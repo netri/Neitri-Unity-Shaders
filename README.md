@@ -16,3 +16,7 @@ They render what is behind them with some effect.
 
 ### World Position
 ![](https://image.prntscr.com/image/v_BsMeg5SZ6yJeSOzAtjrA.png)
+
+
+# Credits
+mel0n - wireframe shader idea
