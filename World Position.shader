@@ -7,9 +7,10 @@ Shader "Neitri/World Position"
 	}
 	SubShader
 	{
-		Tags {
-	        "Queue"="Transparent+10"
-            "RenderType"="Transparent"
+		Tags 
+		{
+			"Queue"="Transparent+10"
+			"RenderType"="Transparent"
 		}
 		LOD 100
 
@@ -18,7 +19,7 @@ Shader "Neitri/World Position"
 			Blend One Zero
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma fragment frag			
+			#pragma fragment frag
 			#include "UnityCG.cginc"
 
 			// based on https://gamedev.stackexchange.com/a/132845/41980
