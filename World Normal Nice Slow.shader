@@ -7,10 +7,11 @@ Shader "Neitri/World Normal Nice Slow"
 	}
 	SubShader
 	{
-		Tags {
-            "Queue"="Transparent+10"
-            "RenderType"="Transparent"
-        }
+		Tags 
+		{
+			"Queue"="Transparent+10"
+			"RenderType"="Transparent"
+		}
 		LOD 100
 
 		Pass
@@ -109,11 +110,12 @@ Shader "Neitri/World Normal Nice Slow"
 				float3 worldPos2 = calculateWorldSpace(i.modelPos, float2(0, offset.y));
 				float3 worldPos3 = calculateWorldSpace(i.modelPos, float2(-offset.x, 0));
 				float3 worldNormal = normalize(cross(worldPos2 - worldPos1, worldPos3 - worldPos1));
-				//return float4(worldNormal, 1.0f);
+				
+				return float4(worldNormal, 1.0f);
 
 				// Looks nicer if demonstrated on phong shading
-				fixed phong = (dot(worldNormal, float3(1,0,0)) + 1) * 0.8;
-				return fixed4(phong, phong, phong, 1);
+				//fixed phong = (dot(worldNormal, float3(1,0,0)) + 1) * 0.5;
+				//return fixed4(phong, phong, phong, 1);
 			}
 
 			ENDCG
