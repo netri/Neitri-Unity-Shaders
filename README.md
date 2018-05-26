@@ -5,6 +5,9 @@ Collection of shaders for Unity3D and VRChat
 ## Depth buffer based shaders
 They render what is behind them with some effect.
 
+In some worlds these shaders may not work correctly, because in Unity's forward rendering _CameraDepthTexture is enabled only if world has at least one light with shadows enabled or if you set 
+```Camera.main.depthTextureMode = DepthTextureMode.Depth```.
+
 ### Wireframe
 ![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
 
