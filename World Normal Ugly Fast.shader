@@ -7,7 +7,8 @@ Shader "Neitri/World Normal Ugly Fast"
 	}
 	SubShader
 	{
-		Tags {
+		Tags 
+		{
 			"Queue"="Transparent+10"
 			"RenderType"="Transparent"
 		}
@@ -18,7 +19,7 @@ Shader "Neitri/World Normal Ugly Fast"
 			Blend One Zero
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma fragment frag			
+			#pragma fragment frag
 			#include "UnityCG.cginc"
 
 			// based on https://gamedev.stackexchange.com/a/132845/41980
