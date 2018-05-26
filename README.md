@@ -6,7 +6,7 @@ Collection of shaders for Unity3D and VRChat
 They render what is behind them with some effect.
 
 ### Wireframe
-![](https://image.prntscr.com/image/kcXPRyudR2SstTZproni9Q.png)
+![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
 
 ### World Normal Nice Slow
 ![](https://image.prntscr.com/image/C8jEwUwwS4SfFIY2tex16A.png)
