@@ -69,14 +69,14 @@ Shader "Neitri/World Normal Ugly Fast"
 				// This is the worldspace coordinate of the corresponding fragment
 				// we retrieved from the depth buffer.
 				float3 worldSpacePosition = direction * depth + _WorldSpaceCameraPos;
-				// Causes 2x2 artefacts because derivative functions are sampled in 2×2 block
+				// Causes 2x2 artefacts because derivative functions are sampled in 2Ã—2 block
 				// see: http://www.aclockworkberry.com/shader-derivative-functions/
-				fixed3 worldNormal = normalize( cross(ddx(worldSpacePosition), ddy(worldSpacePosition)) );				
-				//return fixed4(worldNormal, 1);
+				fixed3 worldNormal = normalize(cross(-ddx(worldSpacePosition), ddy(worldSpacePosition)));
+				return fixed4(worldNormal, 1);
 
 				// Looks nicer if demonstrated on phong shading
-				fixed phong = (dot(worldNormal, float3(1,0,0)) + 1) * 0.5;
-				return fixed4(phong, phong, phong, 1);
+				//fixed phong = (dot(worldNormal, float3(1,0,0)) + 1) * 0.5;
+				//return fixed4(phong, phong, phong, 1);
 			}
 
 			ENDCG
