@@ -9,6 +9,8 @@ In some worlds these shaders may not work correctly, because in Unity's forward 
 ```Camera.main.depthTextureMode = DepthTextureMode.Depth```.
 
 ### Wireframe
+Post processing might ruin results.
+
 ![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
 
 ### World Normal Nice Slow
