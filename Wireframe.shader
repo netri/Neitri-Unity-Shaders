@@ -120,7 +120,10 @@ Shader "Neitri/Wireframe"
 			ENDCG
 		}
 
-		GrabPass { }
+		GrabPass 
+		{ 
+			"_WorldSpaceNormal"
+		}
 
 		Pass
 		{
@@ -145,7 +148,7 @@ Shader "Neitri/Wireframe"
 				return o;
 			}
 
-			sampler2D _GrabTexture;
+			sampler2D _WorldSpaceNormal;
 
 			float4 frag(v2f i) : SV_Target
 			{
@@ -153,9 +156,9 @@ Shader "Neitri/Wireframe"
 
 				float2 offset = 1.0 / _ScreenParams.xy;
 
-				float3 pos00 = tex2D(_GrabTexture, grabPos).rgb;
-				float3 pos01 = tex2D(_GrabTexture, grabPos + float2(0, offset.y)).rgb;
-				float3 pos10 = tex2D(_GrabTexture, grabPos - float2(offset.x, 0)).rgb;
+				float3 pos00 = tex2D(_WorldSpaceNormal, grabPos).rgb;
+				float3 pos01 = tex2D(_WorldSpaceNormal, grabPos + float2(0, offset.y)).rgb;
+				float3 pos10 = tex2D(_WorldSpaceNormal, grabPos - float2(offset.x, 0)).rgb;
 
 				float3 one = float3(1, 1, 1);
 				float w = dot(one, abs(pos10 - pos00)) + dot(one, abs(pos01 - pos00));
