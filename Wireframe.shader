@@ -127,7 +127,7 @@ Shader "Neitri/Wireframe"
 
 		Pass
 		{
-			// Wireframe calculated from normal derivateves, using two pass shader, idea by mel0n
+			// Wireframe calculated from normal derivatives, using two pass shader, idea by mel0n
 
 			Blend One Zero
 			CGPROGRAM
