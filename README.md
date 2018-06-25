@@ -2,33 +2,32 @@
 Collection of shaders for Unity3D and VRChat
 
 
-## Depth buffer based shaders
-They render what is behind them with some effect, they don't go on your avatar but ideally on some "window" that you will look thru.
+## Shader types
 
-These shaders need _CameraDepthTexture, to ensure _CameraDepthTexture is enabled please add a directional Light anywhere to your avatar (idally enabled only when the "window" is enabled) and set it's properties in the following way:
-
-![](https://image.prntscr.com/image/fhYPlY4QTaGga1h2lpX6Og.png)
-
+* Shader marked with &#x1F6AA; render what is behind them with some effect, they don't go on your avatar but ideally on some "window" that you will look thru. Post processing might ruin results of these shaders.
+* Shader marked with &#x1f4a1; need _CameraDepthTexture, to ensure _CameraDepthTexture is enabled please add a directional Light anywhere to your avatar (idally enabled only when the "window" is enabled) and set it's properties in the following way:<br>
+![](https://image.prntscr.com/image/fhYPlY4QTaGga1h2lpX6Og.png)<br>
 Intensity value has to be over 0, because if it's 0 Unity considers the light as disabled.
 You need to do this because Unity's forward rendering _CameraDepthTexture is enabled only if world has at least one light with shadows enabled or if game maker sets
 ```Camera.main.depthTextureMode = DepthTextureMode.Depth```.
 
 
+### Censor &#x1F6AA;
 
-### Wireframe
-Post processing might ruin results.
-
+### Wireframe &#x1F6AA;&#x1f4a1;
 ![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
+mel0n - Wireframe shader idea
 
-### World Normal Nice Slow
+### World Normal Nice Slow &#x1F6AA;&#x1f4a1;
+Slow because it uses two passes instead of one.
 ![](https://image.prntscr.com/image/C8jEwUwwS4SfFIY2tex16A.png)
 
-### World Normal Ugly Fast
+### World Normal Ugly Fast &#x1F6AA;&#x1f4a1;
+Fast because it uses one pass, ugly because it uses `ddx` and `ddy` which work in 2x2 blocks.
 ![](https://image.prntscr.com/image/9PsypMDdRIaS1zQwKiiOYg.png)
 
-### World Position
+### World Position &#x1F6AA;&#x1f4a1;
 ![](https://image.prntscr.com/image/v_BsMeg5SZ6yJeSOzAtjrA.png)
 
 
-# Credits
-mel0n - wireframe shader idea
+
