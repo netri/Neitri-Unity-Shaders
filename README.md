@@ -13,7 +13,7 @@ You need to do this because Unity's forward rendering _CameraDepthTexture is ena
 
 
 ### Censor &#x1F6AA;
-Both VR and non VR see censor squares.
+Both VR and non VR see same censor squares.<br>
 Censor square size decreases as distance to it increases.
 ![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
 
