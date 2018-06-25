@@ -7,7 +7,7 @@ Shader "Neitri/Wireframe Fade"
 {
 	Properties
 	{
-		_WireframeColor("Wireframe Color", Color) = (1, 1, 1, 1)
+		_WireframeColor("Wireframe Color", Color) = (0, 0, 0, 1)
 	}
 	SubShader
 	{
