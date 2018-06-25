@@ -13,10 +13,13 @@ You need to do this because Unity's forward rendering _CameraDepthTexture is ena
 
 
 ### Censor &#x1F6AA;
+Both VR and non VR see censor squares.
+Censor square size decreases as distance to it increases.
+![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
 
 ### Wireframe &#x1F6AA;&#x1f4a1;
 ![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
-mel0n - Wireframe shader idea
+Credits: Mel0n for the wireframe shader idea
 
 ### World Normal Nice Slow &#x1F6AA;&#x1f4a1;
 Slow because it uses two passes instead of one.
