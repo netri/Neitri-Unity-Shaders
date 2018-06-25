@@ -17,9 +17,11 @@ Both VR and non VR see censor squares.
 Censor square size decreases as distance to it increases.
 ![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
 
-### Wireframe &#x1F6AA;&#x1f4a1;
+### Wireframe Overlay &#x1F6AA;&#x1f4a1;
 ![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
-Credits: Mel0n for the wireframe shader idea
+
+### Wireframe Fade &#x1F6AA;&#x1f4a1;
+![](https://image.prntscr.com/image/e7skT9zeTdKK1sSIjC00wA.png)
 
 ### World Normal Nice Slow &#x1F6AA;&#x1f4a1;
 Slow because it uses two passes instead of one.
@@ -31,6 +33,11 @@ Fast because it uses one pass, ugly because it uses `ddx` and `ddy` which work i
 
 ### World Position &#x1F6AA;&#x1f4a1;
 ![](https://image.prntscr.com/image/v_BsMeg5SZ6yJeSOzAtjrA.png)
+
+## Credits
+mel0n - Wireframe shaders idea
+Merlin - Wireframe Fade
+
 
 
 
