@@ -7,6 +7,7 @@ Collection of shaders for Unity3D and VRChat
 * Shader marked with &#x1F6AA; render what is behind them with some effect, they don't go on your avatar but ideally on some "window" that you will look thru. Post processing might ruin results of these shaders.
 * Shader marked with &#x1f4a1; need _CameraDepthTexture, to ensure _CameraDepthTexture is enabled please add a directional Light anywhere to your avatar (idally enabled only when the "window" is enabled) and set it's properties in the following way:<br>
 ![](https://image.prntscr.com/image/fhYPlY4QTaGga1h2lpX6Og.png)<br>
+The settings above should be optimized enough to not cause any additional render passes, if they do, the render passes should be low resolution.
 Intensity value has to be over 0, because if it's 0 Unity considers the light as disabled.
 You need to do this because Unity's forward rendering _CameraDepthTexture is enabled only if world has at least one light with shadows enabled or if game maker sets
 ```Camera.main.depthTextureMode = DepthTextureMode.Depth```.
