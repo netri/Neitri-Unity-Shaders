@@ -5,7 +5,7 @@ Shader "Neitri/Wireframe Overlay"
 {
 	Properties
 	{
-		_WireFrameColor("Wireframe Color", Color) = (1, 1, 1, 1)
+		_WireframeColor("Wireframe Color", Color) = (1, 1, 1, 1)
 		_BackgroundColor("Background Color", Color) = (0, 0, 0, 1)
 	}
 	SubShader
@@ -152,7 +152,7 @@ Shader "Neitri/Wireframe Overlay"
 			sampler2D _WorldSpaceNormal;
 
 			fixed4 _BackgroundColor;
-			fixed4 _WireFrameColor;
+			fixed4 _WireframeColor;
 
 			fixed4 frag(v2f i) : SV_Target
 			{
@@ -167,7 +167,7 @@ Shader "Neitri/Wireframe Overlay"
 				float3 one = float3(1, 1, 1);
 				float w = dot(one, abs(pos10 - pos00)) + dot(one, abs(pos01 - pos00));
 
-				return lerp(_BackgroundColor, _WireFrameColor, w);
+				return lerp(_BackgroundColor, _WireframeColor, w);
 			}
 			ENDCG
 		}
