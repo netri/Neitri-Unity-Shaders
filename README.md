@@ -18,9 +18,11 @@ Censor square size decreases as distance to it increases.
 ![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
 
 ### Wireframe Overlay &#x1F6AA;&#x1f4a1;
+Overlays background color on top of original scene.
 ![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
 
 ### Wireframe Fade &#x1F6AA;&#x1f4a1;
+Fades into original scene color.
 ![](https://image.prntscr.com/image/e7skT9zeTdKK1sSIjC00wA.png)
 
 ### World Normal Nice Slow &#x1F6AA;&#x1f4a1;
