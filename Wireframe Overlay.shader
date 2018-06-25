@@ -1,10 +1,12 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-Shader "Neitri/Wireframe"
+Shader "Neitri/Wireframe Overlay"
 {
 	Properties
 	{
+		_WireFrameColor("Wireframe Color", Color) = (1, 1, 1, 1)
+		_BackgroundColor("Background Color", Color) = (0, 0, 0, 1)
 	}
 	SubShader
 	{
@@ -13,15 +15,13 @@ Shader "Neitri/Wireframe"
 			"Queue"="Transparent+10"
 			"RenderType"="Transparent"
 		}
-		LOD 100
 
 		Pass
 		{
 			Blend One Zero
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma fragment frag
-			
+			#pragma fragment frag			
 			#include "UnityCG.cginc"
 
 			// based on https://gamedev.stackexchange.com/a/132845/41980
@@ -127,9 +127,9 @@ Shader "Neitri/Wireframe"
 
 		Pass
 		{
-			// Wireframe calculated from normal derivatives, using two pass shader, idea by mel0n
+			// Wireframe calculated from normal derivateves, using two pass shader, idea by mel0n
 
-			Blend One Zero
+			Blend SrcAlpha OneMinusSrcAlpha
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -141,7 +141,8 @@ Shader "Neitri/Wireframe"
 				float4 pos : SV_POSITION;
 			};
 
-			v2f vert(appdata_base v) {
+			v2f vert(appdata_base v) 
+			{
 				v2f o;
 				o.pos = UnityObjectToClipPos(v.vertex);
 				o.grabPos = ComputeGrabScreenPos(o.pos);
@@ -150,7 +151,10 @@ Shader "Neitri/Wireframe"
 
 			sampler2D _WorldSpaceNormal;
 
-			float4 frag(v2f i) : SV_Target
+			fixed4 _BackgroundColor;
+			fixed4 _WireFrameColor;
+
+			fixed4 frag(v2f i) : SV_Target
 			{
 				float2 grabPos = i.grabPos.xy / i.grabPos.w;
 
@@ -163,7 +167,7 @@ Shader "Neitri/Wireframe"
 				float3 one = float3(1, 1, 1);
 				float w = dot(one, abs(pos10 - pos00)) + dot(one, abs(pos01 - pos00));
 
-				return fixed4(w, w, w, 1);
+				return lerp(_BackgroundColor, _WireFrameColor, w);
 			}
 			ENDCG
 		}
