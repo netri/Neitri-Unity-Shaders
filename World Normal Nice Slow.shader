@@ -47,7 +47,8 @@ Shader "Neitri/World Normal Nice Slow"
 				return o;
 			}
 
-			// taken from http://answers.unity.com/answers/641391/view.html
+			// Taken from http://answers.unity.com/answers/641391/view.html
+			// Creates inverse matrix of input
 			float4x4 inverse(float4x4 input)
 			{
 				#define minor(a,b,c) determinant(float3x3(input.a, input.b, input.c))
@@ -76,23 +77,19 @@ Shader "Neitri/World Normal Nice Slow"
 				return transpose(cofactors) / determinant(input);
 			}
 
-			float3 calculateWorldSpace(float4 vertex, float2 screenOffset)
-			{
-				float4 worldPos = mul(unity_ObjectToWorld, float4(vertex.xyz, 1));
-				// Calculate our UV within the screen (for reading depth buffer)
-				float4 screenPos = mul(UNITY_MATRIX_VP, worldPos); 
-				// Adjust positon in screen space
-				screenPos.xy += screenOffset * screenPos.w;
-				// Transform back to world pos
-				worldPos = mul(inverse(UNITY_MATRIX_VP), screenPos);
+			float4x4 INVERSE_UNITY_MATRIX_VP;
+			float3 calculateWorldSpace(float4 screenPos)
+			{	
+				// Transform from adjusted screen pos back to world pos
+				float4 worldPos = mul(INVERSE_UNITY_MATRIX_VP, screenPos);
 				// Subtract camera position from vertex position in world
 				// to get a ray pointing from the camera to this vertex.
-				float3 worldDir = worldPos.xyz - _WorldSpaceCameraPos;
+				float3 worldDir = worldPos.xyz / worldPos.w - _WorldSpaceCameraPos;
 				// Calculate screen UV
 				float2 screenUV = screenPos.xy / screenPos.w;
 				screenUV.y *= _ProjectionParams.x;
 				screenUV = screenUV * 0.5f + 0.5f;
-				// VR stereo support
+				// Adjust screen UV for VR single pass stereo support
 				screenUV = UnityStereoTransformScreenSpaceTex(screenUV);
 				// Read depth, linearizing into worldspace units.    
 				float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, screenUV))) / screenPos.w;
@@ -105,13 +102,14 @@ Shader "Neitri/World Normal Nice Slow"
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				// Should be 1.0, but some artefacts appear if we use the perfect value
-				float2 offset = 1.2 / _ScreenParams.xy; 
-				float3 worldPos1 = calculateWorldSpace(i.modelPos, float2(0,0));
-				float3 worldPos2 = calculateWorldSpace(i.modelPos, float2(0, offset.y));
-				float3 worldPos3 = calculateWorldSpace(i.modelPos, float2(-offset.x, 0));
-				float3 worldNormal = normalize(cross(worldPos2 - worldPos1, worldPos3 - worldPos1));
-				
+				INVERSE_UNITY_MATRIX_VP = inverse(UNITY_MATRIX_VP);
+				float4 screenPos = UnityObjectToClipPos(i.modelPos); 
+				// Should be 1.0 pixel, but some artefacts appear if we use perfect value
+				float2 offset = 1.2 / _ScreenParams.xy * screenPos.w; 
+				float3 worldPos1 = calculateWorldSpace(screenPos);
+				float3 worldPos2 = calculateWorldSpace(screenPos + float4(0, offset.y, 0, 0));
+				float3 worldPos3 = calculateWorldSpace(screenPos + float4(-offset.x, 0, 0, 0));
+				float3 worldNormal = normalize(cross(worldPos2 - worldPos1, worldPos3 - worldPos1));				
 				return float4(worldNormal, 1.0f);
 
 				// Looks nicer if demonstrated on phong shading
