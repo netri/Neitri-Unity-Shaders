@@ -1,5 +1,6 @@
 # Neitris-Unity-Shaders
-Collection of shaders for Unity3D and VRChat
+Collection of shaders for Unity3D and VRChat.
+If anyone feels like throwing some cookies my way: https://www.paypal.me/Neitri
 
 
 # Shader types
