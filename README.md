@@ -37,6 +37,18 @@ Both VR and non VR see same censor squares.<br>
 Censor square size decreases as distance to it increases.
 ![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
 
+# Example usage
+The World Normal and World Positon shaders can be used to create some interesting effects.
+For example these have been created with it:
+
+Lyuma 
+https://cdn.discordapp.com/attachments/437747065376735232/470685226205577246/video.mov
+![](https://image.prntscr.com/image/XNr65AfpSGCjZpuZb6F_xw.png)
+
+Wakam
+![](https://puu.sh/AD8cG/d9210fc29d.gif)
+
+
 # Credits
 mel0n - Wireframe shaders idea
 Merlin - Wireframe Fade
