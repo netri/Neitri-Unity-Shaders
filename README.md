@@ -13,11 +13,6 @@ Intensity value has to be over 0, because if it's 0 Unity considers the light as
 You need to do this because Unity's forward rendering _CameraDepthTexture is enabled only if world has at least one light with shadows enabled or if game maker sets
 ```Camera.main.depthTextureMode = DepthTextureMode.Depth```.
 
-## Censor &#x1F6AA;
-Both VR and non VR see same censor squares.<br>
-Censor square size decreases as distance to it increases.
-![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
-
 ## Wireframe Overlay &#x1F6AA;&#x1f4a1;
 Overlays background color on top of original scene.
 ![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
@@ -36,6 +31,11 @@ Fast because it uses one pass, ugly because it uses `ddx` and `ddy` which work i
 
 ## World Position &#x1F6AA;&#x1f4a1;
 ![](https://image.prntscr.com/image/v_BsMeg5SZ6yJeSOzAtjrA.png)
+
+## Censor &#x1F6AA;
+Both VR and non VR see same censor squares.<br>
+Censor square size decreases as distance to it increases.
+![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
 
 # Credits
 mel0n - Wireframe shaders idea
