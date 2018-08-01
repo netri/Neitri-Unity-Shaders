@@ -41,13 +41,13 @@ Censor square size decreases as distance to it increases.
 The World Normal and World Positon shaders can be used to create some interesting effects.
 For example these have been created with it:
 
-Lyuma 
+by Lyuma 
 https://cdn.discordapp.com/attachments/437747065376735232/470685226205577246/video.mov
 ![](https://image.prntscr.com/image/XNr65AfpSGCjZpuZb6F_xw.png)
 
-Wakam
-![](https://puu.sh/AD8cG/d9210fc29d.gif)
-
+by Wakam
+https://puu.sh/AD8cG/d9210fc29d.gif
+![](https://image.prntscr.com/image/a2AJGABfQyyX3vymSf21Gg.png)
 
 # Credits
 mel0n - Wireframe shaders idea
