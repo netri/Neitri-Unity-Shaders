@@ -1,7 +1,7 @@
 # Neitris-Unity-Shaders
 Collection of shaders for Unity3D and VRChat.
 If anyone feels like throwing some cookies my way: https://www.paypal.me/Neitri
-
+The World Normal and World Positon shaders can be used to create interesting advanced effects, e.g.: triplanar decals, cover everything in texture, color wave, distortion wave.
 
 # Shader types
 
@@ -36,19 +36,6 @@ Fast because it uses one pass, ugly because it uses `ddx` and `ddy` which work i
 Both VR and non VR see same censor squares.<br>
 Censor square size decreases as distance to it increases.
 ![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
-
-# Example usage
-The World Normal and World Positon shaders can be used to create some interesting effects.
-
-For example these have been created with it:
-
-by Lyuma 
-https://cdn.discordapp.com/attachments/437747065376735232/470685226205577246/video.mov
-![](https://image.prntscr.com/image/XNr65AfpSGCjZpuZb6F_xw.png)
-
-by Wakam
-https://puu.sh/AD8cG/d9210fc29d.gif
-![](https://image.prntscr.com/image/a2AJGABfQyyX3vymSf21Gg.png)
 
 # Credits
 mel0n - Wireframe shaders idea
