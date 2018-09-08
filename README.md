@@ -1,6 +1,6 @@
 # Neitris-Unity-Shaders
 Collection of shaders for Unity3D and VRChat.
-World Normal and World Positon shaders can be used as basis for more interesting advanced effects, such as:
+World Normal and World Positon shaders have been used as basis for more interesting advanced effects, such as:
 * triplanar decals
 * color wave
 * distortion wave
