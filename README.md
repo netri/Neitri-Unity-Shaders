@@ -1,7 +1,10 @@
 # Neitris-Unity-Shaders
 Collection of shaders for Unity3D and VRChat.
-If anyone feels like throwing some cookies my way: https://www.paypal.me/Neitri
-The World Normal and World Positon shaders can be used to create interesting advanced effects, e.g.: triplanar decals, cover everything in texture, color wave, distortion wave.
+World Normal and World Positon shaders can be used as basis for more interesting advanced effects, such as:
+* triplanar decals
+* color wave
+* distortion wave
+* cover everything in texture
 
 # Shader types
 
