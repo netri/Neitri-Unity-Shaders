@@ -10,8 +10,8 @@ Shader "Neitri/World Position"
 	{
 		Tags 
 		{
-			"Queue"="Transparent+10"
-			"RenderType"="Transparent"
+			"Queue" = "Transparent+1000"
+			"RenderType" = "Transparent"
 		}
 		LOD 100
 
