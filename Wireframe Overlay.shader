@@ -12,8 +12,8 @@ Shader "Neitri/Wireframe Overlay"
 	{
 		Tags 
 		{
-			"Queue"="Transparent+10"
-			"RenderType"="Transparent"
+			"Queue" = "Transparent+1000"
+			"RenderType" = "Transparent"
 		}
 
 		Pass
