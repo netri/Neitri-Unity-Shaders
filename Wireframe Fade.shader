@@ -13,8 +13,8 @@ Shader "Neitri/Wireframe Fade"
 	{
 		Tags 
 		{
-			"Queue"="Transparent+10"
-			"RenderType"="Transparent"
+			"Queue" = "Transparent+1000"
+			"RenderType" = "Transparent"
 		}
 
 		GrabPass
@@ -128,7 +128,7 @@ Shader "Neitri/Wireframe Fade"
 
 		GrabPass 
 		{ 
-			"_WorldSpaceNormal"
+			"_WorldSpaceNormal2"
 		}
 
 		Pass
@@ -155,7 +155,7 @@ Shader "Neitri/Wireframe Fade"
 				return o;
 			}
 
-			sampler2D _WorldSpaceNormal;
+			sampler2D _WorldSpaceNormal2;
 			sampler2D _ScreenBeforeWireframe;
 
 			fixed4 _WireframeColor;
@@ -166,9 +166,9 @@ Shader "Neitri/Wireframe Fade"
 
 				float2 offset = 1.0 / _ScreenParams.xy;
 
-				float3 pos00 = tex2D(_WorldSpaceNormal, grabPos).rgb;
-				float3 pos01 = tex2D(_WorldSpaceNormal, grabPos + float2(0, offset.y)).rgb;
-				float3 pos10 = tex2D(_WorldSpaceNormal, grabPos - float2(offset.x, 0)).rgb;
+				float3 pos00 = tex2D(_WorldSpaceNormal2, grabPos).rgb;
+				float3 pos01 = tex2D(_WorldSpaceNormal2, grabPos + float2(0, offset.y)).rgb;
+				float3 pos10 = tex2D(_WorldSpaceNormal2, grabPos - float2(offset.x, 0)).rgb;
 
 				float3 one = float3(1, 1, 1);
 				float w = dot(one, abs(pos10 - pos00)) + dot(one, abs(pos01 - pos00));
