@@ -14,7 +14,7 @@ World Normal and World Positon shaders have been used as basis for more interest
 The settings above should be optimized enough to not cause any additional render passes, if they do, the render passes should be low resolution.
 Intensity value has to be over 0, because if it's 0 Unity considers the light as disabled.
 You need to do this because Unity's forward rendering _CameraDepthTexture is enabled only if world has at least one light with shadows enabled or if game maker sets
-```Camera.main.depthTextureMode = DepthTextureMode.Depth```.
+```Camera.main.depthTextureMode = DepthTextureMode.Depth```. Shaders that use depth texture will be more imprecise or noisy the further you are from position 0,0,0. That is due to the nature of floating point numbers, it's a Unity thing.
 
 ## Wireframe Overlay &#x1F6AA;&#x1f4a1;
 Overlays background color on top of original scene.
