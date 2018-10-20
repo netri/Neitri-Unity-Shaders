@@ -1,9 +1,9 @@
 
 
-This is the shader I've been using, working on and testing for the last 1 year.
-I really like how MMD models look in all the various rendered videos, I've been tring to get close to it.
-I want to keep it simple and nice, I will not add as many features as Xiexe's shader has.
-If you find world where this shader looks unaccepatable compared to others' please send me the world's name.
+This is the shader I've been using, working on and testing for the last 1 year.<br>
+I really like how MMD models look in all the various rendered videos, I've been tring to get close to it.<br>
+I want to keep it simple and nice, I will not add as many features as Xiexe's shader has.<br>
+If you find world where this shader looks unaccepatable compared to others' please send me the world's name.<br>
 
 
 This shader was made with the following goals in mind:
@@ -16,6 +16,7 @@ This shader was made with the following goals in mind:
 - Shader defaults should be set to ideal battle tested values
 
 
-both "transparent" shaders actually have to be in geometry queue, beause we want them to be shadowed the same as opaque
-ZWrite On is for big geometry such as transparent hair where you want it to occlude it self
-ZWrite Off is for small geometry such as blush which should not occlude anyting
+both "transparent" shaders actually have to be in geometry queue, beause we want them to be shadowed the same as opaque.<br>
+
+ZWrite On is for big geometry such as transparent hair where you want it to occlude it self.<br>
+ZWrite Off is for small geometry such as blush which should not occlude anyting.
