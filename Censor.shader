@@ -113,6 +113,4 @@ Shader "Neitri/Censor" {
             ENDCG
         }
     }
-    FallBack "Diffuse"
-    CustomEditor "ShaderForgeMaterialInspector"
 }

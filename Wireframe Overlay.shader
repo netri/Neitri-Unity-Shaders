@@ -16,12 +16,15 @@ Shader "Neitri/Wireframe Overlay"
 			"RenderType" = "Transparent"
 		}
 
+		Cull Off
+
 		Pass
 		{
-			Blend One Zero
+			// based on "Neitri/World Normal Nice Slow"
+
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma fragment frag			
+			#pragma fragment frag
 			#include "UnityCG.cginc"
 
 			// based on https://gamedev.stackexchange.com/a/132845/41980

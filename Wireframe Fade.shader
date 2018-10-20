@@ -17,6 +17,8 @@ Shader "Neitri/Wireframe Fade"
 			"RenderType" = "Transparent"
 		}
 
+		Cull Off
+
 		GrabPass
 		{
 			"_ScreenBeforeWireframe"
@@ -24,7 +26,8 @@ Shader "Neitri/Wireframe Fade"
 
 		Pass
 		{
-			Blend One Zero
+			// based on "Neitri/World Normal Nice Slow"
+
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -133,7 +136,7 @@ Shader "Neitri/Wireframe Fade"
 
 		Pass
 		{
-			// Wireframe calculated from normal derivateves, using two pass shader, idea by mel0n
+			// wireframe calculated from normal derivateves, using two pass shader, idea by mel0n
 
 			Blend One Zero
 			CGPROGRAM

@@ -13,18 +13,18 @@ Shader "Neitri/World Normal Nice Slow"
 			"Queue" = "Transparent+1000"
 			"RenderType" = "Transparent"
 		}
-		LOD 100
+		
+		Cull Off
 
 		Pass
 		{
-			Blend One Zero
+			// based on "Neitri/World Position"
+
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
 			
 			#include "UnityCG.cginc"
-
-			// based on https://gamedev.stackexchange.com/a/132845/41980
 
 			struct appdata
 			{
@@ -47,8 +47,8 @@ Shader "Neitri/World Normal Nice Slow"
 				return o;
 			}
 
-			// Taken from http://answers.unity.com/answers/641391/view.html
-			// Creates inverse matrix of input
+			// from http://answers.unity.com/answers/641391/view.html
+			// creates inverse matrix of input
 			float4x4 inverse(float4x4 input)
 			{
 				#define minor(a,b,c) determinant(float3x3(input.a, input.b, input.c))
@@ -96,8 +96,7 @@ Shader "Neitri/World Normal Nice Slow"
 				// Advance by depth along our view ray from the camera position.
 				// This is the worldspace coordinate of the corresponding fragment
 				// we retrieved from the depth buffer.
-				float3 worldSpacePos = worldDir * depth + _WorldSpaceCameraPos;
-				return worldSpacePos;
+				return worldDir * depth;
 			}
 
 			fixed4 frag (v2f i) : SV_Target
@@ -109,7 +108,7 @@ Shader "Neitri/World Normal Nice Slow"
 				float3 worldPos1 = calculateWorldSpace(screenPos);
 				float3 worldPos2 = calculateWorldSpace(screenPos + float4(0, offset.y, 0, 0));
 				float3 worldPos3 = calculateWorldSpace(screenPos + float4(-offset.x, 0, 0, 0));
-				float3 worldNormal = normalize(cross(worldPos2 - worldPos1, worldPos3 - worldPos1));				
+				float3 worldNormal = normalize(cross(worldPos2 - worldPos1, worldPos3 - worldPos1));
 				return float4(worldNormal, 1.0f);
 
 				// Looks nicer if demonstrated on phong shading
