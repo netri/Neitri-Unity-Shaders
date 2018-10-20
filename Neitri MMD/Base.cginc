@@ -5,13 +5,11 @@
 // Cubed's https://github.com/cubedparadox/Cubeds-Unity-Shaders
 // Xiexe's https://vrcat.club/threads/xiexes-toon-shader-v1-2-2-updated-6-20-2018-xstoon-stylized-reflections-update.1878/
 
-//#define UNITY_SHOULD_SAMPLE_SH 1
+
 
 #include "UnityCG.cginc"
 #include "AutoLight.cginc"
 #include "Lighting.cginc"
-//#include "UnityPBSLighting.cginc"
-//#include "UnityStandardBRDF.cginc"
 
 //#define USE_TANGENT_BITANGENT
 
@@ -43,53 +41,15 @@ struct VertexOutput {
 };
 
 
-// custom vertex light shading that uses shading ramp
 // based off Shade4PointLights from "\Unity\builtin_shaders-5.6.5f1\CGIncludes\UnityCG.cginc"
-float3 CustomShade4PointLights (
-    float4 lightPosX, float4 lightPosY, float4 lightPosZ,
-    float3 lightColor0, float3 lightColor1, float3 lightColor2, float3 lightColor3,
-    float4 lightAttenSq,
-    float3 pos, float3 normal)
-{
-	// to light vectors
-	float4 toLightX = lightPosX - pos.x;
-	float4 toLightY = lightPosY - pos.y;
-	float4 toLightZ = lightPosZ - pos.z;
-	// squared lengths
-	float4 lengthSq = 0;
-	lengthSq += toLightX * toLightX;
-	lengthSq += toLightY * toLightY;
-	lengthSq += toLightZ * toLightZ;
-	// don't produce NaNs if some vertex position overlaps with the light
-	lengthSq = max(lengthSq, 0.000001);
-
-	// NdotL
-	float4 ndotl = 0;
-	ndotl += toLightX * normal.x;
-	ndotl += toLightY * normal.y;
-	ndotl += toLightZ * normal.z;
-	// correct NdotL
-	float4 corr = rsqrt(lengthSq);
-	ndotl = max(float4(0, 0, 0, 0), ndotl * corr);
-	// attenuation
-	float4 atten = 1.0 / (1.0 + lengthSq * lightAttenSq);
-	float4 diff = ndotl * atten;
-	// final color
-	float3 col = 0;
-	col += lightColor0 * diff.x;
-	col += lightColor1 * diff.y;
-	col += lightColor2 * diff.z;
-	col += lightColor3 * diff.w;
-	return col;
-}
-
 float3 AverageShade4PointLights (
     float4 lightPosX, float4 lightPosY, float4 lightPosZ,
     float3 lightColor0, float3 lightColor1, float3 lightColor2, float3 lightColor3,
     float4 lightAttenSq,
     float3 pos)
 {
-	//return (lightColor0 + lightColor1 + lightColor2 + lightColor3) * 0.25; // BAD: does not take into account distance to lights
+	// BAD: does not take into account distance to lights
+	//return (lightColor0 + lightColor1 + lightColor2 + lightColor3) * 0.25;
 
 	// to light vectors
 	float4 toLightX = lightPosX - pos.x;
@@ -102,7 +62,6 @@ float3 AverageShade4PointLights (
 	lengthSq += toLightZ * toLightZ;
 	// don't produce NaNs if some vertex position overlaps with the light
 	lengthSq = max(lengthSq, 0.000001);
-
 	// attenuation
 	float4 atten = 1.0 / (1.0 + lengthSq * lightAttenSq);
 	float4 diff = atten;
@@ -130,13 +89,16 @@ VertexOutput vert (VertexInput v)
 
 	float3 posModel = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 
-	// Vertex lights are just a cheap way to calculate 4 spot light without shadows at once
-	// we are finalRGB additional lights in seperate delta forward passes, so no need for vertex lights
-
+	
+	// vertex lights are a cheap way to calculate 4 lights without shadows at once	
+	// Unity renders first few lights as pixel lights with shadows in base/delta pass
+	// next 4 are calculated using vertex lights
+	// next are added to light probes
+	// you can force light to be in vertex lights by setting Render Mode: Not Important
 	#if defined(UNITY_PASS_FORWARDBASE)
 		#ifdef VERTEXLIGHT_ON
 			// Approximated illumination from non-important point lights
-			o.vertexLightsReal.rgb = CustomShade4PointLights (
+			o.vertexLightsReal.rgb = Shade4PointLights (
 				unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
 				unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
 				unity_4LightAtten0, o.posWorld, o.normal);
@@ -155,7 +117,7 @@ VertexOutput vert (VertexInput v)
 }
 
 #if defined(_RAYMARCHER_TYPE_SPHERES) || defined(_RAYMARCHER_TYPE_HEARTS)
-	#define OUTPUT_DEPTH
+	//#define OUTPUT_DEPTH
 	#define ENABLE_RAYMARCHER
 	#if defined(_RAYMARCHER_TYPE_SPHERES)
 		#define RAYMARCHER_DISTANCE_FIELD_FUNCTION distanceMap_spheres
@@ -188,7 +150,6 @@ float _Smoothness;
 
 float _IndirectLightingFlatness;
 
-//sampler2D _ShadingRamp;
 
 #if defined(_COLOR_OVER_TIME_ON)
 	sampler2D _ColorOverTime_Ramp;
@@ -196,11 +157,20 @@ float _IndirectLightingFlatness;
 #endif
 
 
+#define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
+
 float grayness(float3 color)
 {
-	const float3 greyScale = float3(0.3, 0.59, 0.11);
-	return dot(color, greyScale);
+	return dot(color, GRAYSCALE_VECTOR);
 }
+
+
+
+float maxDot(float3 a, float3 b)
+{
+	return max(0, dot(a, b));
+}
+
 
 
 // from: https://www.shadertoy.com/view/MslGR8
@@ -215,21 +185,9 @@ float3 ScreenSpaceDither( float2 vScreenPos )
 	return vDither.rgb;
 }
 
-// remaps dot according to shading ramp
-float remapDot(float dot)
-{
-	dot = dot * 0.5 + 0.5; // remap -1 .. 1 to 0 .. 1
-	//return tex2Dlod(_ShadingRamp, float4(dot, 0.5f, 0, 0)).r;
-	return dot;
-}
-
-float maxDot(float3 a, float3 b)
-{
-	return max(0, dot(a, b));
-}
 
 
-
+// PBR function taken from https://learnopengl.com/PBR/Theory
 // normal distribution function
 // Trowbridge-Reitz GGX normal distribution function
 float DistributionGGX(float NdotH, float a)
@@ -241,51 +199,6 @@ float DistributionGGX(float NdotH, float a)
     denom        = UNITY_PI * denom * denom;
     return nom / denom;
 }
-
-float GeometrySchlickGGX(float NdotV, float k)
-{
-    float denom = NdotV * (1.0 - k) + k;
-    return NdotV / denom;
-}  
-// geometry function
-// microfacet shadowing
-float GeometrySmith(float NdotV, float NdotL, float k)
-{
-    float ggx1 = GeometrySchlickGGX(NdotV, k);
-    float ggx2 = GeometrySchlickGGX(NdotL, k);
-	
-    return ggx1 * ggx2;
-}
-
-// fresnel equation
-float3 fresnelSchlick(float NdotV, float3 F0)
-{
-    return F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
-}
-
-// based on https://learnopengl.com/PBR/Theory
-float3 pbrSpecular(float N, float L, float V, float H, float3 surfaceColor, float smoothness, float metalness)
-{
-	float a = smoothness;
-
-	float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-	float NdotH = max(dot(N, H), 0.0);
-
-	float kDirect = a + 1; kDirect = (kDirect * kDirect) / 8.0f;
-	float kIBL = (a * a) / 2.0f;
-
-	float3 F0 = 0.04;
-	surfaceColor = 1;
-	F0 = lerp(F0, surfaceColor, metalness);
-
-	float result = DistributionGGX(NdotH, a) * GeometrySmith(NdotV, NdotL, kIBL) * fresnelSchlick(NdotV, F0);
-	result /= 4 * NdotV;
-
-	return result;
-}
-
-
 
 
 
@@ -304,7 +217,9 @@ float4 frag(VertexOutput i) : SV_Target
 #endif
 
 	float4 mainTexture = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex)) * _Color;
-	clip(mainTexture.a - 0.05); // discard current pixel if alpha is less than 0.05
+	
+	// cutout support, discard current pixel if alpha is less than 0.05
+	clip(mainTexture.a - 0.05);
 
 	#if defined(_COLOR_OVER_TIME_ON)
 		float3 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(_Time.x * _ColorOverTime_Speed, _Time.x * _ColorOverTime_Speed, 0, 0)).rgb;
@@ -314,12 +229,14 @@ float4 frag(VertexOutput i) : SV_Target
 	#if defined(ENABLE_RAYMARCHER)
 		float raymarchedScreenDepth;
 		raymarch(i.posWorld.xyz, mainTexture.rgb, raymarchedScreenDepth);
+		#if defined(OUTPUT_DEPTH)
 		float realDepthWeight = i.color.r;
 		fragOut.depth = lerp(raymarchedScreenDepth, i.pos.z, realDepthWeight);
+		#endif
 	#endif
 
 #if defined(UNITY_SINGLE_PASS_STEREO)
-	float3 worldSpaceCameraPos = (unity_StereoWorldSpaceCameraPos[0].xyz + unity_StereoWorldSpaceCameraPos[1].xyz) / 2.0;
+	float3 worldSpaceCameraPos = lerp(unity_StereoWorldSpaceCameraPos[0].xyz,  unity_StereoWorldSpaceCameraPos[1].xyz, 0.5);
 #else
 	float3 worldSpaceCameraPos = _WorldSpaceCameraPos.xyz;
 #endif
@@ -353,7 +270,8 @@ float4 frag(VertexOutput i) : SV_Target
 	fixed3 lightColor = _LightColor0.rgb;
 
 
-	// prevent bloom if light color is over saturated
+	// prevent bloom if light color is over 1
+	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
 	//fixed lightColorMax = max(lightColor.x, max(lightColor.y, lightColor.z));
 	//if(lightColorMax > 1) lightColor /= lightColorMax;
 
@@ -363,8 +281,6 @@ float4 frag(VertexOutput i) : SV_Target
 	#if defined(UNITY_PASS_FORWARDBASE)
 		// non cookie directional light, or no lights at all (just ambient, light probes and vertex lights)
 		
-		//allSphericalHarmonics = LinearToGammaSpace (allSphericalHarmonics);
-
 		// TODO: proxy volume support, see: ShadeSHPerPixel
 
 		// ambient color, skybox, light probes are baked in spherical harmonics
@@ -382,7 +298,10 @@ float4 frag(VertexOutput i) : SV_Target
 			//lightDir = -normalize(noAmbientShadeSH9Light * 0.5 + 0.533);
 
 			// Neitri's
-			lightDir = normalize(unity_SHAr.xyz + unity_SHAg.xyz + unity_SHAb.xyz);
+			// humans perceive colors differently, same amount of green may appear brighter than same amount of blue, that is why we adjust contributions by grayscale factor
+			//return i.posWorld.x > 0 ? float4(0,0.5,0,1) : float4(0,0,0.5,1);
+			const float3 grayscaleVector = GRAYSCALE_VECTOR;
+			lightDir = normalize(unity_SHAr.xyz * grayscaleVector.r + unity_SHAg.xyz * grayscaleVector.g + unity_SHAb.xyz * grayscaleVector.b);
 		}
 	
 
@@ -405,9 +324,6 @@ float4 frag(VertexOutput i) : SV_Target
 		{
 			lightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
 		}
-
-		//DEBUG
-		//return fixed4(realLightProbes*mainTexture.rgb, 1); // Unity legacy diffuse
 
 	#else
 		
@@ -432,7 +348,7 @@ float4 frag(VertexOutput i) : SV_Target
 		//specular = saturate(specular);
 		//float3 specular = pbrSpecular(normal, lightDir, viewDir, halfDir, mainTexture.rgb, _Smoothness, 0);
 
-		//float3 specularColor = (UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflectedviewDir, (1 - _Smoothness) * 6));		
+		//float3 specularColor = (UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflectedviewDir, (1 - _Smoothness) * 6));
 		//if (!any(specularColor)) specularColor = lightColor;
 
 		finalRGB += lightColor * specular * unityLightAttenuation;
@@ -461,7 +377,7 @@ float4 frag(VertexOutput i) : SV_Target
 			// lets make sure its not too bright
 			diffuseColor = lightColor * unityLightAttenuation;
 			float g = grayness(diffuseColor);
-			if (g > 1) diffuseColor *= 1 / g;
+			if (g > 1) diffuseColor /= g;
 			diffuseColor = diffuseColor * diffuse * mainTexture.rgb;
 		#endif
 
@@ -472,7 +388,7 @@ float4 frag(VertexOutput i) : SV_Target
 	
 	#if defined(_SHADER_TYPE_SKIN)
 	// view based shading, adds MMD like feel
-	finalRGB *= lerp(1, dot(viewDir, normal), 0.3);
+	finalRGB *= lerp(1, maxDot(viewDir, normal), 0.2);
 	#endif
 
 	
@@ -482,19 +398,8 @@ float4 frag(VertexOutput i) : SV_Target
 	// can use following defines DIRECTIONAL || POINT || SPOT || DIRECTIONAL_COOKIE || POINT_COOKIE || SPOT_COOKIE
 
 
-	// DEBUG
-	#if defined(UNITY_PASS_FORWARDBASE)
-	#else
-	#endif
-	//finalRGB = ScreenSpaceDither(i.pos.xy)*10;
-	//diffuseRGB = lightColor * lightWeight;
-	//diffuseRGB = lightWeight;
-	//diffuseRGB = unlit;
-	//diffuseRGB = unityLightAttenuation;
-	//diffuseRGB = abs(diffuseRGB);
-
-
 	// prevent bloom, final failsafe
+	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
 	//finalRGB = saturate(finalRGB);
 
 	#if defined(UNITY_PASS_FORWARDBASE)
@@ -509,13 +414,6 @@ float4 frag(VertexOutput i) : SV_Target
 		UNITY_APPLY_FOG(i.fogCoord, finalRGBA);
 	#else
 		UNITY_APPLY_FOG_COLOR(i.fogCoord, finalRGBA, half4(0,0,0,0)); // fog towards black in additive pass
-	#endif
-
-	// DEBUG
-	#if defined(UNITY_PASS_FORWARDBASE)
-		//discard;
-	#else
-		//discard;
 	#endif
 
 	#if defined(OUTPUT_DEPTH)
