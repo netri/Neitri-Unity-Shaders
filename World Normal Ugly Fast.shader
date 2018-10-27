@@ -32,8 +32,8 @@ Shader "Neitri/World Normal Ugly Fast"
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float4 projPos : TEXCOORD1;
-				float3 ray : TEXCOORD2;
+				float4 projPos : TEXCOORD0;
+				float3 ray : TEXCOORD1;
 			};
 
 			UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
@@ -50,8 +50,8 @@ Shader "Neitri/World Normal Ugly Fast"
 
 			float4 frag (v2f i) : SV_Target
 			{
-				float sceneZ = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-				float3 worldPosition = sceneZ * i.ray / i.projPos.z + _WorldSpaceCameraPos;
+				float sceneDepth = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
+				float3 worldPosition = sceneDepth * i.ray / i.projPos.z + _WorldSpaceCameraPos;
 				fixed3 worldNormal = normalize(cross(-ddx(worldPosition), ddy(worldPosition)));
 				return float4(worldNormal, 1.0f);
 			}

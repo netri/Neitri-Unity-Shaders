@@ -36,9 +36,9 @@ Shader "Neitri/World Triplanar Mapped"
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float4 modelPos : TEXCOORD1;
-				float4 projPos : TEXCOORD2;
-				float3 ray : TEXCOORD3;
+				float4 modelPos : TEXCOORD0;
+				float4 projPos : TEXCOORD1;
+				float3 ray : TEXCOORD2;
 			};
 
 			UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
@@ -108,11 +108,9 @@ Shader "Neitri/World Triplanar Mapped"
 
 			float4 frag (v2f i) : SV_Target
 			{
-				float sceneZ = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-				float3 worldPosition = sceneZ * i.ray / i.projPos.z + _WorldSpaceCameraPos;
-
+				float sceneDepth = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
+				float3 worldPosition = sceneDepth * i.ray / i.projPos.z + _WorldSpaceCameraPos;
 				fixed3 worldNormal = normalize(cross(-ddx(worldPosition), ddy(worldPosition)));
-
 				clip(_Range - distance(worldPosition, i.modelPos));
 
 				//fixed4 color = neitriTriPlanar1(_MainTex, worldPosition, i.modelPos, worldNormal, _Scale);
@@ -120,7 +118,6 @@ Shader "Neitri/World Triplanar Mapped"
 				fixed4 color = errorTriPlanar(_MainTex, worldPosition, i.modelPos, worldNormal, _Scale);
 
 				clip(color.a - 0.01);
-
 				return color;
 			}
 
