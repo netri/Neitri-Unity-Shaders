@@ -20,7 +20,7 @@ Shader "Neitri/MMD Opaque" {
 		[Header(Other)]
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
 		_Shadow ("Normal direction shadow strength", Range(0, 1)) = 0.4
-		_LightCastedShadowStrength ("Light casted shadow strength", Range(0, 1)) = 1
+		_LightCastedShadowStrength ("Light casted shadow strength", Range(0, 1)) = 0.9
 		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
 
 		[Header(Change color over time)]
