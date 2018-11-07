@@ -11,7 +11,11 @@
 #include "AutoLight.cginc"
 #include "Lighting.cginc"
 
-//#define USE_TANGENT_BITANGENT
+
+#define USE_NORMAL_MAP
+#if defined(USE_NORMAL_MAP)
+	#define USE_TANGENT_BITANGENT
+#endif
 
 struct VertexInput {
     float4 vertex : POSITION;
@@ -81,7 +85,7 @@ VertexOutput vert (VertexInput v)
     o.uv0.xy = v.texcoord0;
 	o.color = v.color;
 	o.normal = UnityObjectToWorldNormal(v.normal);
-	#if defined(USE_NORMAL_MAP)
+	#if defined(USE_TANGENT_BITANGENT)
 		o.tangentDir = normalize( mul( unity_ObjectToWorld, float4( v.tangent.xyz, 0.0 ) ).xyz );
 		o.bitangentDir = normalize(cross(o.normal, o.tangentDir) * v.tangent.w);
 	#endif
@@ -141,13 +145,13 @@ fixed4 _EmissionColor;
 
 
 #if defined(USE_NORMAL_MAP)
-	#define USE_TANGENT_BITANGENT
-	sampler2D _NormalMap; float4 _NormalMap_ST;
+	sampler2D _BumpMap; float4 _BumpMap_ST;
+	float _BumpScale;
 #endif
 
 float _Shadow;
-float _Smoothness;
-
+float _LightCastedShadowStrength;
+float _Glossiness;
 float _IndirectLightingFlatness;
 
 
@@ -241,9 +245,21 @@ float4 frag(VertexOutput i) : SV_Target
 	float3 worldSpaceCameraPos = _WorldSpaceCameraPos.xyz;
 #endif
 
+	float distanceToCamera = distance(worldSpaceCameraPos, i.posWorld);
 
 	float3 normal = i.normal;
-	
+
+#if defined(USE_NORMAL_MAP)
+	if (_BumpScale != 0)
+	{
+		float3x3 tangentTransform = float3x3(i.tangentDir, i.bitangentDir, normal);
+		float3 normalLocal = UnpackNormal(tex2D(_BumpMap,TRANSFORM_TEX(i.uv0, _BumpMap)));
+		normalLocal.z /= _BumpScale;
+		normal = normalize(lerp(normal, mul(normalLocal, tangentTransform), saturate(_BumpScale))); // perturbed normals
+		//return float4(normal,1);
+	}
+#endif
+
 	// slightly dither normal to hide obvious normal interpolation
 	normal = normalize(normal + ScreenSpaceDither(i.pos.xy) / 50.0);
 	
@@ -256,16 +272,10 @@ float4 frag(VertexOutput i) : SV_Target
 	// bounced direction from camera towards pixel
 	float3 reflectedviewDir = reflect(-viewDir, normal);
 
-#if defined(USE_NORMAL_MAP)
-	float3x3 tangentTransform = float3x3( i.tangentDir, i.bitangentDir, normal);
-    float3 normalLocal = UnpackNormal(tex2D(_NormalMap,TRANSFORM_TEX(i.uv0, _NormalMap)));
-    normal = normalize(mul( normalLocal, tangentTransform )); // perturbed normals
-#endif
-
-
 
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.posWorld.xyz);
+	unityLightAttenuation = lerp(1, unityLightAttenuation, _LightCastedShadowStrength);
 
 	fixed3 lightColor = _LightColor0.rgb;
 
@@ -335,20 +345,21 @@ float4 frag(VertexOutput i) : SV_Target
 	
 	lightDir = normalize(lightDir);
 
+
 	// specular
 	UNITY_BRANCH
-	if (_Smoothness > 0)
+	if (_Glossiness > 0)
 	{
 		float3 halfDir = normalize(lightDir + viewDir);
 
 		//float specular = (8.0 + _Smoothness*100) / ( 8.0 * UNITY_PI ) * pow(max(dot(normal, halfDir), 0.0), _Smoothness*100);
-		float specular = DistributionGGX(maxDot(normal, halfDir), (1 - _Smoothness));
-		specular = specular * _Smoothness;
-		specular = specular * _Smoothness / (4 * maxDot(normal, viewDir) + 0.1);
+		float specular = DistributionGGX(maxDot(normal, halfDir), (1 - _Glossiness));
+		specular = specular * _Glossiness;
+		specular = specular * _Glossiness / (4 * maxDot(normal, viewDir) + 0.1);
 		//specular = saturate(specular);
-		//float3 specular = pbrSpecular(normal, lightDir, viewDir, halfDir, mainTexture.rgb, _Smoothness, 0);
+		//float3 specular = pbrSpecular(normal, lightDir, viewDir, halfDir, mainTexture.rgb, _Glossiness, 0);
 
-		//float3 specularColor = (UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflectedviewDir, (1 - _Smoothness) * 6));
+		//float3 specularColor = (UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflectedviewDir, (1 - _Glossiness) * 6));
 		//if (!any(specularColor)) specularColor = lightColor;
 
 		finalRGB += lightColor * specular * unityLightAttenuation;
@@ -382,13 +393,12 @@ float4 frag(VertexOutput i) : SV_Target
 		#endif
 
 		finalRGB += diffuseColor;
-		
 	}
 
 	
 	#if defined(_SHADER_TYPE_SKIN)
 	// view based shading, adds MMD like feel
-	finalRGB *= lerp(1, maxDot(viewDir, normal), 0.2);
+	finalRGB *= lerp(1, maxDot(viewDir, normal) + 0.5, 0.03);
 	#endif
 
 	
@@ -404,7 +414,9 @@ float4 frag(VertexOutput i) : SV_Target
 
 	#if defined(UNITY_PASS_FORWARDBASE)
 		fixed4 emissive = tex2D(_EmissionMap,TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
-		finalRGB += emissive.rgb * emissive.a;
+		float emissiveWeight = smoothstep(-1, 1, grayness(emissive.rgb) - grayness(finalRGB));
+		finalRGB = lerp(finalRGB, emissive.rgb, emissiveWeight);
+
 	#else
 	#endif
 

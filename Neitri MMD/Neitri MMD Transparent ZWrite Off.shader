@@ -6,28 +6,32 @@
 
 Shader "Neitri/MMD Transparent ZWrite Off" {
 	Properties{
-		[Header(Main)]
-		[KeywordEnum(None, Skin)] _SHADER_TYPE ("Shader specialization", Float) = 0
-		_MainTex ("_MainTex", 2D) = "white" {}
-        _Color ("_Color", Color) = (1,1,1,1)
+		[KeywordEnum(None, Skin, Hair)] _SHADER_TYPE ("Shader specialization", Float) = 0
+		
+		[Header(Main)] 
+		_MainTex ("Texture", 2D) = "white" {}
+        _Color ("Color", Color) = (1,1,1,1)
+
+		[Header(Normal)] 
+		_BumpMap("Normal Map", 2D) = "bump" {}
+		_BumpScale("Scale", Float) = 1.0
 
 		[Header(Emission)]
-		_EmissionMap ("_EmissionMap", 2D) = "black" {}
-		_EmissionColor ("_EmissionColor", Color) = (0,0,0,1)
+		_EmissionMap ("Texture", 2D) = "black" {}
+		_EmissionColor ("Color", Color) = (0,0,0,1)
 		
-		[Header(Direct or point or vertex lights)]
-		_Shadow ("_Shadow", Range(0, 1)) = 0.4
-		_Smoothness ("_Smoothness", Range(0, 1)) = 0
+		[Header(Other)]
+		_Glossiness ("Glossiness", Range(0, 1)) = 0
+		_Shadow ("Normal direction shadow strength", Range(0, 1)) = 0.4
+		_LightCastedShadowStrength ("Light casted shadow strength", Range(0, 1)) = 1
+		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
 
-		[Header(Light probes)]
-		_IndirectLightingFlatness ("_IndirectLightingFlatness", Range(0, 1)) = 0.9
-
-		[Header(Color over time)]
+		[Header(Change color over time)]
 		[Toggle(_COLOR_OVER_TIME_ON)] _COLOR_OVER_TIME_ON ("Enable", Float) = 0
-		_ColorOverTime_Ramp ("Ramp", 2D) = "white" {}
-		_ColorOverTime_Speed ("Speed", float) = 0.1
+		_ColorOverTime_Ramp ("Colors Texture", 2D) = "white" {}
+		_ColorOverTime_Speed ("Time Speed Multiplier", float) = 0.1
 
-		[Header(Raymarcher)]
+		[Header(Raymarched Pattern)]
 		[KeywordEnum(None, Spheres, Hearts)] _RAYMARCHER_TYPE ("Type", Float) = 0
 		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
 	}
@@ -53,7 +57,7 @@ Shader "Neitri/MMD Transparent ZWrite Off" {
 				#pragma target 4.0
 				#pragma multi_compile_fwdbase
 				#pragma multi_compile_fog
-				#pragma multi_compile _ _SHADER_TYPE_SKIN
+				#pragma multi_compile _ _SHADER_TYPE_SKIN _SHADER_TYPE_HAIR
 				#pragma multi_compile _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 				#pragma multi_compile _ _COLOR_OVER_TIME_ON
 				ENDCG
@@ -77,7 +81,7 @@ Shader "Neitri/MMD Transparent ZWrite Off" {
 				#pragma target 4.0
 				#pragma multi_compile_fwdadd_fullshadows
 				#pragma multi_compile_fog
-				#pragma multi_compile _ _SHADER_TYPE_SKIN
+				#pragma multi_compile _ _SHADER_TYPE_SKIN _SHADER_TYPE_HAIR
 				#pragma multi_compile _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 				#pragma multi_compile _ _COLOR_OVER_TIME_ON
 				ENDCG

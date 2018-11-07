@@ -42,10 +42,11 @@ Shader "Neitri/World Position"
 			v2f vert (appdata v)
 			{
 				v2f o;
-				o.ray = mul(unity_ObjectToWorld, v.vertex).xyz - _WorldSpaceCameraPos;
-				o.vertex = UnityObjectToClipPos(v.vertex);
+				float4 worldPos = mul(UNITY_MATRIX_M, v.vertex);
+				o.ray = worldPos.xyz - _WorldSpaceCameraPos;
+				o.vertex = mul(UNITY_MATRIX_VP, worldPos);
 				o.projPos = ComputeScreenPos (o.vertex);
-				COMPUTE_EYEDEPTH(o.projPos.z);
+				o.projPos.z = -mul(UNITY_MATRIX_V, worldPos).z;
 				return o;
 			}
 

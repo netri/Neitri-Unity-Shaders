@@ -36,7 +36,7 @@ Shader "Neitri/World Triplanar Mapped"
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float4 modelPos : TEXCOORD0;
+				float4 modelCenterPos : TEXCOORD0;
 				float4 projPos : TEXCOORD1;
 				float3 ray : TEXCOORD2;
 			};
@@ -98,11 +98,13 @@ Shader "Neitri/World Triplanar Mapped"
 			v2f vert (appdata v)
 			{
 				v2f o;
-				o.modelPos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
-				o.ray = mul(unity_ObjectToWorld, v.vertex) - _WorldSpaceCameraPos;
-				o.vertex = UnityObjectToClipPos(v.vertex);
+				float4 worldPos = mul(UNITY_MATRIX_M, v.vertex);
+				o.modelCenterPos = mul(UNITY_MATRIX_M, float4(0, 0, 0, 1));
+				o.ray = worldPos.xyz - _WorldSpaceCameraPos;
+				o.vertex = mul(UNITY_MATRIX_VP, worldPos);
 				o.projPos = ComputeScreenPos (o.vertex);
-				COMPUTE_EYEDEPTH(o.projPos.z);
+				o.projPos.z = -mul(UNITY_MATRIX_V, worldPos).z;
+				return o;
 				return o;
 			}
 
@@ -111,11 +113,11 @@ Shader "Neitri/World Triplanar Mapped"
 				float sceneDepth = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
 				float3 worldPosition = sceneDepth * i.ray / i.projPos.z + _WorldSpaceCameraPos;
 				fixed3 worldNormal = normalize(cross(-ddx(worldPosition), ddy(worldPosition)));
-				clip(_Range - distance(worldPosition, i.modelPos));
+				clip(_Range - distance(worldPosition, i.modelCenterPos));
 
-				//fixed4 color = neitriTriPlanar1(_MainTex, worldPosition, i.modelPos, worldNormal, _Scale);
-				//fixed4 color = neitriTriPlanar2(_MainTex, worldPosition, i.modelPos, worldNormal, _Scale);
-				fixed4 color = errorTriPlanar(_MainTex, worldPosition, i.modelPos, worldNormal, _Scale);
+				//fixed4 color = neitriTriPlanar1(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
+				//fixed4 color = neitriTriPlanar2(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
+				fixed4 color = errorTriPlanar(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
 
 				clip(color.a - 0.01);
 				return color;
