@@ -220,7 +220,14 @@ float4 frag(VertexOutput i) : SV_Target
 {
 #endif
 
-	float4 mainTexture = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex)) * _Color;
+	float4 mainTexture = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
+
+	#if defined(SUPPORT_TRANSPARENCY)
+	// because people expect color alpha to work only on transparent shaders
+	mainTexture *= _Color;
+	#else
+	mainTexture.rgb *= _Color.rgb;
+	#endif
 	
 	// cutout support, discard current pixel if alpha is less than 0.05
 	clip(mainTexture.a - 0.05);

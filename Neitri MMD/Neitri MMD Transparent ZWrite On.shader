@@ -6,7 +6,7 @@
 
 Shader "Neitri/MMD Transparent ZWrite On" {
 	Properties{
-		[KeywordEnum(None, Skin, Hair)] _SHADER_TYPE ("Shader specialization", Float) = 0
+		[KeywordEnum(None, Skin)] _SHADER_TYPE ("Shader specialization", Float) = 0
 		
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
@@ -29,7 +29,7 @@ Shader "Neitri/MMD Transparent ZWrite On" {
 		[Header(Change color over time)]
 		[Toggle(_COLOR_OVER_TIME_ON)] _COLOR_OVER_TIME_ON ("Enable", Float) = 0
 		_ColorOverTime_Ramp ("Colors Texture", 2D) = "white" {}
-		_ColorOverTime_Speed ("Time Speed Multiplier", float) = 0.1
+		_ColorOverTime_Speed ("Time Speed Multiplier", Float) = 0.1
 
 		[Header(Raymarched Pattern)]
 		[KeywordEnum(None, Spheres, Hearts)] _RAYMARCHER_TYPE ("Type", Float) = 0
@@ -52,12 +52,13 @@ Shader "Neitri/MMD Transparent ZWrite On" {
 				#pragma vertex vert
 				#pragma fragment frag
 				#define UNITY_PASS_FORWARDBASE
+				#define SUPPORT_TRANSPARENCY
 				#include "Base.cginc"
 				#pragma only_renderers d3d11 glcore gles
 				#pragma target 4.0
 				#pragma multi_compile_fwdbase
 				#pragma multi_compile_fog
-				#pragma multi_compile _ _SHADER_TYPE_SKIN _SHADER_TYPE_HAIR
+				#pragma multi_compile _ _SHADER_TYPE_SKIN
 				#pragma multi_compile _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 				#pragma multi_compile _ _COLOR_OVER_TIME_ON
 				ENDCG
@@ -76,12 +77,13 @@ Shader "Neitri/MMD Transparent ZWrite On" {
 				#pragma vertex vert
 				#pragma fragment frag
 				#define UNITY_PASS_FORWARDADD
+				#define SUPPORT_TRANSPARENCY
 				#include "Base.cginc"
 				#pragma only_renderers d3d11 glcore gles
 				#pragma target 4.0
 				#pragma multi_compile_fwdadd_fullshadows
 				#pragma multi_compile_fog
-				#pragma multi_compile _ _SHADER_TYPE_SKIN _SHADER_TYPE_HAIR
+				#pragma multi_compile _ _SHADER_TYPE_SKIN
 				#pragma multi_compile _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 				#pragma multi_compile _ _COLOR_OVER_TIME_ON
 				ENDCG
