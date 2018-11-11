@@ -8,8 +8,13 @@
 
 
 #include "UnityCG.cginc"
+
 #include "AutoLight.cginc"
 #include "Lighting.cginc"
+
+#include "UnityPBSLighting.cginc"
+#include "UnityStandardBRDF.cginc"
+
 
 
 #define USE_NORMAL_MAP
@@ -190,22 +195,6 @@ float3 ScreenSpaceDither( float2 vScreenPos )
 }
 
 
-
-// PBR function taken from https://learnopengl.com/PBR/Theory
-// normal distribution function
-// Trowbridge-Reitz GGX normal distribution function
-float DistributionGGX(float NdotH, float a)
-{
-    float a2     = a*a;
-    float NdotH2 = NdotH*NdotH;
-	float nom    = a2;
-    float denom  = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom        = UNITY_PI * denom * denom;
-    return nom / denom;
-}
-
-
-
 #if defined(OUTPUT_DEPTH)
 struct FragOut
 {
@@ -228,13 +217,14 @@ float4 frag(VertexOutput i) : SV_Target
 	#else
 	mainTexture.rgb *= _Color.rgb;
 	#endif
-	
-	// cutout support, discard current pixel if alpha is less than 0.05
-	clip(mainTexture.a - 0.05);
 
 	#if defined(_COLOR_OVER_TIME_ON)
-		float3 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(_Time.x * _ColorOverTime_Speed, _Time.x * _ColorOverTime_Speed, 0, 0)).rgb;
-		mainTexture.rgb *= adjustColor;
+		float4 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(_Time.x * _ColorOverTime_Speed, _Time.x * _ColorOverTime_Speed, 0, 0));
+		#if defined(SUPPORT_TRANSPARENCY)
+		mainTexture *= adjustColor;
+		#else
+		mainTexture.rgb *= adjustColor.rgb;
+		#endif
 	#endif
 
 	#if defined(ENABLE_RAYMARCHER)
@@ -246,26 +236,34 @@ float4 frag(VertexOutput i) : SV_Target
 		#endif
 	#endif
 
-#if defined(UNITY_SINGLE_PASS_STEREO)
-	float3 worldSpaceCameraPos = lerp(unity_StereoWorldSpaceCameraPos[0].xyz,  unity_StereoWorldSpaceCameraPos[1].xyz, 0.5);
-#else
-	float3 worldSpaceCameraPos = _WorldSpaceCameraPos.xyz;
-#endif
+	// cutout support, discard current pixel if alpha is less than 0.05
+	clip(mainTexture.a - 0.05);
 
-	float distanceToCamera = distance(worldSpaceCameraPos, i.posWorld);
 
 	float3 normal = i.normal;
 
 #if defined(USE_NORMAL_MAP)
+	UNITY_BRANCH
 	if (_BumpScale != 0)
 	{
 		float3x3 tangentTransform = float3x3(i.tangentDir, i.bitangentDir, normal);
 		float3 normalLocal = UnpackNormal(tex2D(_BumpMap,TRANSFORM_TEX(i.uv0, _BumpMap)));
 		normalLocal.z /= _BumpScale;
 		normal = normalize(lerp(normal, mul(normalLocal, tangentTransform), saturate(_BumpScale))); // perturbed normals
+		//DEBUG
 		//return float4(normal,1);
 	}
 #endif
+
+
+#if defined(UNITY_SINGLE_PASS_STEREO)
+	float3 worldSpaceCameraPos = lerp(unity_StereoWorldSpaceCameraPos[0].xyz,  unity_StereoWorldSpaceCameraPos[1].xyz, 0.5);
+#else
+	float3 worldSpaceCameraPos = _WorldSpaceCameraPos.xyz;
+#endif
+
+	//float distanceToCamera = distance(worldSpaceCameraPos, i.posWorld);
+
 
 	// slightly dither normal to hide obvious normal interpolation
 	normal = normalize(normal + ScreenSpaceDither(i.pos.xy) / 50.0);
@@ -278,7 +276,6 @@ float4 frag(VertexOutput i) : SV_Target
 
 	// bounced direction from camera towards pixel
 	float3 reflectedviewDir = reflect(-viewDir, normal);
-
 
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.posWorld.xyz);
@@ -304,22 +301,6 @@ float4 frag(VertexOutput i) : SV_Target
 		half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
 
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
-
-		if (!any(lightDir))
-		{
-			// dominant light direction approximation from spherical harmonics
-
-			// Xiexe's
-			//half3 reverseShadeSH9Light = ShadeSH9(float4(-normal,1));
-			//half3 noAmbientShadeSH9Light = (realLightProbes - reverseShadeSH9Light)/2;
-			//lightDir = -normalize(noAmbientShadeSH9Light * 0.5 + 0.533);
-
-			// Neitri's
-			// humans perceive colors differently, same amount of green may appear brighter than same amount of blue, that is why we adjust contributions by grayscale factor
-			//return i.posWorld.x > 0 ? float4(0,0.5,0,1) : float4(0,0,0.5,1);
-			const float3 grayscaleVector = GRAYSCALE_VECTOR;
-			lightDir = normalize(unity_SHAr.xyz * grayscaleVector.r + unity_SHAg.xyz * grayscaleVector.g + unity_SHAb.xyz * grayscaleVector.b);
-		}
 	
 
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _IndirectLightingFlatness);
@@ -341,6 +322,22 @@ float4 frag(VertexOutput i) : SV_Target
 		{
 			lightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
 		}
+		
+		if (!any(lightDir))
+		{
+			// dominant light direction approximation from spherical harmonics
+
+			// Xiexe's
+			//half3 reverseShadeSH9Light = ShadeSH9(float4(-normal,1));
+			//half3 noAmbientShadeSH9Light = (realLightProbes - reverseShadeSH9Light)/2;
+			//lightDir = -normalize(noAmbientShadeSH9Light * 0.5 + 0.533);
+
+			// Neitri's
+			// humans perceive colors differently, same amount of green may appear brighter than same amount of blue, that is why we adjust contributions by grayscale factor
+			//return i.posWorld.x > 0 ? float4(0,0.5,0,1) : float4(0,0,0.5,1);
+			const float3 grayscaleVector = GRAYSCALE_VECTOR;
+			lightDir = normalize(unity_SHAr.xyz * grayscaleVector.r + unity_SHAg.xyz * grayscaleVector.g + unity_SHAb.xyz * grayscaleVector.b);
+		}
 
 	#else
 		
@@ -359,17 +356,35 @@ float4 frag(VertexOutput i) : SV_Target
 	{
 		float3 halfDir = normalize(lightDir + viewDir);
 
-		//float specular = (8.0 + _Smoothness*100) / ( 8.0 * UNITY_PI ) * pow(max(dot(normal, halfDir), 0.0), _Smoothness*100);
-		float specular = DistributionGGX(maxDot(normal, halfDir), (1 - _Glossiness));
-		specular = specular * _Glossiness;
-		specular = specular * _Glossiness / (4 * maxDot(normal, viewDir) + 0.1);
-		//specular = saturate(specular);
-		//float3 specular = pbrSpecular(normal, lightDir, viewDir, halfDir, mainTexture.rgb, _Glossiness, 0);
+		float gloss = _Glossiness;
+		float perceptualRoughness = 1.0 - gloss;
+		float roughness = perceptualRoughness * perceptualRoughness * perceptualRoughness;
+
+		float NdotL = saturate(dot(normal, lightDir));
+		float LdotH = saturate(dot(lightDir, halfDir));
+		float NdotV = abs(dot( normal, viewDir ));
+		float NdotH = saturate(dot( normal, halfDir ));
+		float VdotH = saturate(dot( viewDir, halfDir ));
+		float visTerm = SmithJointGGXVisibilityTerm( NdotL, NdotV, roughness );
+		float normTerm = GGXTerm(NdotH, roughness);
+		float specularPBL = (visTerm*normTerm) * UNITY_PI;
+		#ifdef UNITY_COLORSPACE_GAMMA
+		specularPBL = sqrt(max(1e-4h, specularPBL));
+		#endif
+		specularPBL = max(0, specularPBL * NdotL);
+
+		half surfaceReduction;
+		#ifdef UNITY_COLORSPACE_GAMMA
+		surfaceReduction = 1.0-0.28*roughness*perceptualRoughness;
+		#else
+		surfaceReduction = 1.0/(roughness*roughness + 1.0);
+		#endif
+		float3 directSpecular = unityLightAttenuation*lightColor*specularPBL*FresnelTerm(lightColor, LdotH);
+
+		finalRGB += directSpecular * gloss;
 
 		//float3 specularColor = (UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflectedviewDir, (1 - _Glossiness) * 6));
 		//if (!any(specularColor)) specularColor = lightColor;
-
-		finalRGB += lightColor * specular * unityLightAttenuation;
 	}
 
 	// diffuse

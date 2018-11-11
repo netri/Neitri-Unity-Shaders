@@ -4,7 +4,7 @@
 // both "transoarent" shaders actually have to be in geometry queue, beause we want them to be shadowed the same as opaque
 // ZWrite Off is for small geometry such as blush which should not occlude anyting
 
-Shader "Neitri/MMD Transparent ZWrite Off" {
+Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 	Properties{
 		[KeywordEnum(None, Skin)] _SHADER_TYPE ("Shader specialization", Float) = 0
 		
@@ -58,9 +58,9 @@ Shader "Neitri/MMD Transparent ZWrite Off" {
 				#pragma target 4.0
 				#pragma multi_compile_fwdbase
 				#pragma multi_compile_fog
-				#pragma multi_compile _ _SHADER_TYPE_SKIN
-				#pragma multi_compile _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
-				#pragma multi_compile _ _COLOR_OVER_TIME_ON
+				#pragma shader_feature _ _SHADER_TYPE_SKIN
+				#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
+				#pragma shader_feature _ _COLOR_OVER_TIME_ON
 				ENDCG
 			}
 			Pass {
@@ -83,9 +83,9 @@ Shader "Neitri/MMD Transparent ZWrite Off" {
 				#pragma target 4.0
 				#pragma multi_compile_fwdadd_fullshadows
 				#pragma multi_compile_fog
-				#pragma multi_compile _ _SHADER_TYPE_SKIN
-				#pragma multi_compile _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
-				#pragma multi_compile _ _COLOR_OVER_TIME_ON
+				#pragma shader_feature _ _SHADER_TYPE_SKIN
+				#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
+				#pragma shader_feature _ _COLOR_OVER_TIME_ON
 				ENDCG
 			}
 	}
