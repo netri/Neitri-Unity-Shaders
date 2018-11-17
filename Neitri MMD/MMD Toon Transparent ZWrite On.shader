@@ -14,7 +14,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 
 		[Header(Normal)] 
 		_BumpMap("Normal Map", 2D) = "bump" {}
-		_BumpScale("Scale", Float) = 1.0
+		_BumpScale("Scale", Float) = 0
 
 		[Header(Emission)]
 		_EmissionMap ("Texture", 2D) = "black" {}
