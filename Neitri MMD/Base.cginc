@@ -236,9 +236,12 @@ float4 frag(VertexOutput i) : SV_Target
 		#endif
 	#endif
 
+	#if defined(SUPPORT_TRANSPARENCY)
 	// cutout support, discard current pixel if alpha is less than 0.05
 	clip(mainTexture.a - 0.05);
-
+	#else
+	clip(mainTexture.a - 0.9);
+	#endif
 
 	float3 normal = i.normal;
 
