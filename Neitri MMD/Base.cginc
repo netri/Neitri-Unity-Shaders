@@ -16,6 +16,7 @@
 #include "UnityStandardBRDF.cginc"
 
 
+sampler3D _DitherMaskLOD;
 
 #define USE_NORMAL_MAP
 #if defined(USE_NORMAL_MAP)
@@ -240,8 +241,13 @@ float4 frag(VertexOutput i) : SV_Target
 	// cutout support, discard current pixel if alpha is less than 0.05
 	clip(mainTexture.a - 0.05);
 	#else
-	clip(mainTexture.a - 0.9);
+	// dither from builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardShadow.cginc
+	half dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25,mainTexture.a*0.9375)).a;
+    clip (dither - 0.01);
+	mainTexture.a = 1;
+	//clip(mainTexture.a - 0.9);
 	#endif
+
 
 	float3 normal = i.normal;
 
@@ -441,10 +447,9 @@ float4 frag(VertexOutput i) : SV_Target
 		fixed4 emissive = tex2D(_EmissionMap,TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 		float emissiveWeight = smoothstep(-1, 1, grayness(emissive.rgb) - grayness(finalRGB));
 		finalRGB = lerp(finalRGB, emissive.rgb, emissiveWeight);
-
 	#else
 	#endif
-
+	   
 	fixed4 finalRGBA = fixed4(finalRGB, mainTexture.a);
 	
 	#if defined(UNITY_PASS_FORWARDBASE)
