@@ -18,7 +18,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 
 		[Header(Emission)]
 		_EmissionMap ("Texture", 2D) = "black" {}
-		_EmissionColor ("Color", Color) = (0,0,0,1)
+		_EmissionColor ("Color", Color) = (1,1,1,1)
 		
 		[Header(Other)]
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
