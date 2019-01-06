@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_Name: Depth Mirror
+  m_Shader: {fileID: 4800000, guid: d1b07e7e374c6de4b844d8ed3c400b1b, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Depth:
+        m_Texture: {fileID: 8400000, guid: 16dfdf49f7eda8647b488671b425deab, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DepthTex:
+        m_Texture: {fileID: 8400000, guid: 16dfdf49f7eda8647b488671b425deab, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 8400000, guid: 0af43b568405efa47a9f05e09bff6a9a, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Cutoff: 0.5
+    - _DepthRange: 1
+    - _TesselationDistanceStart: 10
+    - _TesselationDistanceStop: 5
+    - _TessellationCoeficient: 2
+    - _depthSquareSampleOffset: 0.002
+    m_Colors: []
