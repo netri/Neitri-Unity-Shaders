@@ -16,8 +16,6 @@
 #include "UnityStandardBRDF.cginc"
 
 
-sampler3D _DitherMaskLOD;
-
 #define USE_NORMAL_MAP
 #if defined(USE_NORMAL_MAP)
 	#define USE_TANGENT_BITANGENT
@@ -167,20 +165,14 @@ float _IndirectLightingFlatness;
 #endif
 
 
-#define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
 
-float grayness(float3 color)
+sampler3D _DitherMaskLOD;
+
+#define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
+float grayness(float3 color) 
 {
 	return dot(color, GRAYSCALE_VECTOR);
 }
-
-
-
-float maxDot(float3 a, float3 b)
-{
-	return max(0, dot(a, b));
-}
-
 
 
 // from: https://www.shadertoy.com/view/MslGR8
@@ -193,6 +185,28 @@ float3 ScreenSpaceDither( float2 vScreenPos )
 	float3 vDither = dot( float2( 171.0, 231.0 ), vScreenPos.xy + _Time.z ).xxx;
 	vDither.rgb = frac( vDither.rgb / float3( 103.0, 71.0, 97.0 ) ) - float3( 0.5, 0.5, 0.5 );
 	return vDither.rgb;
+}
+
+
+half3 AverageSphericalHarmonics()
+{
+	half3 res;
+
+	res = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+	
+	// unsure if better variant that uses higher order terms
+	/*half3x3 mat = half3x3(
+		unity_SHAr.w, length(unity_SHAr.rgb), length(unity_SHBr),
+		unity_SHAg.w, length(unity_SHAg.rgb), length(unity_SHBg),
+		unity_SHAb.w, length(unity_SHAb.rgb), length(unity_SHBb)
+	);
+	res = mul(mat, half3(1, 0.3, 0.1));
+	res += length(unity_SHC) * 0.03;*/
+
+	#ifdef UNITY_COLORSPACE_GAMMA
+		res = LinearToGammaSpace(res);
+	#endif
+	return res;
 }
 
 
@@ -307,31 +321,31 @@ float4 frag(VertexOutput i) : SV_Target
 		// TODO: proxy volume support, see: ShadeSHPerPixel
 
 		// ambient color, skybox, light probes are baked in spherical harmonics
-		half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
-
+		half3 averageLightProbes = AverageSphericalHarmonics();
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
-	
 
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _IndirectLightingFlatness);
-
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _IndirectLightingFlatness);
-		
-	
+
 		diffuseRGB += vertexLights + lightProbes;
+
+		// DEBUG
+		//return float4(diffuseRGB, 1);
 
 		// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
 		// so we we averge all ambient like sources that are used
 		float3 unlit = averageLightProbes + lightColor + i.vertexLightsAverage;
 		// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
-		float unlitTargetGrayness = lerp(grayness(lightColor), 0, _Shadow);
+		float unlitTargetGrayness = max(0, grayness(lightColor) - _Shadow);
 		unlit *= unlitTargetGrayness / max(0.001, grayness(unlit));
 
-
+		UNITY_BRANCH
 		if (!any(lightColor))
 		{
 			lightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
 		}
-		
+
+		UNITY_BRANCH
 		if (!any(lightDir))
 		{
 			// dominant light direction approximation from spherical harmonics
@@ -343,9 +357,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 			// Neitri's
 			// humans perceive colors differently, same amount of green may appear brighter than same amount of blue, that is why we adjust contributions by grayscale factor
-			//return i.posWorld.x > 0 ? float4(0,0.5,0,1) : float4(0,0,0.5,1);
-			const float3 grayscaleVector = GRAYSCALE_VECTOR;
-			lightDir = normalize(unity_SHAr.xyz * grayscaleVector.r + unity_SHAg.xyz * grayscaleVector.g + unity_SHAb.xyz * grayscaleVector.b);
+			lightDir = normalize(unity_SHAr.xyz * 0.3 + unity_SHAg.xyz * 0.59 + unity_SHAb.xyz * 0.11);
 		}
 
 	#else
@@ -428,8 +440,10 @@ float4 frag(VertexOutput i) : SV_Target
 
 	
 	#if defined(_SHADER_TYPE_SKIN)
-	// view based shading, adds MMD like feel
-	finalRGB *= lerp(1, maxDot(viewDir, normal) + 0.5, 0.03);
+		// rim lighting, shift colors to red, adds MMD like skin feel, fake SSS
+		float rimLighting = max(0.8 - dot(viewDir, normal), 0) * 0.1;
+		finalRGB.rgb += float3(rimLighting * 2.33, -rimLighting, -rimLighting);
+		// 2.33 == (grayscale_vectot.g + grayscale_vectot.b) / grayscale_vectot.r
 	#endif
 
 	
