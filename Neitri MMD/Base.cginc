@@ -266,10 +266,10 @@ float4 frag(VertexOutput i) : SV_Target
 
 	#ifdef _COLOR_OVER_TIME_ON
 		float4 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(_Time.x * _ColorOverTime_Speed, _Time.x * _ColorOverTime_Speed, 0, 0));
-		#ifdef (SUPPORT_TRANSPARENCY)
-		mainTexture *= adjustColor;
+		#ifdef SUPPORT_TRANSPARENCY
+			mainTexture *= adjustColor;
 		#else
-		mainTexture.rgb *= adjustColor.rgb;
+			mainTexture.rgb *= adjustColor.rgb;
 		#endif
 	#endif
 
@@ -277,8 +277,8 @@ float4 frag(VertexOutput i) : SV_Target
 		float raymarchedScreenDepth;
 		raymarch(i.posWorld.xyz, mainTexture.rgb, raymarchedScreenDepth);
 		#ifdef OUTPUT_DEPTH
-		float realDepthWeight = i.color.r;
-		fragOut.depth = lerp(raymarchedScreenDepth, i.pos.z, realDepthWeight);
+			float realDepthWeight = i.color.r;
+			fragOut.depth = lerp(raymarchedScreenDepth, i.pos.z, realDepthWeight);
 		#endif
 	#endif
 
