@@ -3,7 +3,7 @@
 
 Shader "Neitri/MMD Toon Opaque" {
     Properties {
-		[KeywordEnum(None, Skin)] _SHADER_TYPE ("Shader specialization", Float) = 0
+		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0
 		
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
@@ -19,8 +19,8 @@ Shader "Neitri/MMD Toon Opaque" {
 		
 		[Header(Other)]
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
-		_Shadow ("Normal direction shadow strength", Range(0, 1)) = 0.4
-		_LightCastedShadowStrength ("Light casted shadow strength", Range(0, 1)) = 0.9
+		_Shadow ("Surface direction shading darkness", Range(0, 1)) = 0.4
+		_LightCastedShadowStrength ("Shadow from lights darkness", Range(0, 1)) = 0.9
 		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
 
 		[Header(Change color over time)]
@@ -52,7 +52,7 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma target 4.0
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
-			#pragma shader_feature _ _SHADER_TYPE_SKIN
+			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
             ENDCG
@@ -74,7 +74,7 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma target 4.0
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
-			#pragma shader_feature _ _SHADER_TYPE_SKIN
+			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
             ENDCG

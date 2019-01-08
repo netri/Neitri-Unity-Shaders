@@ -153,9 +153,9 @@ fixed4 _EmissionColor;
 	float _BumpScale;
 #endif
 
-float _Shadow;
+float _Shadow; // same as Cubed's
 float _LightCastedShadowStrength;
-float _Glossiness;
+float _Glossiness; // same as Unity's standard
 float _IndirectLightingFlatness;
 
 
@@ -324,8 +324,8 @@ float4 frag(VertexOutput i) : SV_Target
 	float3 reflectedviewDir = reflect(-viewDir, normal);
 
 	// shadows, spot/point light distance calculations, light cookies
-	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.posWorld.xyz);
-	unityLightAttenuation = lerp(1, unityLightAttenuation, _LightCastedShadowStrength);
+	UNITY_LIGHT_ATTENUATION(lightAttenuation, i, i.posWorld.xyz);
+	lightAttenuation = lerp(1, lightAttenuation, _LightCastedShadowStrength);
 
 	fixed3 lightColor = _LightColor0.rgb;
 
@@ -387,7 +387,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 	// specular
 	UNITY_BRANCH
-	if (_Glossiness > 0)
+	if (_Glossiness > 0) 
 	{
 		float3 halfDir = normalize(lightDir + viewDir);
 
@@ -397,10 +397,9 @@ float4 frag(VertexOutput i) : SV_Target
 
 		float NdotL = saturate(dot(normal, lightDir));
 		float LdotH = saturate(dot(lightDir, halfDir));
-		float NdotV = abs(dot( normal, viewDir ));
-		float NdotH = saturate(dot( normal, halfDir ));
-		float VdotH = saturate(dot( viewDir, halfDir ));
-		float visTerm = SmithJointGGXVisibilityTerm( NdotL, NdotV, roughness );
+		float NdotV = saturate(dot(normal, viewDir));
+		float NdotH = saturate(dot(normal, halfDir));
+		float visTerm = SmithJointGGXVisibilityTerm(NdotL, NdotV, roughness);
 		float normTerm = GGXTerm(NdotH, roughness);
 		float specularPBL = visTerm * normTerm * UNITY_PI;
 		#ifdef UNITY_COLORSPACE_GAMMA
@@ -408,13 +407,7 @@ float4 frag(VertexOutput i) : SV_Target
 		#endif
 		specularPBL = max(0, specularPBL * NdotL);
 
-		half surfaceReduction;
-		#ifdef UNITY_COLORSPACE_GAMMA
-		surfaceReduction = 1.0-0.28*roughness*perceptualRoughness;
-		#else
-		surfaceReduction = 1.0/(roughness*roughness + 1.0);
-		#endif
-		float3 directSpecular = unityLightAttenuation*lightColor*specularPBL*FresnelTerm(lightColor, LdotH);
+		float3 directSpecular = lightAttenuation * lightColor * specularPBL * FresnelTerm(lightColor, LdotH) * gloss;
 
 		finalRGB += directSpecular;
 
@@ -439,11 +432,11 @@ float4 frag(VertexOutput i) : SV_Target
 		// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
 		#ifdef UNITY_PASS_FORWARDBASE
 			diffuseColor = lerp(unlit, lightColor, diffuse);
-			diffuseColor = diffuseColor * unityLightAttenuation * mainTexture.rgb;
+			diffuseColor = diffuseColor * lightAttenuation * mainTexture.rgb;
 		#else
 			// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
 			// lets make sure its not too bright
-			diffuseColor = lightColor * unityLightAttenuation;
+			diffuseColor = lightColor * lightAttenuation;
 			float g = grayness(diffuseColor);
 			if (g > 1) diffuseColor /= g;
 			diffuseColor = diffuseColor * diffuse * mainTexture.rgb;
@@ -453,11 +446,25 @@ float4 frag(VertexOutput i) : SV_Target
 	}
 
 	
+	#ifdef _SHADER_TYPE_CLOTH
+		// light color, slightly moving
+		float cloth = 
+			saturate(0.8 - dot(viewDir, normal)) *
+			saturate(0.8 - abs(dot(lightDir, normal))) *
+			0.03 *
+			lightAttenuation;
+		finalRGB.rgb += lightColor * cloth;
+	#endif
+
 	#ifdef _SHADER_TYPE_SKIN
-		// rim lighting, shift colors to red, adds MMD like skin feel, fake SSS
-		float rimLighting = max(0.8 - dot(viewDir, normal), 0) * 0.2 * grayness(finalRGB.rgb);
-		finalRGB.rgb += float3(rimLighting, -rimLighting, -rimLighting);
-		// 2.33 == (grayscale_vectot.g + grayscale_vectot.b) / grayscale_vectot.r
+		// shift colors to red, adds MMD like skin feel, fake SSS
+		float skin =
+			max(0.8 - dot(viewDir, normal), 0) * 
+			0.2 * 
+			grayness(mainTexture.rgb) * 
+			lightAttenuation;
+		finalRGB.rgb += float3(skin * 0.3, skin * -0.59, skin * -0.11);
+		// reference grayscale vector: 0.3, 0.59, 0.11
 	#endif
 
 	
