@@ -34,60 +34,63 @@ Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 		[Header(Raymarched Pattern)]
 		[KeywordEnum(None, Spheres, Hearts)] _RAYMARCHER_TYPE ("Type", Float) = 0
 		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
+
+		[Header(Other)]
+		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 0
 	}
-		SubShader{
+	SubShader{
+		Tags {
+			"Queue" = "Geometry+400"
+			"RenderType" = "Transparent"
+		}
+		Pass {
+			Name "FORWARD"
 			Tags {
-				"Queue" = "Geometry+400"
-				"RenderType" = "Transparent"
+				"LightMode" = "ForwardBase"
 			}
-			Pass {
-				Name "FORWARD"
-				Tags {
-					"LightMode" = "ForwardBase"
-				}
-				Cull Off
-				Blend SrcAlpha OneMinusSrcAlpha
-				ZWrite Off
-				CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment frag
-				#define UNITY_PASS_FORWARDBASE
-				#define SUPPORT_TRANSPARENCY
-				#include "Base.cginc"
-				#pragma only_renderers d3d11 glcore gles
-				#pragma target 4.0
-				#pragma multi_compile_fwdbase
-				#pragma multi_compile_fog
-				#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
-				#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
-				#pragma shader_feature _ _COLOR_OVER_TIME_ON
-				ENDCG
+			Cull [_Cull]
+			Blend SrcAlpha OneMinusSrcAlpha
+			ZWrite Off
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			#define UNITY_PASS_FORWARDBASE
+			#define SUPPORT_TRANSPARENCY
+			#include "Base.cginc"
+			#pragma only_renderers d3d11 glcore gles
+			#pragma target 4.0
+			#pragma multi_compile_fwdbase
+			#pragma multi_compile_fog
+			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
+			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
+			#pragma shader_feature _ _COLOR_OVER_TIME_ON
+			ENDCG
+		}
+		Pass {
+			Name "FORWARD_DELTA"
+			Tags {
+				"LightMode" = "ForwardAdd"
 			}
-			Pass {
-				Name "FORWARD_DELTA"
-				Tags {
-					"LightMode" = "ForwardAdd"
-				}
-				Cull Off
-				Blend SrcAlpha One
-				ZWrite Off
-				Fog { Color(0,0,0,0) }
-				ZTest LEqual
-				CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment frag
-				#define UNITY_PASS_FORWARDADD
-				#define SUPPORT_TRANSPARENCY
-				#include "Base.cginc"
-				#pragma only_renderers d3d11 glcore gles
-				#pragma target 4.0
-				#pragma multi_compile_fwdadd_fullshadows
-				#pragma multi_compile_fog
-				#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
-				#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
-				#pragma shader_feature _ _COLOR_OVER_TIME_ON
-				ENDCG
-			}
+			Cull [_Cull]
+			Blend SrcAlpha One
+			ZWrite Off
+			Fog { Color(0,0,0,0) }
+			ZTest LEqual
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			#define UNITY_PASS_FORWARDADD
+			#define SUPPORT_TRANSPARENCY
+			#include "Base.cginc"
+			#pragma only_renderers d3d11 glcore gles
+			#pragma target 4.0
+			#pragma multi_compile_fwdadd_fullshadows
+			#pragma multi_compile_fog
+			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
+			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
+			#pragma shader_feature _ _COLOR_OVER_TIME_ON
+			ENDCG
+		}
 	}
 	FallBack "Standard"
 }

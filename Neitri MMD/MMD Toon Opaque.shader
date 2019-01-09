@@ -3,8 +3,8 @@
 
 Shader "Neitri/MMD Toon Opaque" {
     Properties {
-		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0
-		
+		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0		
+
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
         _Color ("Color", Color) = (1,1,1,1)
@@ -31,6 +31,9 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Header(Raymarched Pattern)]
 		[KeywordEnum(None, Spheres, Hearts)] _RAYMARCHER_TYPE ("Type", Float) = 0
 		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
+
+		[Header(Other)]
+		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
     }
     SubShader {
         Tags {
@@ -41,7 +44,7 @@ Shader "Neitri/MMD Toon Opaque" {
         Pass {
             Name "FORWARD"
             Tags { "LightMode" = "ForwardBase" }
-			Cull Back
+			Cull [_Cull]
 			Blend SrcAlpha OneMinusSrcAlpha
             CGPROGRAM
             #pragma vertex vert
@@ -60,7 +63,7 @@ Shader "Neitri/MMD Toon Opaque" {
         Pass {
             Name "FORWARD_DELTA"
             Tags { "LightMode" = "ForwardAdd" }
-			Cull Back
+			Cull [_Cull]
             Blend SrcAlpha One
 			ZWrite Off
             Fog { Color (0,0,0,0) }

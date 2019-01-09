@@ -344,7 +344,8 @@ float4 frag(VertexOutput i) : SV_Target
 		// TODO: proxy volume support, see: ShadeSHPerPixel
 
 		// ambient color, skybox, light probes are baked in spherical harmonics
-		half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
+		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
+		half3 averageLightProbes = ShadeSH9Average();
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _IndirectLightingFlatness);
@@ -460,10 +461,9 @@ float4 frag(VertexOutput i) : SV_Target
 		// shift colors to red, adds MMD like skin feel, fake SSS
 		float skin =
 			max(0.8 - dot(viewDir, normal), 0) * 
-			0.2 * 
-			grayness(mainTexture.rgb) * 
-			lightAttenuation;
-		finalRGB.rgb += float3(skin * 0.3, skin * -0.59, skin * -0.11);
+			0.3 * 
+			grayness(finalRGB.rgb);
+		finalRGB.rgb += skin * float3(0.5, -0.5, -0.2);
 		// reference grayscale vector: 0.3, 0.59, 0.11
 	#endif
 
