@@ -198,8 +198,8 @@ half3 ShadeSH9Average()
 		unity_SHAg.w, length(unity_SHAg.rgb), length(unity_SHBg),
 		unity_SHAb.w, length(unity_SHAb.rgb), length(unity_SHBb)
 	);
-	half3 res = mul(mat, half3(1, 0.3, 0.1));
-	res += length(unity_SHC) * 0.03;
+	half3 res = mul(mat, half3(0.5, 0.3, 0.2));
+	//res += length(unity_SHC) * 0.1;
 	#ifdef UNITY_COLORSPACE_GAMMA
 		res = LinearToGammaSpace(res);
 	#endif
@@ -335,7 +335,7 @@ float4 frag(VertexOutput i) : SV_Target
 	//fixed lightColorMax = max(lightColor.x, max(lightColor.y, lightColor.z));
 	//if(lightColorMax > 1) lightColor /= lightColorMax;
 
-
+	int fallbacksUsed = 0;
 	float3 diffuseRGB = 0;
 
 	#ifdef UNITY_PASS_FORWARDBASE
@@ -345,6 +345,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// ambient color, skybox, light probes are baked in spherical harmonics
 		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
+		//half3 averageLightProbes = (ShadeSH9(half4(1, 0, 0, 1))+ShadeSH9(half4(0, 1, 0, 1))+ShadeSH9(half4(0, 0, 1, 1))+ShadeSH9(half4(-1, 0, 0, 1))+ShadeSH9(half4(0, -1, 0, 1))+ShadeSH9(half4(0, 0, -1, 1))) / 6.0;
 		half3 averageLightProbes = ShadeSH9Average();
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 
@@ -358,7 +359,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
 		// so we we averge all ambient like sources that are used
-		float3 unlit = averageLightProbes + lightColor + i.vertexLightsAverage;
+		float3 unlit = averageLightProbes + i.vertexLightsAverage + lightColor;
 		// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
 		float unlitTargetGrayness = max(0, grayness(lightColor) - _Shadow);
 		unlit *= unlitTargetGrayness / max(0.001, grayness(unlit));
@@ -366,13 +367,15 @@ float4 frag(VertexOutput i) : SV_Target
 		UNITY_BRANCH
 		if (!any(lightColor))
 		{
-			lightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
+			lightColor = lerp(averageLightProbes, i.vertexLightsAverage, 0.5);
+			fallbacksUsed++;
 		}
 
 		UNITY_BRANCH
 		if (!any(lightDir))
 		{
 			lightDir = getLightDirectionFromSphericalHarmonics();
+			fallbacksUsed++;
 		}
 
 	#else
@@ -381,7 +384,7 @@ float4 frag(VertexOutput i) : SV_Target
 		
 	#endif
 
-	fixed3 finalRGB = diffuseRGB * mainTexture.rgb;
+	fixed3 finalRGB = fixed3(0, 0, 0);
 	
 	lightDir = normalize(lightDir);
 
@@ -418,7 +421,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 	// diffuse
 	UNITY_BRANCH
-	if (any(lightDir) && any(lightColor)) 
+	if (fallbacksUsed < 2 && any(lightDir) && any(lightColor)) 
 	{
 		float diffuse = dot(normal, lightDir);
 
@@ -433,26 +436,27 @@ float4 frag(VertexOutput i) : SV_Target
 		// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
 		#ifdef UNITY_PASS_FORWARDBASE
 			diffuseColor = lerp(unlit, lightColor, diffuse);
-			diffuseColor = diffuseColor * lightAttenuation * mainTexture.rgb;
+			diffuseColor = diffuseColor * lightAttenuation;
 		#else
 			// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
 			// lets make sure its not too bright
 			diffuseColor = lightColor * lightAttenuation;
 			float g = grayness(diffuseColor);
 			if (g > 1) diffuseColor /= g;
-			diffuseColor = diffuseColor * diffuse * mainTexture.rgb;
+			diffuseColor = diffuseColor * diffuse;
 		#endif
 
-		finalRGB += diffuseColor;
+		diffuseRGB += diffuseColor;
 	}
-
 	
+	finalRGB += diffuseRGB * mainTexture.rgb;
+
 	#ifdef _SHADER_TYPE_CLOTH
 		// light color, slightly moving
 		float cloth = 
 			saturate(0.8 - dot(viewDir, normal)) *
 			saturate(0.8 - abs(dot(lightDir, normal))) *
-			0.03 *
+			0.05 *
 			lightAttenuation;
 		finalRGB.rgb += lightColor * cloth;
 	#endif
