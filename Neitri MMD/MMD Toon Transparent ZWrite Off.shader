@@ -10,7 +10,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 		
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
-        _Color ("Color", Color) = (1,1,1,1)
+		_Color ("Color", Color) = (1,1,1,1)
 
 		[Header(Normal)] 
 		_BumpMap("Normal Map", 2D) = "bump" {}
@@ -24,7 +24,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
 		_Shadow ("Surface direction shading darkness", Range(0, 1)) = 0.4
 		_LightCastedShadowStrength ("Shadow from lights darkness", Range(0, 1)) = 0.9
-		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
+		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
 
 		[Header(Change color over time)]
 		[Toggle(_COLOR_OVER_TIME_ON)] _COLOR_OVER_TIME_ON ("Enable", Float) = 0
@@ -91,6 +91,6 @@ Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
 			ENDCG
 		}
+		UsePass "VertexLit/SHADOWCASTER"
 	}
-	FallBack "Standard"
 }

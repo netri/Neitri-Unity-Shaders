@@ -2,12 +2,12 @@
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
 Shader "Neitri/MMD Toon Opaque" {
-    Properties {
+	Properties {
 		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0		
 
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
-        _Color ("Color", Color) = (1,1,1,1)
+		_Color ("Color", Color) = (1,1,1,1)
 
 		[Header(Normal)] 
 		_BumpMap("Normal Map", 2D) = "bump" {}
@@ -21,7 +21,7 @@ Shader "Neitri/MMD Toon Opaque" {
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
 		_Shadow ("Surface direction shading darkness", Range(0, 1)) = 0.4
 		_LightCastedShadowStrength ("Shadow from lights darkness", Range(0, 1)) = 0.9
-		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
+		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
 
 		[Header(Change color over time)]
 		[Toggle(_COLOR_OVER_TIME_ON)] _COLOR_OVER_TIME_ON ("Enable", Float) = 0
@@ -34,54 +34,54 @@ Shader "Neitri/MMD Toon Opaque" {
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
-    }
-    SubShader {
-        Tags {
+	}
+	SubShader {
+		Tags {
 			"Queue" = "Geometry"
-            "RenderType" = "Opaque"
-        }
+			"RenderType" = "Opaque"
+		}
 		
-        Pass {
-            Name "FORWARD"
-            Tags { "LightMode" = "ForwardBase" }
+		Pass {
+			Name "FORWARD"
+			Tags { "LightMode" = "ForwardBase" }
 			Cull [_Cull]
 			Blend SrcAlpha OneMinusSrcAlpha
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #define UNITY_PASS_FORWARDBASE
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			#define UNITY_PASS_FORWARDBASE
 			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 4.0
-            #pragma multi_compile_fwdbase
-            #pragma multi_compile_fog
+			#pragma multi_compile_fwdbase
+			#pragma multi_compile_fog
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
-            ENDCG
-        }
-        Pass {
-            Name "FORWARD_DELTA"
-            Tags { "LightMode" = "ForwardAdd" }
+			ENDCG
+		}
+		Pass {
+			Name "FORWARD_DELTA"
+			Tags { "LightMode" = "ForwardAdd" }
 			Cull [_Cull]
-            Blend SrcAlpha One
+			Blend SrcAlpha One
 			ZWrite Off
-            Fog { Color (0,0,0,0) }
+			Fog { Color (0,0,0,0) }
 			ZTest LEqual
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #define UNITY_PASS_FORWARDADD
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			#define UNITY_PASS_FORWARDADD
 			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 4.0
-            #pragma multi_compile_fwdadd_fullshadows
-            #pragma multi_compile_fog
+			#pragma multi_compile_fwdadd_fullshadows
+			#pragma multi_compile_fog
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
-            ENDCG
-        }
-    }
-    FallBack "Standard"
+			ENDCG
+		}
+		UsePass "VertexLit/SHADOWCASTER"
+	}
 }

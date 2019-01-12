@@ -22,20 +22,20 @@
 #endif
 
 struct VertexInput {
-    float4 vertex : POSITION;
-    float3 normal : NORMAL;
+	float4 vertex : POSITION;
+	float3 normal : NORMAL;
 	float4 color : COLOR;
-    float4 tangent : TANGENT;
-    float2 texcoord0 : TEXCOORD0;
+	float4 tangent : TANGENT;
+	float2 texcoord0 : TEXCOORD0;
 };
 struct VertexOutput {
-    float4 pos : SV_POSITION;
+	float4 pos : SV_POSITION;
 	float4 color : COLOR;
-    float4 uv0 : TEXCOORD0; // TODO: uv.w == isOutline, 0 for no, 1 for yes
-    float4 posWorld : TEXCOORD1;
-    float3 normal : TEXCOORD2;
-    LIGHTING_COORDS(3,4) // shadow coords
-    UNITY_FOG_COORDS(5) 
+	float4 uv0 : TEXCOORD0; // TODO: uv.w == isOutline, 0 for no, 1 for yes
+	float4 posWorld : TEXCOORD1;
+	float3 normal : TEXCOORD2;
+	LIGHTING_COORDS(3,4) // shadow coords
+	UNITY_FOG_COORDS(5) 
 	#ifdef UNITY_PASS_FORWARDBASE
 		#if defined(LIGHTMAP_ON) || defined(UNITY_SHOULD_SAMPLE_SH)
 			float4 vertexLightsReal : TEXCOORD7;
@@ -51,10 +51,10 @@ struct VertexOutput {
 
 // based off Shade4PointLights from "\Unity\builtin_shaders-5.6.5f1\CGIncludes\UnityCG.cginc"
 float3 AverageShade4PointLights (
-    float4 lightPosX, float4 lightPosY, float4 lightPosZ,
-    float3 lightColor0, float3 lightColor1, float3 lightColor2, float3 lightColor3,
-    float4 lightAttenSq,
-    float3 pos)
+	float4 lightPosX, float4 lightPosY, float4 lightPosZ,
+	float3 lightColor0, float3 lightColor1, float3 lightColor2, float3 lightColor3,
+	float4 lightAttenSq,
+	float3 pos)
 {
 	// BAD: does not take into account distance to lights
 	//return (lightColor0 + lightColor1 + lightColor2 + lightColor3) * 0.25;
@@ -85,15 +85,15 @@ float3 AverageShade4PointLights (
 
 VertexOutput vert (VertexInput v) 
 {
-    VertexOutput o = (VertexOutput)0;
-    o.uv0.xy = v.texcoord0;
+	VertexOutput o = (VertexOutput)0;
+	o.uv0.xy = v.texcoord0;
 	o.color = v.color;
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	#ifdef USE_TANGENT_BITANGENT
 		o.tangentDir = normalize( mul( unity_ObjectToWorld, float4( v.tangent.xyz, 0.0 ) ).xyz );
 		o.bitangentDir = normalize(cross(o.normal, o.tangentDir) * v.tangent.w);
 	#endif
-    o.posWorld = mul(unity_ObjectToWorld, v.vertex);
+	o.posWorld = mul(unity_ObjectToWorld, v.vertex);
 
 	float3 posModel = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 
@@ -117,15 +117,15 @@ VertexOutput vert (VertexInput v)
 		#endif
 	#endif
 
-    float3 lightColor = _LightColor0.rgb;
-    o.pos = UnityObjectToClipPos( v.vertex );
-    UNITY_TRANSFER_FOG(o,o.pos); // transfer fog coords
-    TRANSFER_VERTEX_TO_FRAGMENT(o) // transfer shadow coords
-    return o;
+	float3 lightColor = _LightColor0.rgb;
+	o.pos = UnityObjectToClipPos( v.vertex );
+	UNITY_TRANSFER_FOG(o,o.pos); // transfer fog coords
+	TRANSFER_VERTEX_TO_FRAGMENT(o) // transfer shadow coords
+	return o;
 }
 
 #if defined(_RAYMARCHER_TYPE_SPHERES) || defined(_RAYMARCHER_TYPE_HEARTS)
-	//#define OUTPUT_DEPTH
+	#define OUTPUT_DEPTH
 	#define ENABLE_RAYMARCHER
 	#ifdef _RAYMARCHER_TYPE_SPHERES
 		#define RAYMARCHER_DISTANCE_FIELD_FUNCTION distanceMap_spheres
@@ -177,7 +177,7 @@ float grayness(float3 color)
 
 // from: https://www.shadertoy.com/view/MslGR8
 // note: valve edition
-//       from http://alex.vlachos.com/graphics/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf
+//	   from http://alex.vlachos.com/graphics/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf
 // note: input in pixels (ie not normalized uv)
 float3 getScreenSpaceDither( float2 vScreenPos )
 {
@@ -288,7 +288,7 @@ float4 frag(VertexOutput i) : SV_Target
 	#else
 	// dither from builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardShadow.cginc
 	half dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25,mainTexture.a*0.9375)).a;
-    clip (dither - 0.01);
+	clip (dither - 0.01);
 	mainTexture.a = 1;
 	//clip(mainTexture.a - 0.9);
 	#endif
@@ -396,8 +396,16 @@ float4 frag(VertexOutput i) : SV_Target
 		float3 halfDir = normalize(lightDir + viewDir);
 
 		float gloss = _Glossiness;
+
 		float perceptualRoughness = 1.0 - gloss;
 		float roughness = perceptualRoughness * perceptualRoughness;
+
+		// geometric roughness, roughness adjusted based on normal change on neighbouring pixels
+		float3 ddxN = ddx(normal);
+		float3 ddyN = ddy(normal); 
+		float geoRoughness = pow(saturate(max(dot(ddxN, ddxN), dot(ddyN, ddyN))), 0.333);
+		roughness = min(roughness, 1.0f - geoRoughness);
+
 
 		float NdotL = saturate(dot(normal, lightDir));
 		float LdotH = saturate(dot(lightDir, halfDir));
@@ -501,7 +509,7 @@ float4 frag(VertexOutput i) : SV_Target
 	fragOut.color = finalRGBA;
 	return fragOut;
 	#else
-    return finalRGBA;
+	return finalRGBA;
 	#endif
 
 }
