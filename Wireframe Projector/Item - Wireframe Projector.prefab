@@ -79,7 +79,7 @@ GameObject:
   - component: {fileID: 114350646628915994}
   - component: {fileID: 114829496545055892}
   m_Layer: 22
-  m_Name: timer disable Projector
+  m_Name: Timer disable Projector
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -121,9 +121,9 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1674046601012768}
-  m_LocalRotation: {x: 0.5, y: -0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: -2.497, y: 1.07, z: 0.352}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.5, z: 0}
+  m_LocalScale: {x: 100, y: 100, z: 100}
   m_Children:
   - {fileID: 224405473456186588}
   - {fileID: 4200519709139906}
@@ -184,7 +184,7 @@ MeshFilter:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1674046601012768}
-  m_Mesh: {fileID: 4300002, guid: 559b99e00b2d7684790ebe658cf40cb5, type: 3}
+  m_Mesh: {fileID: 4300002, guid: 5070e7f889b193b4ba47ceff0c14fa58, type: 3}
 --- !u!54 &54553582543881186
 Rigidbody:
   m_ObjectHideFlags: 1
@@ -213,7 +213,7 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 14
   m_SkinWidth: 0.01
-  m_Mesh: {fileID: 4300002, guid: 559b99e00b2d7684790ebe658cf40cb5, type: 3}
+  m_Mesh: {fileID: 4300002, guid: 5070e7f889b193b4ba47ceff0c14fa58, type: 3}
 --- !u!114 &114226585961086904
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -601,8 +601,8 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1228350294704776}
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: -0.1527}
-  m_LocalScale: {x: 0.0005829654, y: 0.0005319118, z: 0.03000003}
+  m_LocalPosition: {x: 0, y: 0, z: -0.001421}
+  m_LocalScale: {x: 0.000005829654, y: 0.000005319118, z: 0.0003}
   m_Children:
   - {fileID: 224631669870657746}
   m_Father: {fileID: 4263729428218568}
@@ -610,7 +610,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -0.0196, y: 0}
+  m_AnchoredPosition: {x: -0.000187, y: 0.000015}
   m_SizeDelta: {x: 344.908, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!224 &224631669870657746

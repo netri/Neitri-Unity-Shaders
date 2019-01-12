@@ -6,7 +6,7 @@ Material:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: blue
+  m_Name: Blue Wireframe Projection
   m_Shader: {fileID: 4800000, guid: 6d5ad7bf2d3142245990b4d427852d1b, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
