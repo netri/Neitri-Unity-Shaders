@@ -1,4 +1,4 @@
-Shader "Neitri/World Cutout"
+Shader "Neitri/World Cutout Sphere"
 {
 	Properties
 	{
