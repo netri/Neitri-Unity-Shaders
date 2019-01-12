@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_Name: Poiyomi
+  m_Shader: {fileID: 4800000, guid: 06b07f89e6009b24291a6e769320e24a, type: 3}
+  m_ShaderKeywords: _LIT
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LightingGradient:
+        m_Texture: {fileID: 2800000, guid: c8ee94f0168b75440ae490f72fd4dcf4, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RimTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SpecularMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Clip: 0.5
+    - _Cull: 0
+    - _Desaturation: 0
+    - _EmissionStrength: 0
+    - _EmissiveBlink_Max: 1
+    - _EmissiveBlink_Min: 1
+    - _EmissiveBlink_Velocity: 4
+    - _EmissiveScroll_Interval: 20
+    - _EmissiveScroll_Velocity: 10
+    - _EmissiveScroll_Width: 10
+    - _Gloss: 0
+    - _HARD_SPECULAR: 0
+    - _Lit: 1
+    - _NormalIntensity: 1
+    - _RimLightColorBias: 0
+    - _RimSharpness: 0.25
+    - _RimStrength: 0
+    - _RimWidth: 0.8
+    - _SCROLLING_EMISSION: 0
+    - _ShadowOffset: 0
+    - _ShadowStrength: 0.25
+    - _SpecularBias: 0
+    - _SpecularSize: 0.005
+    - _SpecularStrength: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissiveScroll_Direction: {r: 0, g: -10, b: 0, a: 0}
+    - _LightDirection: {r: 0, g: 1, b: 0, a: 0}
+    - _RimLightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimTexPanSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}

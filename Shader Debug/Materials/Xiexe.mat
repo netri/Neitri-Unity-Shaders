@@ -1,0 +1,154 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_Name: Xiexe
+  m_Shader: {fileID: 4800000, guid: 7a9fb2bc3175a2240bd55b7c7300b32d, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BakedCube:
+        m_Texture: {fileID: 8900000, guid: 400c139eefcba334d88fae7b76fd0322, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissiveTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RoughMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ShadowRamp:
+        m_Texture: {fileID: 2800000, guid: 516133a9f844ad84d8bf8ebbaeaa13cf, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SpecularMap:
+        m_Texture: {fileID: 2800000, guid: 5c8adfdf1c2841b4a95778edab97ca2c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SpecularPattern:
+        m_Texture: {fileID: 2800000, guid: a9d899b9b5f746b4cbf7ec49e7b32ccd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord2:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _BumpScale: 1
+    - _Culling: 2
+    - _Cutoff: 0.5
+    - _DetailNormalMapScale: 1
+    - _DstBlend: 0
+    - _Emissive: 0
+    - _GlossMapScale: 1
+    - _Glossiness: 0
+    - _GlossyReflections: 1
+    - _MatcapStyle: 1
+    - _Metallic: 0
+    - _Mode: 0
+    - _OcclusionStrength: 1
+    - _Offset: 0
+    - _Parallax: 0.02
+    - _RampColor: 1
+    - _RampDir: 1
+    - _ReadMask: 255
+    - _ReflSmoothness: 1
+    - _ReflType: 0
+    - _RimIntensity: 0.8
+    - _RimWidth: 0.2
+    - _RimlightType: 0
+    - _Saturation: 1
+    - _ShadowType: 0
+    - _SmoothnessTextureChannel: 0
+    - _SpecularArea: 25
+    - _SpecularHighlights: 1
+    - _SpecularIntensity: 5
+    - _SrcBlend: 1
+    - _Stencil: 0
+    - _StencilComp: 0
+    - _StencilFail: 0
+    - _StencilOp: 0
+    - _StencilZFail: 0
+    - _StylelizedIntensity: 1
+    - _StylizedReflStyle: 0
+    - _UVSec: 0
+    - _UseOnlyBakedCube: 0
+    - _UseReflections: 1
+    - _UseUV2forNormalsSpecular: 0
+    - _WriteMask: 255
+    - _ZTest: 4
+    - _ZWrite: 1
+    - __dirty: 1
+    - _advMode: 0
+    - _colormask: 15
+    - _dstblend: 0
+    - _mode: 0
+    - _srcblend: 1
+    m_Colors:
+    - _Color: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
+    - _EmissiveColor: {r: 0, g: 0, b: 0, a: 1}
+    - _NormalTiling: {r: 1, g: 1, b: 0, a: 0}
+    - _SimulatedLightDirection: {r: 0, g: 45, b: 90, a: 0}
+    - _SpecularPatternTiling: {r: 20, g: 20, b: 0, a: 0}
