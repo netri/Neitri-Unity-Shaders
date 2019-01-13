@@ -1,3 +1,6 @@
+// by Neitri, free of charge, free to redistribute
+// downloaded from https://github.com/netri/Neitri-Unity-Shaders
+
 Shader "Neitri/World Cutout Sphere"
 {
 	Properties

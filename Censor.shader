@@ -75,42 +75,6 @@ Shader "Neitri/Censor" {
             }
             ENDCG
         }
-        Pass {
-            Name "ShadowCaster"
-            Tags {
-                "LightMode"="ShadowCaster"
-            }
-            Offset 1, 1
-            Cull Off
-            
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #define UNITY_PASS_SHADOWCASTER
-            #include "UnityCG.cginc"
-            #include "Lighting.cginc"
-            #pragma fragmentoption ARB_precision_hint_fastest
-            #pragma multi_compile_shadowcaster
-            #pragma only_renderers d3d9 d3d11 glcore gles 
-            #pragma target 3.0
-            struct VertexInput {
-                float4 vertex : POSITION;
-            };
-            struct VertexOutput {
-                V2F_SHADOW_CASTER;
-            };
-            VertexOutput vert (VertexInput v) {
-                VertexOutput o = (VertexOutput)0;
-                o.pos = UnityObjectToClipPos( v.vertex );
-                TRANSFER_SHADOW_CASTER(o)
-                return o;
-            }
-            float4 frag(VertexOutput i, float facing : VFACE) : COLOR {
-                float isFrontFace = ( facing >= 0 ? 1 : 0 );
-                float faceSign = ( facing >= 0 ? 1 : -1 );
-                SHADOW_CASTER_FRAGMENT(i)
-            }
-            ENDCG
-        }
+        UsePass "VertexLit/SHADOWCASTER"
     }
 }
