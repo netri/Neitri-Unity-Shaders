@@ -41,13 +41,13 @@ Censor square size decreases as distance to it increases.
 ![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
 
 ## World Cutout Sphere &#x1F6AA;&#x1f4a1;
-Effecient single pass world cutout shader.
+Efficient single pass world cutout shader.
 Uses ray sphere intersection, so works only as spherical cutout.
 ![](https://image.prntscr.com/image/pk4bLielQ1W_q1WvttVWAw.png)
 
 # Credits
+Everyone in "VRC Shader Development" discord
 mel0n - Wireframe shaders idea
-
 Merlin - Wireframe Fade
 
 
