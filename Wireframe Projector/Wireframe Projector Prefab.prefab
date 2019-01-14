@@ -62,7 +62,7 @@ GameObject:
   - component: {fileID: 33808031334937182}
   - component: {fileID: 64612050359423242}
   m_Layer: 22
-  m_Name: Item - Wireframe Projector
+  m_Name: Wireframe Projector Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -340,7 +340,7 @@ MonoBehaviour:
   m_Script: {fileID: 708705254, guid: f70555f144d8491a825f0804e09c671c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2100000, guid: 2db229fa4043a894eaf30114500127f4, type: 2}
+  m_Material: {fileID: 2100000, guid: a142de44726ecee4ab53bd7f115e73db, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
@@ -601,7 +601,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1228350294704776}
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: -0.001421}
+  m_LocalPosition: {x: 0, y: 0, z: -0.001438}
   m_LocalScale: {x: 0.000005829654, y: 0.000005319118, z: 0.0003}
   m_Children:
   - {fileID: 224631669870657746}
@@ -610,7 +610,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -0.000187, y: 0.000015}
+  m_AnchoredPosition: {x: -0.00019, y: 0.000015}
   m_SizeDelta: {x: 344.908, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!224 &224631669870657746
