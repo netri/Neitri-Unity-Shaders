@@ -64,7 +64,7 @@ Shader "Neitri/World Triplanar Mapped"
 				position = (position - modelPos) / scale + 0.5;
 
 				float3 blendWeights = pow(abs(normal), 3);
-				blendWeights /= blendWeights.x + blendWeights.y + blendWeights.z;
+				blendWeights /= dot(blendWeights, 1);
 
 				const float threshold = 0.05;
 
