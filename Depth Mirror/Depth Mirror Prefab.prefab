@@ -73,7 +73,7 @@ GameObject:
   - component: {fileID: 138203191493324036}
   - component: {fileID: 95773447816492258}
   m_Layer: 0
-  m_Name: Depth Mirror
+  m_Name: Depth Mirror Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -130,7 +130,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1490339855769374}
   m_LocalRotation: {x: -0, y: -0, z: 4.235165e-22, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.055740256, y: -4.5344744e-17, z: 2.0421457}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4625102840037796}
@@ -313,7 +313,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_Materials:
-  - {fileID: 2100000, guid: 43cdd51b277d7ea4ea39502d3dd18e0d, type: 2}
+  - {fileID: 2100000, guid: 20c6a8db08b8e9046901e4e4b035e940, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -371,7 +371,7 @@ Animator:
   m_GameObject: {fileID: 1490339855769374}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: f7c56c1114635a043a79900de4e4a784, type: 2}
+  m_Controller: {fileID: 9100000, guid: c446911cbb077c34c8db2e2d7707cc31, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
