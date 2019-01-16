@@ -47,8 +47,14 @@ Uses ray sphere intersection, so works only as spherical cutout.
 
 # Credits
 Everyone in "VRC Shader Development" discord
+
 mel0n - Wireframe shaders idea
+
 Merlin - Wireframe Fade
+
+Migero - Distance Fade Outline idea
+
+Nave - Script to generate 1 vert + X triangles mesh for Depth Mirror
 
 
 
