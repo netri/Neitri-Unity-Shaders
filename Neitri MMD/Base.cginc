@@ -320,9 +320,6 @@ float4 frag(VertexOutput i) : SV_Target
 	// direction from pixel towards light
 	float3 lightDir = UnityWorldSpaceLightDir(i.posWorld.xyz);
 
-	// bounced direction from camera towards pixel
-	float3 reflectedviewDir = reflect(-viewDir, normal);
-
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(lightAttenuation, i, i.posWorld.xyz);
 	lightAttenuation = lerp(1, lightAttenuation, _LightCastedShadowStrength);
@@ -387,75 +384,50 @@ float4 frag(VertexOutput i) : SV_Target
 	fixed3 finalRGB = fixed3(0, 0, 0);
 	
 	lightDir = normalize(lightDir);
+	float3 halfDir = normalize(lightDir + viewDir);
 
+	float NdotL = dot(normal, lightDir);
+	float NdotV = dot(normal, viewDir);
+	float NdotH = saturate(dot(normal, halfDir));
 
-	// specular
-	UNITY_BRANCH
-	if (_Glossiness > 0) 
-	{
-		// equations copied from BRDF1_Unity_PBS from UnityStandardBRDF.cginc
-
-		float3 halfDir = normalize(lightDir + viewDir);
-
-		float gloss = _Glossiness;
-		float perceptualRoughness = 1.0 - gloss;
-		float roughness = perceptualRoughness * perceptualRoughness;
-		roughness = max(roughness, 0.002);
-
-		// geometric roughness, roughness adjusted based on normal change on neighbouring pixels
-		float3 ddxN = ddx(normal);
-		float3 ddyN = ddy(normal); 
-		float geoRoughness = pow(saturate(max(dot(ddxN, ddxN), dot(ddyN, ddyN))), 0.333);
-		roughness = min(roughness, 1.0f - geoRoughness);
-
-		float NdotL = saturate(dot(normal, lightDir));
-		float LdotH = saturate(dot(lightDir, halfDir));
-		float NdotV = abs(dot(normal, viewDir));
-		float NdotH = saturate(dot(normal, halfDir));
-		float visTerm = SmithJointGGXVisibilityTerm(NdotL, NdotV, roughness);
-		float normTerm = GGXTerm(NdotH, roughness);		
-		float specularTerm = visTerm * normTerm * UNITY_PI; // Torrance-Sparrow model, Fresnel is applied later
-		#ifdef UNITY_COLORSPACE_GAMMA
-			specularTerm = sqrt(max(1e-4h, specularTerm));
-		#endif
-		specularTerm = max(0, specularTerm * NdotL);
-
-
-		float3 specularColor = gloss * lightAttenuation * lightColor * specularTerm * FresnelTerm(lightColor, LdotH);
-		finalRGB += specularColor;
-
-		//float3 specularColor = (UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflectedviewDir, (1 - _Glossiness) * 6));
-		//if (!any(specularColor)) specularColor = lightColor;
-	}
-
-	// diffuse
 	UNITY_BRANCH
 	if (fallbacksUsed < 2 && any(lightDir) && any(lightColor)) 
 	{
-		float diffuse = dot(normal, lightDir);
+		// specular
+		{
+			float gloss = _Glossiness;
+			float specPow = exp2(gloss * 10.0);
+			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * gloss;
+			finalRGB += lightAttenuation * specularReflection * lightColor;
+		}
 
-		#ifdef _SHADER_TYPE_SKIN
-		// makes dot ramp more smooth
-		diffuse = diffuse * 0.5 + 0.5; // remap -1 .. 1 to 0 .. 1
-		#endif
+		// diffuse
+		{
+			float diffuse = max(0, NdotL);
 
-		diffuse = max(0, diffuse);
-		float3 diffuseColor = 0;
+			#ifdef _SHADER_TYPE_SKIN
+			// makes dot ramp more smooth
+			diffuse = diffuse * 0.5 + 0.5; // remap -1 .. 1 to 0 .. 1
+			#endif
 
-		// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
-		#ifdef UNITY_PASS_FORWARDBASE
-			diffuseColor = lerp(unlit, lightColor, diffuse);
-			diffuseColor = diffuseColor * lightAttenuation;
-		#else
-			// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
-			// lets make sure its not too bright
-			diffuseColor = lightColor * lightAttenuation;
-			float g = grayness(diffuseColor);
-			if (g > 1) diffuseColor /= g;
-			diffuseColor = diffuseColor * diffuse;
-		#endif
+			diffuse = max(0, diffuse);
+			float3 diffuseColor = 0;
 
-		diffuseRGB += diffuseColor;
+			// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
+			#ifdef UNITY_PASS_FORWARDBASE
+				diffuseColor = lerp(unlit, lightColor, diffuse);
+				diffuseColor = diffuseColor * lightAttenuation;
+			#else
+				// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
+				// lets make sure its not too bright
+				diffuseColor = lightColor * lightAttenuation;
+				float g = grayness(diffuseColor);
+				if (g > 1) diffuseColor /= g;
+				diffuseColor = diffuseColor * diffuse;
+			#endif
+
+			diffuseRGB += diffuseColor;
+		}
 	}
 	
 	finalRGB += diffuseRGB * mainTexture.rgb;
@@ -463,8 +435,8 @@ float4 frag(VertexOutput i) : SV_Target
 	#ifdef _SHADER_TYPE_CLOTH
 		// light color, slightly moving
 		float cloth = 
-			saturate(0.8 - dot(viewDir, normal)) *
-			saturate(0.8 - abs(dot(lightDir, normal))) *
+			saturate(0.8 - NdotV) *
+			saturate(0.8 - abs(NdotL)) *
 			0.05 *
 			lightAttenuation;
 		finalRGB.rgb += lightColor * cloth;
@@ -473,7 +445,7 @@ float4 frag(VertexOutput i) : SV_Target
 	#ifdef _SHADER_TYPE_SKIN
 		// shift colors to red, adds MMD like skin feel, fake SSS
 		float skin =
-			max(0.8 - dot(viewDir, normal), 0) * 
+			max(0.8 - NdotV, 0) * 
 			0.3 * 
 			grayness(finalRGB.rgb);
 		finalRGB.rgb += skin * float3(0.5, -0.5, -0.2);
