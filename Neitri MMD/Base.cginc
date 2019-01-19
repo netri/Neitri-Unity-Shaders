@@ -3,7 +3,7 @@
 
 // Some ideas are from:
 // Cubed's https://github.com/cubedparadox/Cubeds-Unity-Shaders
-// Xiexe's https://vrcat.club/threads/xiexes-toon-shader-v1-2-2-updated-6-20-2018-xstoon-stylized-reflections-update.1878/
+// Xiexe's https://github.com/Xiexe/Xiexes-Unity-Shaders
 
 
 
@@ -393,12 +393,14 @@ float4 frag(VertexOutput i) : SV_Target
 	UNITY_BRANCH
 	if (_Glossiness > 0) 
 	{
+		// equations copied from BRDF1_Unity_PBS from UnityStandardBRDF.cginc
+
 		float3 halfDir = normalize(lightDir + viewDir);
 
 		float gloss = _Glossiness;
-
 		float perceptualRoughness = 1.0 - gloss;
 		float roughness = perceptualRoughness * perceptualRoughness;
+		roughness = max(roughness, 0.002);
 
 		// geometric roughness, roughness adjusted based on normal change on neighbouring pixels
 		float3 ddxN = ddx(normal);
@@ -406,22 +408,21 @@ float4 frag(VertexOutput i) : SV_Target
 		float geoRoughness = pow(saturate(max(dot(ddxN, ddxN), dot(ddyN, ddyN))), 0.333);
 		roughness = min(roughness, 1.0f - geoRoughness);
 
-
 		float NdotL = saturate(dot(normal, lightDir));
 		float LdotH = saturate(dot(lightDir, halfDir));
-		float NdotV = saturate(dot(normal, viewDir));
+		float NdotV = abs(dot(normal, viewDir));
 		float NdotH = saturate(dot(normal, halfDir));
 		float visTerm = SmithJointGGXVisibilityTerm(NdotL, NdotV, roughness);
-		float normTerm = GGXTerm(NdotH, roughness);
-		float specularPBL = visTerm * normTerm * UNITY_PI;
+		float normTerm = GGXTerm(NdotH, roughness);		
+		float specularTerm = visTerm * normTerm * UNITY_PI; // Torrance-Sparrow model, Fresnel is applied later
 		#ifdef UNITY_COLORSPACE_GAMMA
-		specularPBL = sqrt(max(1e-4h, specularPBL));
+			specularTerm = sqrt(max(1e-4h, specularTerm));
 		#endif
-		specularPBL = max(0, specularPBL * NdotL);
+		specularTerm = max(0, specularTerm * NdotL);
 
-		float3 directSpecular = lightAttenuation * lightColor * specularPBL * FresnelTerm(lightColor, LdotH) * gloss;
 
-		finalRGB += directSpecular;
+		float3 specularColor = gloss * lightAttenuation * lightColor * specularTerm * FresnelTerm(lightColor, LdotH);
+		finalRGB += specularColor;
 
 		//float3 specularColor = (UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflectedviewDir, (1 - _Glossiness) * 6));
 		//if (!any(specularColor)) specularColor = lightColor;
