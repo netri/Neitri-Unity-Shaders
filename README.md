@@ -48,6 +48,8 @@ Uses ray sphere intersection, so works only as spherical cutout.
 # Credits
 Everyone in "VRC Shader Development" discord
 
+error.mdl - First Depth Mirror
+
 mel0n - Wireframe shaders idea
 
 Merlin - Wireframe Fade
