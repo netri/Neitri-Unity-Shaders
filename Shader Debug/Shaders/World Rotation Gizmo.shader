@@ -1,11 +1,16 @@
-﻿Shader "Unlit/World Rotation Gizmo"
+﻿Shader "Neitri/Debug/World Rotation Gizmo"
 {
 	Properties
 	{
+		_MainTex ("_MainTex", 2D) = "white" {}
 	}
 	SubShader
 	{
-		Tags { "RenderType"="Opaque" }
+		Blend SrcAlpha OneMinusSrcAlpha
+		Tags {
+			"RenderType"="Opaque"
+			"Queue"="Transparent"
+		}
 		LOD 100
 
 		Pass
@@ -13,8 +18,6 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			// make fog work
-			#pragma multi_compile_fog
 			
 			#include "UnityCG.cginc"
 
@@ -22,36 +25,49 @@
 			{
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
+				float4 color : COLOR;
 			};
 
 			struct v2f
 			{
+				float4 pos : SV_POSITION;
 				float2 uv : TEXCOORD0;
-				UNITY_FOG_COORDS(1)
-				float4 vertex : SV_POSITION;
+				float4 color : TEXCOORD1;
 			};
-
-			sampler2D _MainTex;
-			float4 _MainTex_ST;
 			
+			sampler2D _MainTex;
+
 			v2f vert (appdata v)
 			{
 				v2f o;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-				UNITY_TRANSFER_FOG(o,o.vertex);
+
+				float4 worldPos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
+				float4 scale = mul(unity_ObjectToWorld, normalize(float4(1, 1, 1, 0)));
+
+				worldPos.xyz += v.vertex.xyz * length(scale.xyz);
+
+				o.pos = mul(UNITY_MATRIX_VP, worldPos);
+				o.uv = v.uv;
+				o.color = v.color;
 				return o;
 			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				// sample the texture
-				fixed4 col = tex2D(_MainTex, i.uv);
-				// apply fog
-				UNITY_APPLY_FOG(i.fogCoord, col);
-				return col;
+				if (dot(i.color,1) > 3.5)
+				{
+					fixed4 col = tex2D(_MainTex, i.uv);
+					clip(col.a-0.05);
+					return col;
+				}
+				else
+				{
+					return i.color;
+				}
 			}
 			ENDCG
 		}
 	}
 }
+
+
