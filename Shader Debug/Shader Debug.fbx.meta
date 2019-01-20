@@ -33,7 +33,143 @@ ModelImporter:
     2300000: //RootNode
     3300000: //RootNode
     4300000: Shader Debug
-  externalObjects: {}
+    4300002: Shader Debug Mesh
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Ambient Light
+    second: {fileID: 2100000, guid: 5bfe05c62bf93e94e89bde312c26bb45, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Camera Depth
+    second: {fileID: 2100000, guid: 4f21a8e5546e3b840afca7aba5fdddf1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CubedParadox
+    second: {fileID: 2100000, guid: 762f88fd63ac9e94b9a8c7de5d427ea1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Labels
+    second: {fileID: 2100000, guid: fdb42c5b4861fc74a98fd27ffa72d058, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Light Probes
+    second: {fileID: 2100000, guid: 68ebf4edbaf3c214ab35ec342488311d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Light0 Attenuation Base
+    second: {fileID: 2100000, guid: c7fee3cd4f09f2742b79212393aeb243, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Light0 Attenuation Delta Add
+    second: {fileID: 2100000, guid: e6da7697eefcddd4d8ef8908b3e715d6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Light0 Color Base
+    second: {fileID: 2100000, guid: acf53e2c4c0dcc344bcbf33fa05230ef, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Light0 Color Delta Add
+    second: {fileID: 2100000, guid: fe2e74465ec810844adc9d83f303a8fc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Light0 Direction Base
+    second: {fileID: 2100000, guid: 7c95682db72ec344e9f15161b7f5688d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Light0 Direction Delta Add
+    second: {fileID: 2100000, guid: 66f1a69a8692c2f4c8daf6b3321cc75e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MirrorReflection Layer
+    second: {fileID: 2100000, guid: 83ba4adf26bbcb94dba94739eb8eaf06, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Neitri
+    second: {fileID: 2100000, guid: 2f567961a07c3564fafaaa8198ba3caf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Normalized Color
+    second: {fileID: 2100000, guid: a9cf50d816f18de4686984e1d532223f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Player Layer
+    second: {fileID: 2100000, guid: 9eff10d21652fff40a24e5abf739c174, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: PlayerLocal Layer
+    second: {fileID: 2100000, guid: 95fa7324dd739644aa9657badb97d04b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Poiyomi
+    second: {fileID: 2100000, guid: 2c31e492823ab2744b8c10b228699b47, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Reflection Probe 0
+    second: {fileID: 2100000, guid: 3646984ca041ed3499067ac92d313940, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Reflection Probe 2
+    second: {fileID: 2100000, guid: 7ab484929bf2a144c933523d349b57bf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Reflection Probe 5
+    second: {fileID: 2100000, guid: 25afe4904a10e6347bde1868b462ca4d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Unity Standard
+    second: {fileID: 2100000, guid: 425412e3634fc24428e3ff559450f14d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Vertex Lights
+    second: {fileID: 2100000, guid: acb9328d6dd51e848908a0b8a1f246d1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Wireframe Fade
+    second: {fileID: 2100000, guid: 47d5fa296f14d094eacad26fcd205477, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Wireframe Overlay
+    second: {fileID: 2100000, guid: 81cc2f73c0bb1b94dadecd84647d9488, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: World Normal
+    second: {fileID: 2100000, guid: b89a2625f1b4d84499c14c5a4f18e98a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: World Position
+    second: {fileID: 2100000, guid: 8d2c0aabca3b691409071d576a0eb00a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Xiexe
+    second: {fileID: 2100000, guid: ea6c9fddf210c714085d9f0c5ddf8531, type: 2}
   materials:
     importMaterials: 1
     materialName: 0
