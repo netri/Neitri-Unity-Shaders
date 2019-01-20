@@ -4,7 +4,11 @@ ModelImporter:
   serializedVersion: 22
   fileIDToRecycleName:
     100000: //RootNode
+    100002: Labels and Shaders
+    100004: World Rotation Gizmo
     400000: //RootNode
+    400002: Labels and Shaders
+    400004: World Rotation Gizmo
     2100000: Labels
     2100002: Vertex Lights
     2100004: Light Probes
@@ -31,9 +35,15 @@ ModelImporter:
     2100046: Unity Standard
     2100048: Normalized Color
     2300000: //RootNode
+    2300002: Labels and Shaders
+    2300004: World Rotation Gizmo
     3300000: //RootNode
+    3300002: Labels and Shaders
+    3300004: World Rotation Gizmo
     4300000: Shader Debug
     4300002: Shader Debug Mesh
+    4300004: World Rotation Gizmo
+    4300006: Labels and Shaders
   externalObjects:
   - first:
       type: UnityEngine:Material
@@ -165,6 +175,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: World Position
     second: {fileID: 2100000, guid: 8d2c0aabca3b691409071d576a0eb00a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: World Rotation Gizmo
+    second: {fileID: 2100000, guid: d960f3376ed25fe4884203f235c8a0bc, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule

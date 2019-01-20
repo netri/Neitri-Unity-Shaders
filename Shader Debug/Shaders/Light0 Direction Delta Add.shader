@@ -2,7 +2,6 @@
 {
 	Properties
 	{
-		_MainTex ("Texture", 2D) = "white" {}
 	}
 	SubShader
 	{
@@ -12,23 +11,23 @@
 		Pass
 		{
 			Name "FORWARD"
-            Tags { "LightMode"="ForwardBase" }
-            Cull Off
+			Tags { "LightMode"="ForwardBase" }
+			Cull Back
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
 			#include "UnityCG.cginc"
 			float4 vert (float4 vertex : POSITION) : POSITION { return UnityObjectToClipPos(vertex); }
-			float4 frag (float4 pos : SV_POSITION) : SV_Target { return float4(0, 0, 0, 1); }
+			float4 frag () : SV_Target { discard; return 0; }
 			ENDCG
 		}
 
 		Pass
 		{
 			Name "FORWARD_DELTA"
-            Tags { "LightMode"="ForwardAdd" }
-		    Blend One Zero
-		    Cull Off
+			Tags { "LightMode"="ForwardAdd" }
+			Blend One Zero
+			Cull Back
 
 			CGPROGRAM
 			#pragma vertex vert
@@ -40,44 +39,41 @@
 
 			#pragma multi_compile_fwdadd_fullshadows
 
-			struct VertexInput
+			struct appdata
 			{
 				float4 vertex : POSITION;
 				float3 normal : NORMAL;
 				float4 tangent : TANGENT;
-				float2 uv0 : TEXCOORD0;
 			};
 
-			struct FragmentInput
+			struct v2f
 			{
 				float4 pos : SV_POSITION;
-				float2 uv0 : TEXCOORD0;
-				float4 posWorld : TEXCOORD1;
-				float3 normalDir : TEXCOORD2;
+				float4 worldPos : TEXCOORD0;
+				float3 normalDir : TEXCOORD1;
 			};
-
-			sampler2D _MainTex;
-			float4 _MainTex_ST;
 			
-			FragmentInput vert (VertexInput v)
+			v2f vert (appdata v)
 			{
-				FragmentInput o;
+				v2f o;
 				o.pos = UnityObjectToClipPos(v.vertex);
-				o.uv0 = TRANSFORM_TEX(v.uv0, _MainTex);
 				o.normalDir = UnityObjectToWorldNormal(v.normal);
-				o.posWorld = mul(unity_ObjectToWorld, v.vertex);
+				o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 				return o;
 			}
 			
-			float4 frag (FragmentInput i) : SV_Target
+			float4 frag (v2f i) : SV_Target
 			{
 				float3 normalDir = normalize(i.normalDir);
-				float3 lightDirection = normalize(lerp(_WorldSpaceLightPos0.xyz, _WorldSpaceLightPos0.xyz - i.posWorld.xyz, _WorldSpaceLightPos0.w));
+				float3 lightDirection = normalize(lerp(_WorldSpaceLightPos0.xyz, _WorldSpaceLightPos0.xyz - i.worldPos.xyz, _WorldSpaceLightPos0.w));
 				float NdotL = saturate(dot(normalDir, lightDirection));
 				return float4(NdotL, NdotL, NdotL, 1);
 			}
 			ENDCG
 		}
+
+		UsePass "VertexLit/SHADOWCASTER"
 	}
 
+	FallBack Off
 }

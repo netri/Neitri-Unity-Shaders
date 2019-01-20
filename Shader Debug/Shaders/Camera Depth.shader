@@ -2,13 +2,12 @@
 {
 	Properties
 	{
-		_MainTex ("Texture", 2D) = "white" {}
 	}
 	SubShader
 	{
 		Tags { "RenderType"="Opaque" }
 		LOD 100
-		Cull Off
+		Cull Back
 
 		Pass
 		{
@@ -34,6 +33,7 @@
 			sampler2D _LastCameraDepthTexture;
 			float4 _LastCameraDepthTexture_ST;
 
+
 			float3 rgbToHsv(float3 c)
 			{
 				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -53,7 +53,6 @@
 			}
 
 
-
 			v2f vert (appdata v)
 			{
 				v2f o;
@@ -64,8 +63,8 @@
 			
 			float4 frag (v2f i) : SV_Target
 			{
-				 float z = SAMPLE_DEPTH_TEXTURE(_LastCameraDepthTexture, i.uv);
-                float v = LinearEyeDepth(z) / 10;
+				float z = SAMPLE_DEPTH_TEXTURE(_LastCameraDepthTexture, i.uv);
+				float v = LinearEyeDepth(z) / 10;
 
 				float3 rgb = hsvToRgb(float3(v,1,1));
 				return float4(rgb,1);
@@ -73,6 +72,9 @@
 			}
 			ENDCG
 		}
+
+		UsePass "VertexLit/SHADOWCASTER"
 	}
 
+	FallBack Off
 }

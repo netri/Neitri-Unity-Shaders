@@ -2,7 +2,6 @@
 {
 	Properties
 	{
-		_MainTex ("Texture", 2D) = "white" {}
 	}
 	SubShader
 	{
@@ -12,49 +11,40 @@
 		Pass
 		{
 			Name "FORWARD"
-            Tags { "LightMode"="ForwardBase" }
-            Cull Off
+			Tags { "LightMode"="ForwardBase" }
+			Cull Back
 
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
 			
-			#include "UnityCG.cginc"		
+			#include "UnityCG.cginc"
 			#include "AutoLight.cginc"
 			#include "Lighting.cginc"
 
 			#pragma multi_compile_fwdbase
 
-			struct VertexInput
+			struct appdata
 			{
 				float4 vertex : POSITION;
 				float3 normal : NORMAL;
-				float4 tangent : TANGENT;
-				float2 uv0 : TEXCOORD0;
 			};
 
-			struct FragmentInput
+			struct v2f
 			{
 				float4 pos : SV_POSITION;
-				float2 uv0 : TEXCOORD0;
-				float4 posWorld : TEXCOORD1;
-				float3 normalDir : TEXCOORD2;
+				float3 normalDir : TEXCOORD0;
 			};
-
-			sampler2D _MainTex;
-			float4 _MainTex_ST;
 			
-			FragmentInput vert (VertexInput v)
+			v2f vert (appdata v)
 			{
-				FragmentInput o;
+				v2f o;
 				o.pos = UnityObjectToClipPos(v.vertex);
-				o.uv0 = TRANSFORM_TEX(v.uv0, _MainTex);
 				o.normalDir = UnityObjectToWorldNormal(v.normal);
-				o.posWorld = mul(unity_ObjectToWorld, v.vertex);
 				return o;
 			}
 			
-			float4 frag (FragmentInput i) : SV_Target
+			float4 frag (v2f i) : SV_Target
 			{
 				float3 normalDir = normalize(i.normalDir);
 				half3 lightProbes = ShadeSH9(half4(normalDir, 1));
@@ -62,6 +52,9 @@
 			}
 			ENDCG
 		}
+
+		UsePass "VertexLit/SHADOWCASTER"
 	}
 
+	FallBack Off
 }
