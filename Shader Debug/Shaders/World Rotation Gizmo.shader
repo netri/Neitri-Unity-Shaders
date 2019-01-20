@@ -7,10 +7,7 @@
 	SubShader
 	{
 		Blend SrcAlpha OneMinusSrcAlpha
-		Tags {
-			"RenderType"="Opaque"
-			"Queue"="Transparent"
-		}
+		Tags { "RenderType"="Opaque" "Queue"="Transparent" "IgnoreProjector"="True" }
 		LOD 100
 
 		Pass

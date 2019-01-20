@@ -5,7 +5,7 @@
 	}
 	SubShader
 	{
-		Tags { "RenderType"="Opaque" }
+		Tags { "RenderType"="Opaque" "IgnoreProjector"="True" }
 		LOD 100
 		Cull Back
 
