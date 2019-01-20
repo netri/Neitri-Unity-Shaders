@@ -1,6 +1,9 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
+// Credits
+// error.mdl - First Depth Mirror
+
 Shader "Neitri/Depth Mirror" 
 {
 	Properties 
@@ -20,15 +23,17 @@ Shader "Neitri/Depth Mirror"
 		}
 		Pass 
 		{
+			Tags 
+			{
+				"LightMode" = "Always"
+			}
 			Blend SrcAlpha OneMinusSrcAlpha
 			Cull Off
-			
 			
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma geometry geom
 			#pragma fragment frag
-			#define UNITY_PASS_FORWARDBASE
 			#include "UnityCG.cginc"
 
 			#pragma multi_compile_fwdbase
@@ -55,58 +60,57 @@ Shader "Neitri/Depth Mirror"
 				return v;
 			}
 
-
 			[maxvertexcount(4)]
 			void geom(uint primitiveId : SV_PrimitiveID, point appdata IN[1], inout TriangleStream<fragIn> tristream)
 			{
-				const float off = 1.0 / _DepthTex_TexelSize.z;
+				float off = 1.0 / _DepthTex_TexelSize.z;
 
+				// uv coordinates in the middle of depth texture texels
 				float2 uv1 = float2(
-					fmod(primitiveId, _DepthTex_TexelSize.z) / _DepthTex_TexelSize.z + off/2,
-					floor(primitiveId / _DepthTex_TexelSize.z) / _DepthTex_TexelSize.z + off/2
-				);
+					fmod(primitiveId, _DepthTex_TexelSize.z),
+					floor(primitiveId / _DepthTex_TexelSize.z)
+				) / _DepthTex_TexelSize.z + off/2;
 				float2 uv0 = uv1 + float2(off, 0);
 				float2 uv2 = uv1 + float2(off, off);
 				float2 uv3 = uv1 + float2(0, off);
 				
+				// if nothing rendered into depth texture it has depth 0
 				float depth0 = tex2Dlod(_DepthTex, float4(uv0.x, uv0.y, 0, 0));
 				float depth1 = tex2Dlod(_DepthTex, float4(uv1.x, uv1.y, 0, 0));
 				float depth2 = tex2Dlod(_DepthTex, float4(uv2.x, uv2.y, 0, 0));
 				float depth3 = tex2Dlod(_DepthTex, float4(uv3.x, uv3.y, 0, 0));
 
-				// discard if all corners have depth 0 or 1
+				// discard quad if depth was not rendered at all
 				float depthSum = depth0 + depth1 + depth2 + depth3;
-				if (depthSum >= 4 || depthSum <= 0)
+				if (depthSum <= 0)
 				{
 					return;
 				}
 
-				float depthMin = 1;
-				float depthMax = 0;
-						
+				float depthMax = 0; // closest to camera renderd depth
+				float depthMin = 1; // furthest from camera rendered depth
+
+				// find min and max rendered depth
 				#define FIND_DEPTH_DATA(INDEX) \
-					if (depth##INDEX > 0 && depth##INDEX < 1) { \
+					if (depth##INDEX > 0) { \
 						depthMin = min(depth##INDEX, depthMin); \
 						depthMax = max(depth##INDEX, depthMax); \
 					}
-
 				FIND_DEPTH_DATA(0)
 				FIND_DEPTH_DATA(1)
 				FIND_DEPTH_DATA(2)
 				FIND_DEPTH_DATA(3)
 				
-				
+				// if some vertice doesnt have rendered depth, clamp it to furthest rendered depth
 				#define ADJUST_DEPTH(INDEX) \
-					if (depth##INDEX <= 0) depth##INDEX = depthMin - 0.05 / _DepthRange; \
-					else if (depth##INDEX >= 1) depth##INDEX = depthMax + 0.05 / _DepthRange;
-				
+					if (depth##INDEX <= 0) depth##INDEX = depthMin;
 				ADJUST_DEPTH(0)
 				ADJUST_DEPTH(1)
 				ADJUST_DEPTH(2)
-				ADJUST_DEPTH(3)				
+				ADJUST_DEPTH(3)
 
-				// if too big normal, move all to usable depth max
-				if(abs(depth3-depth2) + abs(depth2-depth0) + abs(depth0-depth1) + abs(depth1-depth3) > 0.4)
+				// if quad has too big normal, move all 4 vertices to closest rendered depth
+				if(abs(depthSum - depth0*4) > 0.5 / _DepthRange)
 				{
 					depth0 = depth1 = depth2 = depth3 = depthMax;
 				}
@@ -131,19 +135,17 @@ Shader "Neitri/Depth Mirror"
 				APPEND(3)
 			}
 			
-			float4 frag(fragIn i) : SV_Target 
+			fixed4 frag(fragIn i) : SV_Target 
 			{
-				float4 color = tex2D(_MainTex, i.uv);
-				if (color.a < 0.1) discard;
+				fixed4 color = tex2D(_MainTex, i.uv);
+				clip (color.a - 0.1);
 
-				//float s = abs(color - GammaToLinearSpace(float4(1,0,0,0)));
-				//if (s < 0.01) discard;
-
-				return float4(color.rgb, 1);
+				return fixed4(color.rgb, 1);
 			}
 
 			ENDCG
 		}
-	
 	}
+
+	Fallback Off
 }
