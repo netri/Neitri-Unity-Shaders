@@ -79,14 +79,15 @@ Shader "Neitri/Depth Mirror"
 				float depth1 = tex2Dlod(_DepthTex, float4(uv1.x, uv1.y, 0, 0));
 				float depth2 = tex2Dlod(_DepthTex, float4(uv2.x, uv2.y, 0, 0));
 				float depth3 = tex2Dlod(_DepthTex, float4(uv3.x, uv3.y, 0, 0));
+				
+				float4 depths = float4(depth0, depth1, depth2, depth3);
 
 				// discard quad if depth was not rendered at all
-				float depthSum = depth0 + depth1 + depth2 + depth3;
-				if (depthSum <= 0)
+				if (dot(depths, 1) <= 0)
 				{
 					return;
 				}
-
+		
 				float depthMax = 0; // closest to camera renderd depth
 				float depthMin = 1; // furthest from camera rendered depth
 
@@ -100,7 +101,7 @@ Shader "Neitri/Depth Mirror"
 				FIND_DEPTH_DATA(1)
 				FIND_DEPTH_DATA(2)
 				FIND_DEPTH_DATA(3)
-				
+
 				// if some vertice doesnt have rendered depth, clamp it to furthest rendered depth
 				#define ADJUST_DEPTH(INDEX) \
 					if (depth##INDEX <= 0) depth##INDEX = depthMin;
@@ -109,8 +110,10 @@ Shader "Neitri/Depth Mirror"
 				ADJUST_DEPTH(2)
 				ADJUST_DEPTH(3)
 
+
 				// if quad has too big normal, move all 4 vertices to closest rendered depth
-				if(abs(depthSum - depth0*4) > 0.5 / _DepthRange)
+				depths = float4(depth0, depth1, depth2, depth3);
+				if(dot(abs(depths.wzxy - depths.zxyw), 1) > 0.4 / _DepthRange)
 				{
 					depth0 = depth1 = depth2 = depth3 = depthMax;
 				}
@@ -129,10 +132,10 @@ Shader "Neitri/Depth Mirror"
 					o.position = UnityObjectToClipPos(float4(uv##INDEX.x - 0.5, uv##INDEX.y - 0.5, _DepthRange * 0.5 * depth##INDEX, 1)); \
 					tristream.Append(o); \
 				
-				APPEND(0)
+				APPEND(3)
 				APPEND(1)
 				APPEND(2)
-				APPEND(3)
+				APPEND(0)
 			}
 			
 			fixed4 frag(fragIn i) : SV_Target 
