@@ -218,7 +218,7 @@ Camera:
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294961631
-  m_RenderingPath: 1
+  m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: 16dfdf49f7eda8647b488671b425deab, type: 2}
   m_TargetDisplay: 0
   m_TargetEye: 3
@@ -254,7 +254,7 @@ Camera:
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294961631
-  m_RenderingPath: 1
+  m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: 0af43b568405efa47a9f05e09bff6a9a, type: 2}
   m_TargetDisplay: 0
   m_TargetEye: 3
@@ -275,7 +275,7 @@ MeshRenderer:
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 0
-  m_MotionVectors: 1
+  m_MotionVectors: 2
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
   m_Materials:
