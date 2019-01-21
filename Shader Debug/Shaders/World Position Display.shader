@@ -11,7 +11,7 @@ Shader "Neitri/Debug/World Position Display"
 	SubShader
 	{
 		Blend SrcAlpha OneMinusSrcAlpha
-		Tags { "RenderType"="Opaque" "Queue"="Transparent" "IgnoreProjector"="True" }
+		Tags { "RenderType"="Transparent" "Queue"="Transparent" "IgnoreProjector"="True" }
 		Cull Back
 
 		Pass
@@ -85,6 +85,7 @@ Shader "Neitri/Debug/World Position Display"
 
 				float adjustedValue = abs(value);
 				//value += .000001;
+
 				while(e > 0) {
 				  e -= 1;
 				  adjustedValue *= 10;
@@ -103,13 +104,13 @@ Shader "Neitri/Debug/World Position Display"
 				// if this is decimal dot, force dot character index
 				textureCharIndex = lerp(textureCharIndex, 10, x == 0);
 
-				// if this is decimal dot, force dot character index
+				// if this is negative sign, force negative sign character index
 				textureCharIndex = lerp(textureCharIndex, 11, isNegative && firstDigitIndex == displayDigitIndex + _Precision + 2);
 
 				i.uv.x = (frac(i.uv.x*_Digits)+textureCharIndex)/12;
 
 				fixed4 col = tex2D( _MainTex, i.uv);
-				col.a = digitAlpha;
+				col.a *= digitAlpha;
 				return col * i.color;
 			}
 
