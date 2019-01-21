@@ -46,22 +46,17 @@ Uses ray sphere intersection, so works only as spherical cutout.
 ![](https://image.prntscr.com/image/pk4bLielQ1W_q1WvttVWAw.png)
 
 ## Shader Debug
-Avatar Item that helps with world lighting debugging.
+Avatar item that helps with world lighting debugging.
 ![](https://image.prntscr.com/image/foDnh17GSD_RlaBEKggG2Q.png)
 
 # Credits
 Everyone in "VRC Shader Development" discord
 
-error.mdl - First Depth Mirror
-
-mel0n - Wireframe shaders idea
-
-Merlin - Wireframe Fade
-
-Migero - Distance Fade Outline idea
-
-Nave - Script to generate 1 vert + X triangles mesh for Depth Mirror
-
-
+mel0n - Wireframe Overlay idea<br>
+Merlin - Wireframe Fade<br>
+Migero - Distance Fade Outline idea<br>
+Nave - Script to generate 1 vert + X triangles mesh for Depth Mirror<br>
+error.mdl - first Depth Mirror<br>
+ScruffyRules - help with Depth Mirror debugging<br>
 
 
