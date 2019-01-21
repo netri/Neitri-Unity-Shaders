@@ -45,6 +45,10 @@ Efficient single pass world cutout shader.
 Uses ray sphere intersection, so works only as spherical cutout.
 ![](https://image.prntscr.com/image/pk4bLielQ1W_q1WvttVWAw.png)
 
+## Shader Debug
+Avatar Item that helps with world lighting debugging.
+![](https://image.prntscr.com/image/foDnh17GSD_RlaBEKggG2Q.png)
+
 # Credits
 Everyone in "VRC Shader Development" discord
 
