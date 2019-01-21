@@ -74,8 +74,8 @@ Shader "Neitri/Debug/World Position Display"
 				float displayDigitIndex = floor(i.uv.x * _Digits);
 
 				// leanup/fix precision.
-				float precision = floor(_Precision);
-				precision = (precision+1)*saturate(precision)-1;
+				float precision = _Precision;
+				//precision = (precision+1)*saturate(precision)-1;
 				
 				// same for all pixels
 				float decimalDotIndex = _Digits-precision-1;
@@ -86,17 +86,15 @@ Shader "Neitri/Debug/World Position Display"
 				float adjustedValue = abs(value);
 				//value += .000001;
 
-				while(e > 0) {
-				  e -= 1;
-				  adjustedValue *= 10;
-				}
-				while(e < 0) {
-				  e += 1;
-				  adjustedValue /= 10;
-				}
+				adjustedValue *= pow(10, e);
+
+		
 				
 				float isNegative = value < 0;
-				float firstDigitIndex = _Digits - ceil(log10(abs(value)));
+				float firstDigitIndex = _Digits - ceil(log10(max(1, ceil(abs(value)))));
+				firstDigitIndex -= floor(abs(value)) == 0; // make sure 0. digit is shown if value is under 1
+
+				// should the digit be hidden, to prevent displaying digits like 00000.001, we just need 0.001
 				float digitAlpha = displayDigitIndex + _Precision + 2 + isNegative > firstDigitIndex;
 
 				float textureCharIndex = floor(fmod(adjustedValue,10));
@@ -111,13 +109,14 @@ Shader "Neitri/Debug/World Position Display"
 
 				fixed4 col = tex2D( _MainTex, i.uv);
 				col.a *= digitAlpha;
-				return col * i.color;
+				return 
+					col *
+					lerp(1, i.color, col.a); // ignore vertex color with increased transparency, so transparent border can have gray color
 			}
 
 			ENDCG
 		}
 		
-		UsePass "VertexLit/SHADOWCASTER"
 	}
 
 	Fallback Off
