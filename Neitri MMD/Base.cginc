@@ -407,10 +407,11 @@ float4 frag(VertexOutput i) : SV_Target
 
 			#ifdef _SHADER_TYPE_SKIN
 			// makes dot ramp more smooth
-			diffuse = diffuse * 0.5 + 0.5; // remap -1 .. 1 to 0 .. 1
+			//diffuse = diffuse * 0.5 + 0.5; // remap -1 .. 1 to 0 .. 1
+			diffuse = diffuse * 0.7 + 0.3; // remap -0.428 .. 1 to 0 .. 1
 			#endif
 
-			diffuse = max(0, diffuse);
+			diffuse = saturate(diffuse);
 			float3 diffuseColor = 0;
 
 			// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
@@ -444,11 +445,9 @@ float4 frag(VertexOutput i) : SV_Target
 
 	#ifdef _SHADER_TYPE_SKIN
 		// shift colors to red, adds MMD like skin feel, fake SSS
-		float skin =
-			max(0.8 - NdotV, 0) * 
-			0.3 * 
-			grayness(finalRGB.rgb);
-		finalRGB.rgb += skin * float3(0.5, -0.5, -0.2);
+		float oldGrayness = grayness(finalRGB.rgb);
+		finalRGB.r += max(0.7 - NdotV, 0) * oldGrayness;
+		finalRGB.rgb *= oldGrayness / grayness(finalRGB.rgb);
 		// reference grayscale vector: 0.3, 0.59, 0.11
 	#endif
 
