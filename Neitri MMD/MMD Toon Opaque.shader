@@ -3,7 +3,7 @@
 
 Shader "Neitri/MMD Toon Opaque" {
 	Properties {
-		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0		
+		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0
 
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
@@ -11,7 +11,7 @@ Shader "Neitri/MMD Toon Opaque" {
 
 		[Header(Normal)] 
 		_BumpMap("Normal Map", 2D) = "bump" {}
-		_BumpScale("Scale", Float) = 0
+		_BumpScale("Weight", Float) = 0
 
 		[Header(Emission)]
 		_EmissionMap ("Texture", 2D) = "black" {}
@@ -19,9 +19,10 @@ Shader "Neitri/MMD Toon Opaque" {
 		
 		[Header(Other)]
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
-		_Shadow ("Surface direction shading darkness", Range(0, 1)) = 0.4
-		_LightCastedShadowStrength ("Shadow from lights darkness", Range(0, 1)) = 0.9
-		_IndirectLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
+		_Shadow ("Direction shading darkness", Range(0, 1)) = 0.4
+		_DirectionShadingSmoothness ("Direction shading smoothness", Range(0, 2)) = 2
+		_LightCastedShadowDarkness ("Light shadows darkness", Range(0, 1)) = 0.9
+		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
 
 		[Header(Change color over time)]
 		[Toggle(_COLOR_OVER_TIME_ON)] _COLOR_OVER_TIME_ON ("Enable", Float) = 0
@@ -34,6 +35,8 @@ Shader "Neitri/MMD Toon Opaque" {
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
+		[Toggle(_DITHERED_TRANSPARENCY_ON)] _DITHERED_TRANSPARENCY_ON ("Dithered Transparency", Float) = 0
+		//[Toggle(_MESH_DEFORMATION_ON)] _MESH_DEFORMATION_ON ("Mesh Deformation", Float) = 0
 	}
 	SubShader {
 		Tags {
@@ -58,6 +61,8 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
+			//#pragma shader_feature _ _MESH_DEFORMATION_ON
+			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
 			ENDCG
 		}
 		Pass {
@@ -80,6 +85,8 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
+			//#pragma shader_feature _ _MESH_DEFORMATION_ON
+			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
 			ENDCG
 		}
 		UsePass "VertexLit/SHADOWCASTER"

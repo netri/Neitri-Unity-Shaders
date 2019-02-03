@@ -22,7 +22,7 @@
 #endif
 
 struct VertexInput {
-	float4 vertex : POSITION;
+	float3 vertex : POSITION;
 	float3 normal : NORMAL;
 	float4 color : COLOR;
 	float4 tangent : TANGENT;
@@ -82,6 +82,10 @@ float3 AverageShade4PointLights (
 	return col;
 }
 
+#ifdef _MESH_DEFORMATION_ON
+	UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
+#endif
+
 
 VertexOutput vert (VertexInput v) 
 {
@@ -90,10 +94,32 @@ VertexOutput vert (VertexInput v)
 	o.color = v.color;
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	#ifdef USE_TANGENT_BITANGENT
-		o.tangentDir = normalize( mul( unity_ObjectToWorld, float4( v.tangent.xyz, 0.0 ) ).xyz );
+		o.tangentDir = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0.0)).xyz);
 		o.bitangentDir = normalize(cross(o.normal, o.tangentDir) * v.tangent.w);
 	#endif
-	o.posWorld = mul(unity_ObjectToWorld, v.vertex);
+	o.posWorld = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
+	o.pos = mul(UNITY_MATRIX_VP, o.posWorld);
+
+
+	
+#ifdef _MESH_DEFORMATION_ON
+
+	float4 projPos = ComputeScreenPos(o.pos);
+	float4 pcoord = float4(projPos.xy / projPos.w, 0, 0);
+	float sceneDepth = LinearEyeDepth (tex2Dlod(_CameraDepthTexture, pcoord));
+	float vertexDepth = mul(UNITY_MATRIX_V, o.posWorld).z;
+
+	float value = (vertexDepth - sceneDepth) / _ProjectionParams.z * 0.1;
+	value = value * (abs(value) > 0.1);
+	v.vertex += v.normal * value;
+	
+	o.normal.z += value;
+	o.normal.z = normalize(o.normal.z);
+
+	o.posWorld = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
+	o.pos = mul(UNITY_MATRIX_VP, o.posWorld);
+
+#endif
 
 	float3 posModel = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 
@@ -118,7 +144,6 @@ VertexOutput vert (VertexInput v)
 	#endif
 
 	float3 lightColor = _LightColor0.rgb;
-	o.pos = UnityObjectToClipPos( v.vertex );
 	UNITY_TRANSFER_FOG(o,o.pos); // transfer fog coords
 	TRANSFER_VERTEX_TO_FRAGMENT(o) // transfer shadow coords
 	return o;
@@ -153,18 +178,17 @@ fixed4 _EmissionColor;
 	float _BumpScale;
 #endif
 
-float _Shadow; // same as Cubed's
-float _LightCastedShadowStrength;
-float _Glossiness; // same as Unity's standard
-float _IndirectLightingFlatness;
+float _Shadow; // named same as Cubed's
+float _DirectionShadingSmoothness;
+float _LightCastedShadowDarkness;
+float _Glossiness; // named same as Unity's standard
+float _BakedLightingFlatness;
 
 
 #ifdef _COLOR_OVER_TIME_ON
 	sampler2D _ColorOverTime_Ramp;
 	float _ColorOverTime_Speed;
 #endif
-
-
 
 sampler3D _DitherMaskLOD;
 
@@ -187,9 +211,6 @@ float3 getScreenSpaceDither( float2 vScreenPos )
 	return vDither.rgb;
 }
 
-
-
-
 // unsure if better variant that uses higher order terms
 half3 ShadeSH9Average()
 {
@@ -205,7 +226,6 @@ half3 ShadeSH9Average()
 	#endif
 	return res;
 }
-
 
 float3 getCameraPosition()
 {
@@ -257,7 +277,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 	float4 mainTexture = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
 
-	#ifdef SUPPORT_TRANSPARENCY
+	#ifdef IS_TRANSPARENT_SHADER
 	// because people expect color alpha to work only on transparent shaders
 	mainTexture *= _Color;
 	#else
@@ -266,7 +286,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 	#ifdef _COLOR_OVER_TIME_ON
 		float4 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(_Time.x * _ColorOverTime_Speed, _Time.x * _ColorOverTime_Speed, 0, 0));
-		#ifdef SUPPORT_TRANSPARENCY
+		#ifdef IS_TRANSPARENT_SHADER
 			mainTexture *= adjustColor;
 		#else
 			mainTexture.rgb *= adjustColor.rgb;
@@ -282,15 +302,18 @@ float4 frag(VertexOutput i) : SV_Target
 		#endif
 	#endif
 
-	#ifdef SUPPORT_TRANSPARENCY
+
+	#ifdef _DITHERED_TRANSPARENCY_ON
+		// dither from builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardShadow.cginc
+		half dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25,mainTexture.a*0.9375)).a;
+		clip (dither - 0.01);
+	#endif
+
 	// cutout support, discard current pixel if alpha is less than 0.05
 	clip(mainTexture.a - 0.05);
-	#else
-	// dither from builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardShadow.cginc
-	half dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25,mainTexture.a*0.9375)).a;
-	clip (dither - 0.01);
-	mainTexture.a = 1;
-	//clip(mainTexture.a - 0.9);
+
+	#ifndef IS_TRANSPARENT_SHADER
+		mainTexture.a = 1; // don't blend in opaque shader
 	#endif
 
 
@@ -322,7 +345,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(lightAttenuation, i, i.posWorld.xyz);
-	lightAttenuation = lerp(1, lightAttenuation, _LightCastedShadowStrength);
+	lightAttenuation = lerp(1, lightAttenuation, _LightCastedShadowDarkness);
 
 	fixed3 lightColor = _LightColor0.rgb;
 
@@ -346,8 +369,8 @@ float4 frag(VertexOutput i) : SV_Target
 		half3 averageLightProbes = ShadeSH9Average();
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 
-		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _IndirectLightingFlatness);
-		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _IndirectLightingFlatness);
+		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
+		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
 
 		diffuseRGB += vertexLights + lightProbes;
 
@@ -403,15 +426,14 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// diffuse
 		{
-			float diffuse = max(0, NdotL);
 
-			#ifdef _SHADER_TYPE_SKIN
-			// makes dot ramp more smooth
-			//diffuse = diffuse * 0.5 + 0.5; // remap -1 .. 1 to 0 .. 1
-			diffuse = diffuse * 0.7 + 0.3; // remap -0.428 .. 1 to 0 .. 1
-			#endif
-
+			float diffuse;
+			if (_DirectionShadingSmoothness < 1) 
+				diffuse = lerp(NdotL * 10, NdotL, _DirectionShadingSmoothness); // -10..10 to -1..1
+			else
+				diffuse = lerp(NdotL, NdotL * 0.5 + 0.5, _DirectionShadingSmoothness - 1); // -1..1 to 0..1
 			diffuse = saturate(diffuse);
+
 			float3 diffuseColor = 0;
 
 			// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
