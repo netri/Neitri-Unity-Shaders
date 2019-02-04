@@ -428,6 +428,7 @@ float4 frag(VertexOutput i) : SV_Target
 		{
 
 			float diffuse;
+			UNITY_BRANCH
 			if (_DirectionShadingSmoothness < 1) 
 				diffuse = lerp(NdotL * 10, NdotL, _DirectionShadingSmoothness); // -10..10 to -1..1
 			else
@@ -468,7 +469,7 @@ float4 frag(VertexOutput i) : SV_Target
 	#ifdef _SHADER_TYPE_SKIN
 		// shift colors to red, adds MMD like skin feel, fake SSS
 		float oldGrayness = grayness(finalRGB.rgb);
-		finalRGB.r += max(0.7 - NdotV, 0) * oldGrayness;
+		finalRGB.r += max(0.7 - NdotV, 0) * oldGrayness * 0.5;
 		finalRGB.rgb *= oldGrayness / grayness(finalRGB.rgb);
 		// reference grayscale vector: 0.3, 0.59, 0.11
 	#endif
