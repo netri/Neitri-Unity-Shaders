@@ -82,7 +82,6 @@ Shader "Neitri/Wireframe Overlay"
 			float3 calculateWorldSpace(float4 vertex, float2 screenOffset)
 			{
 				float4 worldPos = mul(unity_ObjectToWorld, float4(vertex.xyz, 1));
-				// Calculate our UV within the screen (for reading depth buffer)
 				float4 screenPos = mul(UNITY_MATRIX_VP, worldPos); 
 				// Adjust positon in screen space
 				screenPos.xy += screenOffset * screenPos.w;
