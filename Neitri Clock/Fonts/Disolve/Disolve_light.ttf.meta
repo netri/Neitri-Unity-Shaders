@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 81267729c5944ca41888a21a8c8a032e
+timeCreated: 1534243712
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Dissolve light
+  fontNames:
+  - Dissolve light
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

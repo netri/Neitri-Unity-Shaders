@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: f9a9c17dccd55804e922f733098685be
+timeCreated: 1520196127
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Digital dream Skew
+  fontNames:
+  - Digital dream Skew
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

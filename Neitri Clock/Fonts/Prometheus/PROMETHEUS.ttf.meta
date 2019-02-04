@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 9f9f92d8e25740e40963c78c3c9950c5
+timeCreated: 1534243712
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: PROMETHEUS
+  fontNames:
+  - PROMETHEUS
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
