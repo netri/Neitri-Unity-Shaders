@@ -334,9 +334,10 @@ float4 frag(VertexOutput i) : SV_Target
 
 	float3 worldSpaceCameraPos = getCameraPosition();
 
-	// slightly dither normal to hide obvious normal interpolation
+	// slightly dither normal over time to hide obvious normal interpolation
 	normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 50.0);
-	
+	//normal = normalize(normal);
+
 	// direction from pixel towards camera
 	float3 viewDir = normalize(worldSpaceCameraPos - i.posWorld.xyz);
 
@@ -470,7 +471,8 @@ float4 frag(VertexOutput i) : SV_Target
 		// shift colors to red, adds MMD like skin feel, fake SSS
 		float oldGrayness = grayness(finalRGB.rgb);
 		finalRGB.r += max(0.7 - NdotV, 0) * oldGrayness * 0.5;
-		finalRGB.rgb *= oldGrayness / grayness(finalRGB.rgb);
+		float newGrayness = grayness(finalRGB.rgb);
+		if (newGrayness > 0) finalRGB.rgb *= oldGrayness / newGrayness;
 		// reference grayscale vector: 0.3, 0.59, 0.11
 	#endif
 
@@ -507,4 +509,84 @@ float4 frag(VertexOutput i) : SV_Target
 	return finalRGBA;
 	#endif
 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#ifdef UNITY_STEREO_INSTANCING_ENABLED
+#define UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT 1
+#endif
+
+struct VertexInputShadowCaster
+{
+	float4 vertex : POSITION;
+	float3 normal : NORMAL;
+	float2 uv0 : TEXCOORD0;
+	UNITY_VERTEX_INPUT_INSTANCE_ID
+};
+
+struct VertexOutputShadowCaster
+{
+	V2F_SHADOW_CASTER_NOPOS
+	float2 tex : TEXCOORD1;
+};
+
+#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
+struct VertexOutputStereoShadowCaster
+{
+	UNITY_VERTEX_OUTPUT_STEREO
+};
+#endif
+
+// We have to do these dances of outputting SV_POSITION separately from the vertex shader,
+// and inputting VPOS in the pixel shader, since they both map to "POSITION" semantic on
+// some platforms, and then things don't go well.
+
+void vertShadowCaster (VertexInputShadowCaster v
+	, out float4 opos : SV_POSITION
+	, out VertexOutputShadowCaster o
+	#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
+	, out VertexOutputStereoShadowCaster os
+	#endif
+)
+{
+	UNITY_SETUP_INSTANCE_ID(v);
+	TRANSFER_SHADOW_CASTER_NOPOS(o,opos)
+	o.tex = TRANSFORM_TEX(v.uv0, _MainTex);
+	#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
+		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(os);
+	#endif
+}
+
+half4 fragShadowCaster (UNITY_POSITION(vpos)
+	, VertexOutputShadowCaster i
+) : SV_Target
+{
+	half alpha = tex2D(_MainTex, i.tex).a * _Color.a;
+	clip (alpha - 0.05);
+	
+	#ifdef IS_TRANSPARENT_SHADER
+		half alphaRef = tex3D(_DitherMaskLOD, float3(vpos.xy*0.25,alpha*0.9375)).a;
+		clip (alphaRef - 0.01);
+	#endif
+
+	SHADOW_CASTER_FRAGMENT(i)
 }

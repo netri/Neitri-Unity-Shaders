@@ -52,10 +52,10 @@ Shader "Neitri/MMD Toon Opaque" {
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#define UNITY_PASS_FORWARDBASE
 			#include "Base.cginc"
+			#define UNITY_PASS_FORWARDBASE
 			#pragma only_renderers d3d11 glcore gles
-			#pragma target 4.0
+			#pragma target 2.0
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
@@ -79,7 +79,7 @@ Shader "Neitri/MMD Toon Opaque" {
 			#define UNITY_PASS_FORWARDADD
 			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
-			#pragma target 4.0
+			#pragma target 2.0
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
@@ -89,6 +89,17 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
 			ENDCG
 		}
-		UsePass "VertexLit/SHADOWCASTER"
+		Pass {
+			Name "ShadowCaster"
+			Tags { "LightMode" = "ShadowCaster" }
+			ZWrite On
+			ZTest LEqual
+			CGPROGRAM
+			#pragma target 2.0
+			#pragma vertex vertShadowCaster
+			#pragma fragment fragShadowCaster
+			#include "Base.cginc"
+			ENDCG
+		}
 	}
 }

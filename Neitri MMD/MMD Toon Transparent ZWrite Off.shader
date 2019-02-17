@@ -60,7 +60,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 			#define IS_TRANSPARENT_SHADER
 			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
-			#pragma target 4.0
+			#pragma target 2.0
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
@@ -86,7 +86,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 			#define IS_TRANSPARENT_SHADER
 			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
-			#pragma target 4.0
+			#pragma target 2.0
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
@@ -95,6 +95,17 @@ Shader "Neitri/MMD Toon Transparent ZWrite Off" {
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
 			ENDCG
 		}
-		UsePass "VertexLit/SHADOWCASTER"
+		Pass {
+			Name "ShadowCaster"
+			Tags { "LightMode" = "ShadowCaster" }
+			ZWrite On
+			ZTest LEqual
+			CGPROGRAM
+			#pragma target 2.0
+			#pragma vertex vertShadowCaster
+			#pragma fragment fragShadowCaster
+			#include "Base.cginc"
+			ENDCG
+		}
 	}
 }
