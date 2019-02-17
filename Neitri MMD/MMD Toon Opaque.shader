@@ -45,14 +45,13 @@ Shader "Neitri/MMD Toon Opaque" {
 		}
 		
 		Pass {
-			Name "FORWARD"
+			Name "ForwardBase"
 			Tags { "LightMode" = "ForwardBase" }
 			Cull [_Cull]
 			Blend SrcAlpha OneMinusSrcAlpha
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#include "Base.cginc"
 			#define UNITY_PASS_FORWARDBASE
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
@@ -63,10 +62,11 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
 			//#pragma shader_feature _ _MESH_DEFORMATION_ON
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
+			#include "Base.cginc"
 			ENDCG
 		}
 		Pass {
-			Name "FORWARD_DELTA"
+			Name "ForwardAdd"
 			Tags { "LightMode" = "ForwardAdd" }
 			Cull [_Cull]
 			Blend SrcAlpha One
@@ -77,7 +77,6 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma vertex vert
 			#pragma fragment frag
 			#define UNITY_PASS_FORWARDADD
-			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
 			#pragma multi_compile_fwdadd_fullshadows
@@ -87,6 +86,7 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
 			//#pragma shader_feature _ _MESH_DEFORMATION_ON
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
+			#include "Base.cginc"
 			ENDCG
 		}
 		Pass {
@@ -101,5 +101,6 @@ Shader "Neitri/MMD Toon Opaque" {
 			#include "Base.cginc"
 			ENDCG
 		}
-	}
+	}	
+	FallBack Off
 }

@@ -46,7 +46,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			"RenderType" = "Transparent"
 		}
 		Pass {
-			Name "FORWARD"
+			Name "ForwardBase"
 			Tags {
 				"LightMode" = "ForwardBase"
 			}
@@ -58,7 +58,6 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			#pragma fragment frag
 			#define UNITY_PASS_FORWARDBASE
 			#define IS_TRANSPARENT_SHADER
-			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
 			#pragma multi_compile_fwdbase
@@ -67,10 +66,11 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
+			#include "Base.cginc"
 			ENDCG
 		}
 		Pass {
-			Name "FORWARD_DELTA"
+			Name "ForwardAdd"
 			Tags {
 				"LightMode" = "ForwardAdd"
 			}
@@ -84,7 +84,6 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			#pragma fragment frag
 			#define UNITY_PASS_FORWARDADD
 			#define IS_TRANSPARENT_SHADER
-			#include "Base.cginc"
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
 			#pragma multi_compile_fwdadd_fullshadows
@@ -93,6 +92,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
+			#include "Base.cginc"
 			ENDCG
 		}
 		Pass {
@@ -108,4 +108,5 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			ENDCG
 		}
 	}
+	FallBack Off
 }
