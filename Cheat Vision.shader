@@ -1,7 +1,7 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-Shader "Neitri/Normalized Color"
+Shader "Neitri/Cheat Vision"
 {
 	Properties
 	{
@@ -62,21 +62,45 @@ Shader "Neitri/Normalized Color"
 				const float3 greyScale = float3(0.3, 0.59, 0.11);
 				return dot(color, greyScale);
 			}
+			
+			float3 hsvToRgb(float3 c)
+			{
+				float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+				float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+				return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+			}
 
 			float4 frag (v2f i) : SV_Target
 			{
-				float sceneZ = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-				float3 worldPosition = sceneZ * i.ray / i.projPos.z + _WorldSpaceCameraPos;
-				fixed3 worldNormal = normalize(cross(-ddx(worldPosition), ddy(worldPosition)));
-
-				float3 fakeLightDirection = normalize(float3(1,1,1));
-
+				float depthSample = SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos));
+				
+				bool isSkyBox = depthSample == 0;
+			
 				fixed4 color = tex2Dproj(_ScreenTex, i.grabPos);
-				fixed g = grayness(color.rgb);
-				color.rgb /= g + 0.02;
 
-				float3 lighting = lerp(0.4, 1, saturate(dot(worldNormal, fakeLightDirection))) + ShadeSH9(half4(worldNormal, 1));
-				color.rgb *= lighting;
+				if (!isSkyBox)
+				{
+					fixed g = grayness(color.rgb);
+					color.rgb /= g + 0.02;
+
+					bool depthEnabled = depthSample > 0.215 && depthSample < 0.216;
+		
+					if (!depthEnabled)
+					{
+						// only if we can read depth texture
+						float sceneZ = LinearEyeDepth (depthSample);
+			
+						float3 depthBasedColor = hsvToRgb(float3(sceneZ/10,1,1));
+						color.rgb = lerp(color.rgb, depthBasedColor, 0.5);
+
+						float3 worldPosition = sceneZ * i.ray / i.projPos.z + _WorldSpaceCameraPos;
+						fixed3 worldNormal = normalize(cross(-ddx(worldPosition), ddy(worldPosition)));
+						float3 fakeLightDirection = normalize(float3(1,1,1));
+
+						float3 shading = lerp(0, 1, saturate(dot(worldNormal, fakeLightDirection)));
+						color.rgb *= shading;
+					}
+				}
 
 				return color;
 			}
