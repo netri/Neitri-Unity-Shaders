@@ -15,7 +15,7 @@ Shader "Neitri/MMD Toon Opaque" {
 
 		[Header(Emission)]
 		_EmissionMap ("Texture", 2D) = "black" {}
-		_EmissionColor ("Color", Color) = (1,1,1,1)
+		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
 		
 		[Header(Other)]
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
@@ -48,7 +48,8 @@ Shader "Neitri/MMD Toon Opaque" {
 			Name "ForwardBase"
 			Tags { "LightMode" = "ForwardBase" }
 			Cull [_Cull]
-			Blend SrcAlpha OneMinusSrcAlpha
+			Blend One Zero
+			AlphaToMask On
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -70,6 +71,7 @@ Shader "Neitri/MMD Toon Opaque" {
 			Tags { "LightMode" = "ForwardAdd" }
 			Cull [_Cull]
 			Blend SrcAlpha One
+			AlphaToMask On
 			ZWrite Off
 			Fog { Color (0,0,0,0) }
 			ZTest LEqual
@@ -98,6 +100,7 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma target 2.0
 			#pragma vertex vertShadowCaster
 			#pragma fragment fragShadowCaster
+			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
 			#include "Base.cginc"
 			ENDCG
 		}

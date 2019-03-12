@@ -178,10 +178,10 @@ fixed4 _EmissionColor;
 	float _BumpScale;
 #endif
 
-float _Shadow; // named same as Cubed's
+float _Shadow; // name from Cubed's
 float _DirectionShadingSmoothness;
 float _LightCastedShadowDarkness;
-float _Glossiness; // named same as Unity's standard
+float _Glossiness; // name from Unity's standard
 float _BakedLightingFlatness;
 
 
@@ -209,6 +209,15 @@ float3 getScreenSpaceDither( float2 vScreenPos )
 	float3 vDither = dot( float2( 171.0, 231.0 ), vScreenPos.xy + _Time.z ).xxx;
 	vDither.rgb = frac( vDither.rgb / float3( 103.0, 71.0, 97.0 ) ) - float3( 0.5, 0.5, 0.5 );
 	return vDither.rgb;
+}
+
+// from: https://www.shadertoy.com/view/Mllczf
+float triangularPDFNoiseDithering(float2 pos)
+{
+	float3 p3 = frac(float3(pos.xyx) * float3(.1031, .1030, .0973));
+	p3 += dot(p3, p3.yzx+19.19);
+	float2 rand = frac((p3.xx+p3.yz)*p3.zy);
+	return (rand.x + rand.y) * 0.5;
 }
 
 // unsure if better variant that uses higher order terms
@@ -304,17 +313,16 @@ float4 frag(VertexOutput i) : SV_Target
 
 
 	#ifdef _DITHERED_TRANSPARENCY_ON
-		// dither from builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardShadow.cginc
-		half dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25,mainTexture.a*0.9375)).a;
-		clip (dither - 0.01);
+		// dithering from builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardShadow.cginc
+		//half dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, mainTexture.a*0.9375)).a; //*0.9375 +_Time.x*1000
+		//clip(dither - 0.01);
+
+		clip(mainTexture.a - triangularPDFNoiseDithering(i.pos.xy));
+	#else
+		// cutout support, discard current pixel if alpha is less than 0.05
+		clip(mainTexture.a - 0.05);
 	#endif
 
-	// cutout support, discard current pixel if alpha is less than 0.05
-	clip(mainTexture.a - 0.05);
-
-	#ifndef IS_TRANSPARENT_SHADER
-		mainTexture.a = 1; // don't blend in opaque shader
-	#endif
 
 
 	float3 normal = i.normal;
@@ -356,8 +364,7 @@ float4 frag(VertexOutput i) : SV_Target
 	//fixed lightColorMax = max(lightColor.x, max(lightColor.y, lightColor.z));
 	//if(lightColorMax > 1) lightColor /= lightColorMax;
 
-	int fallbacksUsed = 0;
-	float3 diffuseRGB = 0;
+	float3 diffuseLightRGB = 0;
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		// non cookie directional light, or no lights at all (just ambient, light probes and vertex lights)
@@ -367,42 +374,43 @@ float4 frag(VertexOutput i) : SV_Target
 		// ambient color, skybox, light probes are baked in spherical harmonics
 		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
 		//half3 averageLightProbes = (ShadeSH9(half4(1, 0, 0, 1))+ShadeSH9(half4(0, 1, 0, 1))+ShadeSH9(half4(0, 0, 1, 1))+ShadeSH9(half4(-1, 0, 0, 1))+ShadeSH9(half4(0, -1, 0, 1))+ShadeSH9(half4(0, 0, -1, 1))) / 6.0;
-		half3 averageLightProbes = ShadeSH9Average();
-		half3 realLightProbes = ShadeSH9(half4(normal, 1));
+		//half3 averageLightProbes = ShadeSH9Average();
 
-		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
+		half3 lightProbes = ShadeSH9(half4(lerp(normal, half3(0, 0, 0), _BakedLightingFlatness), 1));
+		//half3 lightProbes = lerp(ShadeSH9(half4(normal, 1)), ShadeSH9(half4(0, 0, 0, 1)), _BakedLightingFlatness);
+
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
 
-		diffuseRGB += vertexLights + lightProbes;
+		diffuseLightRGB += vertexLights + lightProbes;
 
 		// DEBUG
-		//return float4(diffuseRGB, 1);
+		//return float4(1, 0, 0, 1);
+		//return float4(lightProbes, 1);
 
 		// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
 		// so we we averge all ambient like sources that are used
-		float3 unlit = averageLightProbes + i.vertexLightsAverage + lightColor;
+		float3 unlit = lightProbes + i.vertexLightsAverage + lightColor;
 		// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
 		float unlitTargetGrayness = max(0, grayness(lightColor) - _Shadow);
 		unlit *= unlitTargetGrayness / max(0.001, grayness(unlit));
 
+		
 		UNITY_BRANCH
 		if (!any(lightColor))
 		{
-			lightColor = lerp(averageLightProbes, i.vertexLightsAverage, 0.5);
-			fallbacksUsed++;
+			lightColor = (1 + lightProbes + i.vertexLightsAverage) * 0.3f;
 		}
 
-		UNITY_BRANCH
+		/*UNITY_BRANCH
 		if (!any(lightDir))
 		{
 			lightDir = getLightDirectionFromSphericalHarmonics();
-			fallbacksUsed++;
-		}
+		}*/
 
 	#else
 		
 		// all spot lights, all point lights, cookie directional lights
-		
+
 	#endif
 
 	fixed3 finalRGB = fixed3(0, 0, 0);
@@ -415,7 +423,7 @@ float4 frag(VertexOutput i) : SV_Target
 	float NdotH = saturate(dot(normal, halfDir));
 
 	UNITY_BRANCH
-	if (fallbacksUsed < 2 && any(lightDir) && any(lightColor)) 
+	if (any(lightDir) && any(lightColor)) 
 	{
 		// specular
 		{
@@ -427,7 +435,6 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// diffuse
 		{
-
 			float diffuse;
 			UNITY_BRANCH
 			if (_DirectionShadingSmoothness < 1) 
@@ -451,11 +458,11 @@ float4 frag(VertexOutput i) : SV_Target
 				diffuseColor = diffuseColor * diffuse;
 			#endif
 
-			diffuseRGB += diffuseColor;
+			diffuseLightRGB += diffuseColor;
 		}
 	}
 	
-	finalRGB += diffuseRGB * mainTexture.rgb;
+	finalRGB += diffuseLightRGB * mainTexture.rgb;
 
 	#ifdef _SHADER_TYPE_CLOTH
 		// light color, slightly moving
@@ -556,10 +563,6 @@ struct VertexOutputStereoShadowCaster
 };
 #endif
 
-// We have to do these dances of outputting SV_POSITION separately from the vertex shader,
-// and inputting VPOS in the pixel shader, since they both map to "POSITION" semantic on
-// some platforms, and then things don't go well.
-
 void vertShadowCaster (VertexInputShadowCaster v
 	, out float4 opos : SV_POSITION
 	, out VertexOutputShadowCaster o
@@ -581,11 +584,9 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
 ) : SV_Target
 {
 	half alpha = tex2D(_MainTex, i.tex).a * _Color.a;
-	clip (alpha - 0.05);
-	
-	#ifdef IS_TRANSPARENT_SHADER
-		half alphaRef = tex3D(_DitherMaskLOD, float3(vpos.xy*0.25,alpha*0.9375)).a;
-		clip (alphaRef - 0.01);
+	clip(alpha - 0.05);
+	#if defined(IS_TRANSPARENT_SHADER) || defined(_DITHERED_TRANSPARENCY_ON)
+		clip(alpha - triangularPDFNoiseDithering(vpos.xy));
 	#endif
 
 	SHADOW_CASTER_FRAGMENT(i)

@@ -1,10 +1,9 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-// both "transoarent" shaders actually have to be in geometry queue, beause we want them to be shadowed the same as opaque
-// ZWrite On is for big geometry such as transparent hair where you want it to occlude it self
+// has to be in geometry queue, beause we want it to be shadowed the same as opaque
 
-Shader "Neitri/MMD Toon Transparent ZWrite On" {
+Shader "Neitri/MMD Toon Transparent" {
 	Properties{
 		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0
 
@@ -18,7 +17,7 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 
 		[Header(Emission)]
 		_EmissionMap ("Texture", 2D) = "black" {}
-		_EmissionColor ("Color", Color) = (1,1,1,1)
+		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
 		
 		[Header(Other)]
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
@@ -38,7 +37,6 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
-		[Toggle(_DITHERED_TRANSPARENCY_ON)] _DITHERED_TRANSPARENCY_ON ("Dithered Transparency", Float) = 0
 	}
 	SubShader{
 		Tags {
@@ -52,7 +50,8 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			}
 			Cull [_Cull]
 			Blend SrcAlpha OneMinusSrcAlpha
-			ZWrite On
+			AlphaToMask Off
+			ZWrite Off
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -76,7 +75,8 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			}
 			Cull [_Cull]
 			Blend SrcAlpha One
-			ZWrite On
+			AlphaToMask Off
+			ZWrite Off
 			Fog { Color(0,0,0,0) }
 			ZTest LEqual
 			CGPROGRAM
@@ -104,6 +104,8 @@ Shader "Neitri/MMD Toon Transparent ZWrite On" {
 			#pragma target 2.0
 			#pragma vertex vertShadowCaster
 			#pragma fragment fragShadowCaster
+			#define IS_TRANSPARENT_SHADER
+			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
 			#include "Base.cginc"
 			ENDCG
 		}
