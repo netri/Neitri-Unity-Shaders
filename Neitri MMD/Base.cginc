@@ -314,14 +314,12 @@ float4 frag(VertexOutput i) : SV_Target
 
 
 	#ifdef _DITHERED_TRANSPARENCY_ON
-		// dithering from builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardShadow.cginc
-		//half dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, mainTexture.a*0.9375)).a; //*0.9375 +_Time.x*1000
-		//clip(dither - 0.01);
-
 		clip(mainTexture.a - triangularPDFNoiseDithering(i.pos.xy));
 	#else
-		// cutout support, discard current pixel if alpha is less than 0.05
-		clip(mainTexture.a - 0.05);
+		#ifdef IS_TRANSPARENT_SHADER
+			// cutout support, discard current pixel if alpha is less than 0.05
+			clip(mainTexture.a - 0.05);
+		#endif
 	#endif
 
 
@@ -357,8 +355,8 @@ float4 frag(VertexOutput i) : SV_Target
 	UNITY_LIGHT_ATTENUATION(lightAttenuation, i, i.posWorld.xyz);
 	lightAttenuation = lerp(1, lightAttenuation, _LightCastedShadowDarkness);
 
-	fixed3 lightColor = _LightColor0.rgb;
-
+	fixed3 specularLightColor = _LightColor0.rgb;
+	fixed3 diffuseLightColor = _LightColor0.rgb;
 
 	// prevent bloom if light color is over 1
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
@@ -390,16 +388,16 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
 		// so we we averge all ambient like sources that are used
-		float3 unlit = lightProbes + i.vertexLightsAverage + lightColor;
+		float3 unlit = lightProbes + i.vertexLightsAverage + _LightColor0.rgb;
 		// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
-		float unlitTargetGrayness = max(0, grayness(lightColor) - _Shadow);
+		float unlitTargetGrayness = max(0, grayness(_LightColor0.rgb) - _Shadow);
 		unlit *= unlitTargetGrayness / max(0.001, grayness(unlit));
 
 		
 		UNITY_BRANCH
-		if (!any(lightColor))
+		if (!any(specularLightColor))
 		{
-			lightColor = (1 + lightProbes + i.vertexLightsAverage) * 0.3f;
+			specularLightColor = (1 + lightProbes + i.vertexLightsAverage) * 0.3f;
 		}
 
 		UNITY_BRANCH
@@ -424,23 +422,24 @@ float4 frag(VertexOutput i) : SV_Target
 	float NdotH = saturate(dot(normal, halfDir));
 
 	UNITY_BRANCH
-	if (any(lightDir) && any(lightColor)) 
+	if (any(lightDir)) 
 	{
 		// specular
+		if (any(specularLightColor))
 		{
 			float gloss = _Glossiness;
 			float specPow = exp2(gloss * 10.0);
 			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * gloss;
-			finalRGB += lightAttenuation * specularReflection * lightColor;
+			finalRGB += lightAttenuation * specularLightColor * specularReflection;
 		}
 
 		// diffuse
+		if (any(diffuseLightColor))
 		{
 			float rampNdotL = NdotL * 0.5 + 0.5;
-			float3 shadowRamp = tex2D( _ShadowRamp, float2(rampNdotL,rampNdotL)).rgb;
+			float3 shadowRamp = tex2D( _ShadowRamp, float2(rampNdotL, rampNdotL)).rgb;
 
-			float3 diffuseColor = lightColor * lightAttenuation * shadowRamp;
-			// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
+			float3 diffuseColor = lightAttenuation * diffuseLightColor * shadowRamp;
 			#ifdef UNITY_PASS_FORWARDBASE
 			#else
 				// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
