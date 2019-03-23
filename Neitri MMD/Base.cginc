@@ -178,6 +178,7 @@ fixed4 _EmissionColor;
 	float _BumpScale;
 #endif
 
+sampler2D _ShadowRamp; // name from Xiexe's
 float _Shadow; // name from Cubed's
 float _DirectionShadingSmoothness;
 float _LightCastedShadowDarkness;
@@ -401,11 +402,11 @@ float4 frag(VertexOutput i) : SV_Target
 			lightColor = (1 + lightProbes + i.vertexLightsAverage) * 0.3f;
 		}
 
-		/*UNITY_BRANCH
+		UNITY_BRANCH
 		if (!any(lightDir))
 		{
 			lightDir = getLightDirectionFromSphericalHarmonics();
-		}*/
+		}
 
 	#else
 		
@@ -435,27 +436,17 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// diffuse
 		{
-			float diffuse;
-			UNITY_BRANCH
-			if (_DirectionShadingSmoothness < 1) 
-				diffuse = lerp(NdotL * 10, NdotL, _DirectionShadingSmoothness); // -10..10 to -1..1
-			else
-				diffuse = lerp(NdotL, NdotL * 0.5 + 0.5, _DirectionShadingSmoothness - 1); // -1..1 to 0..1
-			diffuse = saturate(diffuse);
+			float rampNdotL = NdotL * 0.5 + 0.5;
+			float3 shadowRamp = tex2D( _ShadowRamp, float2(rampNdotL,rampNdotL)).rgb;
 
-			float3 diffuseColor = 0;
-
+			float3 diffuseColor = lightColor * lightAttenuation * shadowRamp;
 			// in add pass, we don't want to artificially lighten unlit color, because we might end up with color over (1,1,1) if there are multiple lights, doing this in base pass is enough
 			#ifdef UNITY_PASS_FORWARDBASE
-				diffuseColor = lerp(unlit, lightColor, diffuse);
-				diffuseColor = diffuseColor * lightAttenuation;
 			#else
 				// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
 				// lets make sure its not too bright
-				diffuseColor = lightColor * lightAttenuation;
 				float g = grayness(diffuseColor);
 				if (g > 1) diffuseColor /= g;
-				diffuseColor = diffuseColor * diffuse;
 			#endif
 
 			diffuseLightRGB += diffuseColor;
@@ -463,26 +454,6 @@ float4 frag(VertexOutput i) : SV_Target
 	}
 	
 	finalRGB += diffuseLightRGB * mainTexture.rgb;
-
-	#ifdef _SHADER_TYPE_CLOTH
-		// light color, slightly moving
-		float cloth = 
-			saturate(0.8 - NdotV) *
-			saturate(0.8 - abs(NdotL)) *
-			0.05 *
-			lightAttenuation;
-		finalRGB.rgb += lightColor * cloth;
-	#endif
-
-	#ifdef _SHADER_TYPE_SKIN
-		// shift colors to red, adds MMD like skin feel, fake SSS
-		float oldGrayness = grayness(finalRGB.rgb);
-		finalRGB.r += max(0.7 - NdotV, 0) * oldGrayness * 0.5;
-		float newGrayness = grayness(finalRGB.rgb);
-		if (newGrayness > 0) finalRGB.rgb *= oldGrayness / newGrayness;
-		// reference grayscale vector: 0.3, 0.59, 0.11
-	#endif
-
 	
 	#ifdef UNITY_PASS_FORWARDBASE
 	#else

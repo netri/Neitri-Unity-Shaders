@@ -5,8 +5,6 @@
 
 Shader "Neitri/MMD Toon Transparent" {
 	Properties{
-		[KeywordEnum(None, Skin, Cloth)] _SHADER_TYPE ("Shader specialization", Float) = 0
-
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
 		_Color ("Color", Color) = (1,1,1,1)
@@ -20,9 +18,9 @@ Shader "Neitri/MMD Toon Transparent" {
 		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
 		
 		[Header(Other)]
+		[NoScaleOffset] _ShadowRamp("Shadow Ramp", 2D) = "white" {}
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
 		_Shadow ("Direction shading darkness", Range(0, 1)) = 0.4
-		_DirectionShadingSmoothness ("Direction shading smoothness", Range(0, 2)) = 2
 		_LightCastedShadowDarkness ("Light shadows darkness", Range(0, 1)) = 0.9
 		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
 
@@ -61,7 +59,6 @@ Shader "Neitri/MMD Toon Transparent" {
 			#pragma target 2.0
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
-			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
@@ -88,7 +85,6 @@ Shader "Neitri/MMD Toon Transparent" {
 			#pragma target 2.0
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
-			#pragma shader_feature _ _SHADER_TYPE_SKIN _SHADER_TYPE_CLOTH _SHADER_TYPE_HAIR
 			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
 			#pragma shader_feature _ _COLOR_OVER_TIME_ON
 			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON

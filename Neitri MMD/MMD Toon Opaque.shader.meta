@@ -1,13 +1,13 @@
 fileFormatVersion: 2
 guid: 57083765fa174ea48ab19535cf85775e
-timeCreated: 1538877529
-licenseType: Free
 ShaderImporter:
+  externalObjects: {}
   defaultTextures:
   - _MainTex: {instanceID: 0}
+  - _BumpMap: {instanceID: 0}
   - _EmissionMap: {instanceID: 0}
-  - _ShadingRamp: {fileID: 2800000, guid: d6fed72f5d963de428c59fd9f15fa6b9, type: 3}
-  - _ColorOverTime: {instanceID: 0}
+  - _ShadowRamp: {fileID: 2800000, guid: a5644e1c05e80b548a00343cf36e0032, type: 3}
+  - _ColorOverTime_Ramp: {instanceID: 0}
   userData: 
   assetBundleName: 
   assetBundleVariant: 
