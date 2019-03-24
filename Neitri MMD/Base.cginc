@@ -178,7 +178,7 @@ fixed4 _EmissionColor;
 	float _BumpScale;
 #endif
 
-sampler2D _ShadowRamp; // name from Xiexe's
+sampler2D _Ramp; // name from Xiexe's
 float _Shadow; // name from Cubed's
 float _DirectionShadingSmoothness;
 float _LightCastedShadowDarkness;
@@ -330,12 +330,10 @@ float4 frag(VertexOutput i) : SV_Target
 	UNITY_BRANCH
 	if (_BumpScale != 0)
 	{
-		float3x3 tangentTransform = float3x3(i.tangentDir, i.bitangentDir, normal);
-		float3 normalLocal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0, _BumpMap)));
-		normalLocal = lerp(float3(0, 0, 1), normalLocal, _BumpScale);
-		normal = normalize(mul(normalLocal, tangentTransform));
-		//DEBUG
-		//return float4(normal,1);
+		float3x3 tangentToWorld = float3x3(i.tangentDir, i.bitangentDir, normal);
+		float3 normalTangentSpace = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0, _BumpMap)));
+		normalTangentSpace = lerp(float3(0, 0, 1), normalTangentSpace, _BumpScale);
+		normal = normalize(mul(normalTangentSpace, tangentToWorld));
 	}
 #endif
 
@@ -370,7 +368,7 @@ float4 frag(VertexOutput i) : SV_Target
 		
 		// TODO: proxy volume support, see: ShadeSHPerPixel
 
-		// ambient color, skybox, light probes are baked in spherical harmonics
+		// ambient color, skybox, light probes are baked in spherical harmonics in ShadeSH9
 		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
 		//half3 averageLightProbes = (ShadeSH9(half4(1, 0, 0, 1))+ShadeSH9(half4(0, 1, 0, 1))+ShadeSH9(half4(0, 0, 1, 1))+ShadeSH9(half4(-1, 0, 0, 1))+ShadeSH9(half4(0, -1, 0, 1))+ShadeSH9(half4(0, 0, -1, 1))) / 6.0;
 		//half3 averageLightProbes = ShadeSH9Average();
@@ -425,6 +423,7 @@ float4 frag(VertexOutput i) : SV_Target
 	if (any(lightDir)) 
 	{
 		// specular
+		UNITY_BRANCH
 		if (any(specularLightColor))
 		{
 			float gloss = _Glossiness;
@@ -434,10 +433,11 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 
 		// diffuse
+		UNITY_BRANCH
 		if (any(diffuseLightColor))
 		{
 			float rampNdotL = NdotL * 0.5 + 0.5;
-			float3 shadowRamp = tex2D( _ShadowRamp, float2(rampNdotL, rampNdotL)).rgb;
+			float3 shadowRamp = tex2D( _Ramp, float2(rampNdotL, rampNdotL)).rgb;
 
 			float3 diffuseColor = lightAttenuation * diffuseLightColor * shadowRamp;
 			#ifdef UNITY_PASS_FORWARDBASE
@@ -451,7 +451,7 @@ float4 frag(VertexOutput i) : SV_Target
 			diffuseLightRGB += diffuseColor;
 		}
 	}
-	
+
 	finalRGB += diffuseLightRGB * mainTexture.rgb;
 	
 	#ifdef UNITY_PASS_FORWARDBASE

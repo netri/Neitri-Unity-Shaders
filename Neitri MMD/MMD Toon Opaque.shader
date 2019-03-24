@@ -16,7 +16,7 @@ Shader "Neitri/MMD Toon Opaque" {
 		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
 		
 		[Header(Other)]
-		[NoScaleOffset] _ShadowRamp("Shadow Ramp", 2D) = "white" {}
+		[NoScaleOffset] _Ramp("Shadow Ramp", 2D) = "white" {}
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
 		_Shadow ("Direction shading darkness", Range(0, 1)) = 0.4
 		_LightCastedShadowDarkness ("Light shadows darkness", Range(0, 1)) = 0.9
