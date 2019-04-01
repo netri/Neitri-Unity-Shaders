@@ -28,12 +28,12 @@ Shader "Neitri/MMD Toon Opaque" {
 		_ColorOverTime_Speed ("Time Speed Multiplier", Float) = 0.1
 
 		[Header(Raymarched Pattern)]
-		[KeywordEnum(None, Spheres, Hearts)] _RAYMARCHER_TYPE ("Type", Float) = 0
+		[Enum(None,Spheres,Hearts)] _Raymarcher_Type ("Type", Range(0, 2)) = 0
 		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
-		[Toggle(_DITHERED_TRANSPARENCY_ON)] _DITHERED_TRANSPARENCY_ON ("Dithered Transparency", Float) = 0
+		[Toggle(_DITHERED_TRANSPARENCY_ON)] _DITHERED_TRANSPARENCY_ON ("Dithered Transparency", Float) = 1
 		//[Toggle(_MESH_DEFORMATION_ON)] _MESH_DEFORMATION_ON ("Mesh Deformation", Float) = 0
 	}
 	SubShader {

@@ -149,20 +149,11 @@ VertexOutput vert (VertexInput v)
 	return o;
 }
 
-/*
-#if defined(_RAYMARCHER_TYPE_SPHERES) || defined(_RAYMARCHER_TYPE_HEARTS)
-	#define OUTPUT_DEPTH
-	#define ENABLE_RAYMARCHER
-	#ifdef _RAYMARCHER_TYPE_SPHERES
-		#define RAYMARCHER_DISTANCE_FIELD_FUNCTION distanceMap_spheres
-	#endif	
-	#ifdef _RAYMARCHER_TYPE_HEARTS
-		#define RAYMARCHER_DISTANCE_FIELD_FUNCTION distanceMap_hearts
-	#endif
-	float _Raymarcher_Scale;
-	#include "RayMarcher.cginc"
-#endif
-*/
+
+int _Raymarcher_Type;
+float _Raymarcher_Scale;
+#include "RayMarcher.cginc"
+
 
 
 
@@ -304,14 +295,16 @@ float4 frag(VertexOutput i) : SV_Target
 		#endif
 	#endif
 
-	#ifdef ENABLE_RAYMARCHER
+	UNITY_BRANCH
+	if (_Raymarcher_Type != 0)
+	{
 		float raymarchedScreenDepth;
 		raymarch(i.posWorld.xyz, mainTexture.rgb, raymarchedScreenDepth);
 		#ifdef OUTPUT_DEPTH
 			float realDepthWeight = i.color.r;
 			fragOut.depth = lerp(raymarchedScreenDepth, i.pos.z, realDepthWeight);
 		#endif
-	#endif
+	}
 
 	// cutout support, discard current pixel if alpha is less than 0.05
 	clip(mainTexture.a - 0.05);

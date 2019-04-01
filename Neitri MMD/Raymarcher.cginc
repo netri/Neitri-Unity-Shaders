@@ -1,19 +1,11 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-#define MAX_RAY_STEPS 20 //20
-#define MIN_RAY_DISTANCE 0.0002
-#define MAX_RAY_DISTANCE 0.05 // 0.05
-
 
 float distanceMap_spheres(float3 p)
 {
 	#define SPHERES_SIZE (0.012 * _Raymarcher_Scale)
-	p.x = fmod(p.x, SPHERES_SIZE * 2);
-	p.y = fmod(p.y, SPHERES_SIZE * 2);
-	p.z = fmod(p.z, SPHERES_SIZE * 2);
-	p = abs(p) - SPHERES_SIZE;
-	return length(p) - SPHERES_SIZE * 0.8;
+	return length(abs(fmod(p, SPHERES_SIZE * 2)) - SPHERES_SIZE) - SPHERES_SIZE * 0.8;
 }
 
 
@@ -51,10 +43,6 @@ float distanceMap_hearts(float3 p)
 	return res;
 }
 
-//#define RAYMARCHER_DISTANCE_FIELD_FUNCTION distanceMap_spheres
-//#define RAYMARCHER_DISTANCE_FIELD_FUNCTION distanceMap_hearts
-
-
 float2 traceDistanceField(float3 from, float3 direction) 
 {
 	float4 f = mul(unity_WorldToObject, float4(from, 1));
@@ -62,18 +50,43 @@ float2 traceDistanceField(float3 from, float3 direction)
 	direction = mul(unity_WorldToObject, direction).xyz;
 
 	float totalDistance = 0.0;
-	float3 p;
+	float3 currentPos = from;
 	int steps = 0;
-#if defined(RAYMARCHER_DISTANCE_FIELD_FUNCTION)
-	for (steps = 0; steps < MAX_RAY_STEPS; steps++) {
-		p = from + totalDistance * direction;
-		float distance = RAYMARCHER_DISTANCE_FIELD_FUNCTION(p);
-		totalDistance += distance;
-		if (distance < MIN_RAY_DISTANCE) return float2(totalDistance, steps);
-		if (totalDistance > MAX_RAY_DISTANCE) return float2(MAX_RAY_DISTANCE, MAX_RAY_STEPS);
+
+	#define MIN_RAY_DISTANCE 0.0002
+	#define MAX_RAY_DISTANCE 0.05 // 0.05
+
+	UNITY_BRANCH
+	if (_Raymarcher_Type == 1)
+	{
+		const int maxRayStep = 10;
+		[loop]
+		for (steps = 0; steps < maxRayStep; steps++) {
+			float distance = distanceMap_spheres(currentPos);
+			currentPos += distance * direction;
+			totalDistance += distance;
+			if (distance < MIN_RAY_DISTANCE) return float2(totalDistance, steps/(float)(maxRayStep));
+			if (totalDistance > MAX_RAY_DISTANCE) return float2(MAX_RAY_DISTANCE, 1);
+		}
+		return float2(totalDistance, steps/(float)(maxRayStep));
 	}
-#endif
-	return float2(totalDistance, steps);
+
+	UNITY_BRANCH
+	if (_Raymarcher_Type == 2)
+	{
+		const int maxRayStep = 20;
+		[loop]
+		for (steps = 0; steps < maxRayStep; steps++) {
+			float distance = distanceMap_hearts(currentPos);
+			currentPos += distance * direction;
+			totalDistance += distance;
+			if (distance < MIN_RAY_DISTANCE) return float2(totalDistance, steps/(float)(maxRayStep));
+			if (totalDistance > MAX_RAY_DISTANCE) return float2(MAX_RAY_DISTANCE, 1);
+		}
+		return float2(totalDistance, steps/(float)(maxRayStep));
+	}
+
+	return float2(0, 0);
 }
 
 
@@ -83,12 +96,13 @@ void raymarch(float3 worldRayStart, inout float3 color, out float screenDepth)
 	float3 worldRayDir = normalize(worldRayStart - _WorldSpaceCameraPos);
 	float2 data = traceDistanceField(worldRayStart, worldRayDir);
 	float totalDistance = data.x;
-	float steps = data.y;
-	color *= 1 - steps / MAX_RAY_STEPS;
+	color *= 1 - data.y;
 	//color *= 1 - steps / MAX_RAY_STEPS;// - totalDistance / MAX_RAY_DISTANCE * 0.2f;
 	//color *= 1 - min(0.3, saturate((steps * 3) / MAX_RAY_STEPS));
-	float4 clipPos = mul(UNITY_MATRIX_VP, float4(worldRayStart + worldRayDir * totalDistance, 1.0));
-	screenDepth = clipPos.z / clipPos.w;
+	#ifdef OUTPUT_DEPTH
+		float4 clipPos = mul(UNITY_MATRIX_VP, float4(worldRayStart + worldRayDir * totalDistance, 1.0));
+		screenDepth = clipPos.z / clipPos.w;
+	#endif
 }
 
 

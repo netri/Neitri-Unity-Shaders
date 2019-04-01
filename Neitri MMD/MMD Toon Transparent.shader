@@ -30,7 +30,7 @@ Shader "Neitri/MMD Toon Transparent" {
 		_ColorOverTime_Speed ("Time Speed Multiplier", Float) = 0.1
 
 		[Header(Raymarched Pattern)]
-		[KeywordEnum(None, Spheres, Hearts)] _RAYMARCHER_TYPE ("Type", Float) = 0
+		[Enum(None,Spheres,Hearts)] _Raymarcher_Type ("Type", Range(0, 2)) = 0
 		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
 
 		[Header(Other)]
