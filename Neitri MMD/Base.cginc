@@ -149,6 +149,7 @@ VertexOutput vert (VertexInput v)
 	return o;
 }
 
+/*
 #if defined(_RAYMARCHER_TYPE_SPHERES) || defined(_RAYMARCHER_TYPE_HEARTS)
 	#define OUTPUT_DEPTH
 	#define ENABLE_RAYMARCHER
@@ -160,8 +161,8 @@ VertexOutput vert (VertexInput v)
 	#endif
 	float _Raymarcher_Scale;
 	#include "RayMarcher.cginc"
-#endif	
-
+#endif
+*/
 
 
 
@@ -312,17 +313,13 @@ float4 frag(VertexOutput i) : SV_Target
 		#endif
 	#endif
 
+	// cutout support, discard current pixel if alpha is less than 0.05
+	clip(mainTexture.a - 0.05);
 
 	#ifdef _DITHERED_TRANSPARENCY_ON
 		clip(mainTexture.a - triangularPDFNoiseDithering(i.pos.xy));
 	#else
-		#ifdef IS_TRANSPARENT_SHADER
-			// cutout support, discard current pixel if alpha is less than 0.05
-			clip(mainTexture.a - 0.05);
-		#endif
 	#endif
-
-
 
 	float3 normal = i.normal;
 
@@ -340,8 +337,8 @@ float4 frag(VertexOutput i) : SV_Target
 	float3 worldSpaceCameraPos = getCameraPosition();
 
 	// slightly dither normal over time to hide obvious normal interpolation
-	normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 50.0);
-	//normal = normalize(normal);
+	//normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 10.0);
+	normal = normalize(normal);
 
 	// direction from pixel towards camera
 	float3 viewDir = normalize(worldSpaceCameraPos - i.posWorld.xyz);
@@ -364,6 +361,7 @@ float4 frag(VertexOutput i) : SV_Target
 	float3 diffuseLightRGB = 0;
 
 	#ifdef UNITY_PASS_FORWARDBASE
+
 		// non cookie directional light, or no lights at all (just ambient, light probes and vertex lights)
 		
 		// TODO: proxy volume support, see: ShadeSHPerPixel
@@ -374,10 +372,12 @@ float4 frag(VertexOutput i) : SV_Target
 		//half3 averageLightProbes = ShadeSH9Average();
 
 		half3 lightProbes = ShadeSH9(half4(lerp(normal, half3(0, 0, 0), _BakedLightingFlatness), 1));
+		//half3 lightProbes = ShadeSH9(half4(normal, 1));
 		//half3 lightProbes = lerp(ShadeSH9(half4(normal, 1)), ShadeSH9(half4(0, 0, 0, 1)), _BakedLightingFlatness);
 
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
-
+		//float3 vertexLights = i.vertexLightsReal.rgb;
+		
 		diffuseLightRGB += vertexLights + lightProbes;
 
 		// DEBUG
@@ -386,10 +386,10 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
 		// so we we averge all ambient like sources that are used
-		float3 unlit = lightProbes + i.vertexLightsAverage + _LightColor0.rgb;
+		//float3 unlit = lightProbes + i.vertexLightsAverage + _LightColor0.rgb;
 		// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
-		float unlitTargetGrayness = max(0, grayness(_LightColor0.rgb) - _Shadow);
-		unlit *= unlitTargetGrayness / max(0.001, grayness(unlit));
+		//float unlitTargetGrayness = max(0, grayness(_LightColor0.rgb) - _Shadow);
+		//unlit *= unlitTargetGrayness / max(0.001, grayness(unlit));
 
 		
 		UNITY_BRANCH
@@ -404,14 +404,24 @@ float4 frag(VertexOutput i) : SV_Target
 			lightDir = getLightDirectionFromSphericalHarmonics();
 		}
 
+		// apply ramp to baked indirect diffuse
+		{
+			float rampNdotL = dot(normal, lightDir) * 0.5 + 0.5;
+			rampNdotL = lerp(rampNdotL, 1, 0.5);
+			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
+			float g = grayness(diffuseLightRGB); // maintain same darkness
+			diffuseLightRGB += shadowRamp;
+			diffuseLightRGB *= g / grayness(diffuseLightRGB);
+		}
+
 	#else
 		
 		// all spot lights, all point lights, cookie directional lights
 
 	#endif
 
-	fixed3 finalRGB = fixed3(0, 0, 0);
-	
+	float3 finalRGB = 0;
+
 	lightDir = normalize(lightDir);
 	float3 halfDir = normalize(lightDir + viewDir);
 
@@ -437,7 +447,7 @@ float4 frag(VertexOutput i) : SV_Target
 		if (any(diffuseLightColor))
 		{
 			float rampNdotL = NdotL * 0.5 + 0.5;
-			float3 shadowRamp = tex2D( _Ramp, float2(rampNdotL, rampNdotL)).rgb;
+			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
 
 			float3 diffuseColor = lightAttenuation * diffuseLightColor * shadowRamp;
 			#ifdef UNITY_PASS_FORWARDBASE
@@ -463,6 +473,7 @@ float4 frag(VertexOutput i) : SV_Target
 	// prevent bloom, final failsafe
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
 	//finalRGB = saturate(finalRGB);
+
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		fixed4 emissive = tex2D(_EmissionMap,TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
