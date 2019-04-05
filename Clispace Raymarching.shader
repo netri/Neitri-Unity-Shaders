@@ -1,4 +1,4 @@
-﻿Shader "Unlit/Clispace Raymarching "
+﻿Shader "Neitri/Clispace Raymarching "
 {
 	Properties
 	{
@@ -60,7 +60,7 @@
 
 			float distanceFunction(float3 p)
 			{
-				//return length(p) - 0.5;
+				return length(p) - 0.5;
 
 				const float spacing = 0.1;
 				const float size = 0.01;
