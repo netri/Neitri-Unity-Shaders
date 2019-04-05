@@ -17,18 +17,17 @@ Shader "Neitri/MMD Toon Transparent" {
 		[Header(Emission)]
 		_EmissionMap ("Texture", 2D) = "black" {}
 		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
-		
-		[Header(Lighting Adjustments)]
-		_UseRamp ("Enable Shadow Ramp", Range(0, 1)) = 1
-		_LightCastedShadowDarkness ("Shadows darkness", Range(0, 1)) = 0.9
-		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
-		
-		[Header(Shadow Ramp Disabled)]
-		_Shadow ("Direction shading darkness", Range(0, 1)) = 1
-		_DirectionShadingSmoothness ("Direction shading smoothness", Range(0, 2)) = 1.5
 
-		[Header(Shadow Ramp Enabled)]
-		[NoScaleOffset] _Ramp("Shadow Ramp", 2D) = "white" {}
+		[Header(Shading Ramp)]
+		[NoScaleOffset] _Ramp("Shading Ramp", 2D) = "white" {}
+		_ShadingRampStretch ("Shading Ramp stretch", Range(0, 2)) = 0
+
+		[Header(Shadow)]
+		_Shadow ("Shadow darkness", Range(0, 1)) = 0.7
+		[HDR] _ShadowColor ("Shadow color", Color) = (0,0,0,1)
+
+		[Header(Baked Lighting)]
+		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
 
 		[Header(Change color over time)]
 		_UseColorOverTime ("Enable", Range(0, 1)) = 0 // [Toggle(_COLOR_OVER_TIME_ON)]

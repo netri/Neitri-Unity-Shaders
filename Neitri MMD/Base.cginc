@@ -159,30 +159,28 @@ float _Raymarcher_Scale;
 
 sampler2D _MainTex; float4 _MainTex_ST;
 fixed4 _Color;
+float _Glossiness; // name from Unity's standard
 
 sampler2D _EmissionMap; float4 _EmissionMap_ST;
 fixed4 _EmissionColor;
-
-
 
 #ifdef USE_NORMAL_MAP
 	sampler2D _BumpMap; float4 _BumpMap_ST;
 	float _BumpScale;
 #endif
 
-sampler2D _Ramp; // name from Xiexe's
-float _UseRamp;
 float _Shadow; // name from Cubed's
-float _DirectionShadingSmoothness;
-float _LightCastedShadowDarkness;
-float _Glossiness; // name from Unity's standard
-float _BakedLightingFlatness;
-float _UseDitheredTransparency;
+float3 _ShadowColor;
+float _BakedLightingFlatness;	
 
-float _UseColorOverTime;
+sampler2D _Ramp; // name from Xiexe's
+float _ShadingRampStretch;
+
+int _UseColorOverTime;
 sampler2D _ColorOverTime_Ramp;
 float _ColorOverTime_Speed;
 
+int _UseDitheredTransparency;
 sampler3D _DitherMaskLOD;
 
 #define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
@@ -343,8 +341,13 @@ float4 frag(VertexOutput i) : SV_Target
 	float3 lightDir = UnityWorldSpaceLightDir(i.posWorld.xyz);
 
 	// shadows, spot/point light distance calculations, light cookies
-	UNITY_LIGHT_ATTENUATION(lightAttenuation, i, i.posWorld.xyz);
-	lightAttenuation = lerp(1, lightAttenuation, _LightCastedShadowDarkness);
+	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.posWorld.xyz);
+	#ifdef UNITY_PASS_FORWARDBASE
+		unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
+	#endif
+	float3 lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
+	
+
 
 	fixed3 specularLightColor = _LightColor0.rgb;
 	fixed3 diffuseLightColor = _LightColor0.rgb;
@@ -366,18 +369,6 @@ float4 frag(VertexOutput i) : SV_Target
 		
 		diffuseLightRGB += vertexLights + lightProbes;
 
-		float3 unlitColor;
-		UNITY_BRANCH
-		if (_UseRamp == 0)
-		{
-			// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
-			// so we we averge all ambient like sources that are used
-			unlitColor = lightProbes + i.vertexLightsAverage + _LightColor0.rgb;
-			// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
-			float unlitTargetGrayness = max(0, grayness(_LightColor0.rgb) - _Shadow);
-			unlitColor *= unlitTargetGrayness / max(0.001, grayness(unlitColor));
-		}
-		
 		UNITY_BRANCH
 		if (!any(specularLightColor))
 		{
@@ -391,8 +382,6 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 
 		// apply ramp to baked indirect diffuse
-		UNITY_BRANCH
-		if (_UseRamp == 1)
 		{
 			float rampNdotL = dot(normal, lightDir) * 0.5 + 0.5;
 			rampNdotL = lerp(rampNdotL, 1, 0.5);
@@ -443,37 +432,14 @@ float4 frag(VertexOutput i) : SV_Target
 				if (g > 1) diffuseLightColor /= g;
 			#endif
 
-			UNITY_BRANCH
-			if (_UseRamp == 0)
-			{
-				float diffuseWeight = saturate(NdotL);
-				UNITY_BRANCH
-
-				// simulated poor man's shading ramp with various smoothness
-				// 0 binary, same as Cubed's
-				// 1 default, same as Unity standard
-				// 2 smooth
-				if (_DirectionShadingSmoothness < 1) 
-					diffuseWeight = lerp(diffuseWeight * 10, diffuseWeight, _DirectionShadingSmoothness); // -10..10 to -1..1
-				else
-					diffuseWeight = lerp(diffuseWeight, diffuseWeight * 0.5 + 0.5, _DirectionShadingSmoothness - 1); // -1..1 to 0..1
-				diffuseWeight = saturate(diffuseWeight);
-
-				#ifdef UNITY_PASS_FORWARDBASE
-					diffuseLightRGB += lerp(unlitColor, diffuseLightColor, diffuseWeight) * lightAttenuation;
-				#else
-					diffuseLightRGB += diffuseWeight * diffuseLightColor * lightAttenuation;
-				#endif
-			}
-			else
-			{
-				float rampNdotL = NdotL * 0.5 + 0.5;
-				float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
-				diffuseLightRGB += 
-					shadowRamp *
-					diffuseLightColor *
-					lightAttenuation;
-			}
+			float rampNdotL = NdotL * 0.5 + 0.5;
+			// lazy fast way to remap shadow ramp
+			rampNdotL = lerp(_ShadingRampStretch - 1, 1, rampNdotL * 0.5 + 0.5); // remap -1..1 to (_ShadingRampStretch - 1)..1
+			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
+			diffuseLightRGB += 
+				shadowRamp *
+				diffuseLightColor *
+				lightAttenuation;
 		}
 	}
 
