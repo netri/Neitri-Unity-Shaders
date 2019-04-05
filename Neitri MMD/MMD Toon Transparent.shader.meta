@@ -6,7 +6,7 @@ ShaderImporter:
   - _MainTex: {instanceID: 0}
   - _BumpMap: {instanceID: 0}
   - _EmissionMap: {instanceID: 0}
-  - _Ramp: {fileID: 2800000, guid: c0a30f22e272d694e9a268970f86a753, type: 3}
+  - _Ramp: {fileID: 2800000, guid: dda8707f00c412c4bafa424967d1c740, type: 3}
   - _ColorOverTime_Ramp: {instanceID: 0}
   userData: 
   assetBundleName: 

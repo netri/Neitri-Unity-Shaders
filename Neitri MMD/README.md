@@ -14,3 +14,9 @@ This shader was made with the following goals in mind:
 
 "Transparent ZWrite On" is for big meshes such as transparent hair.<br>
 "Transparent ZWrite Off" is for small meshes such as blush.
+
+
+
+# Nice references
+https://chinagamenews.net/market-info-126/
+https://www.youtube.com/watch?v=lrfhA6Grwr0

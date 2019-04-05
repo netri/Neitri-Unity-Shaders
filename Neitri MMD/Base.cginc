@@ -338,7 +338,8 @@ float4 frag(VertexOutput i) : SV_Target
 	float3 viewDir = normalize(worldSpaceCameraPos - i.posWorld.xyz);
 
 	// direction from pixel towards light
-	float3 lightDir = UnityWorldSpaceLightDir(i.posWorld.xyz);
+	float3 unityLightDir = UnityWorldSpaceLightDir(i.posWorld.xyz);
+	float3 lightDir = unityLightDir;
 
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.posWorld.xyz);
@@ -382,6 +383,8 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 
 		// apply ramp to baked indirect diffuse
+		UNITY_BRANCH
+		/*if (any(lightDir))
 		{
 			float rampNdotL = dot(normal, lightDir) * 0.5 + 0.5;
 			rampNdotL = lerp(rampNdotL, 1, 0.5);
@@ -389,7 +392,7 @@ float4 frag(VertexOutput i) : SV_Target
 			float g = grayness(diffuseLightRGB); // maintain same darkness
 			diffuseLightRGB += shadowRamp;
 			diffuseLightRGB *= g / grayness(diffuseLightRGB);
-		}
+		}*/
 
 	#else
 		
@@ -432,9 +435,9 @@ float4 frag(VertexOutput i) : SV_Target
 				if (g > 1) diffuseLightColor /= g;
 			#endif
 
-			float rampNdotL = NdotL * 0.5 + 0.5;
+			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
 			// lazy fast way to remap shadow ramp
-			rampNdotL = lerp(_ShadingRampStretch - 1, 1, rampNdotL * 0.5 + 0.5); // remap -1..1 to (_ShadingRampStretch - 1)..1
+			rampNdotL = lerp(_ShadingRampStretch, 1, rampNdotL); // remap 0..1 to (_ShadingRampStretch-1)..1
 			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
 			diffuseLightRGB += 
 				shadowRamp *
