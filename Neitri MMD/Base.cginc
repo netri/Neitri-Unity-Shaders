@@ -171,17 +171,17 @@ fixed4 _EmissionColor;
 #endif
 
 sampler2D _Ramp; // name from Xiexe's
+float _UseRamp;
 float _Shadow; // name from Cubed's
 float _DirectionShadingSmoothness;
 float _LightCastedShadowDarkness;
 float _Glossiness; // name from Unity's standard
 float _BakedLightingFlatness;
+float _UseDitheredTransparency;
 
-
-#ifdef _COLOR_OVER_TIME_ON
-	sampler2D _ColorOverTime_Ramp;
-	float _ColorOverTime_Speed;
-#endif
+float _UseColorOverTime;
+sampler2D _ColorOverTime_Ramp;
+float _ColorOverTime_Speed;
 
 sampler3D _DitherMaskLOD;
 
@@ -286,14 +286,17 @@ float4 frag(VertexOutput i) : SV_Target
 	mainTexture.rgb *= _Color.rgb;
 	#endif
 
-	#ifdef _COLOR_OVER_TIME_ON
-		float4 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(_Time.x * _ColorOverTime_Speed, _Time.x * _ColorOverTime_Speed, 0, 0));
+	UNITY_BRANCH
+	if (_UseColorOverTime != 0)
+	{
+		float u = _Time.x * _ColorOverTime_Speed;
+		float4 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(u, u, 0, 0));
 		#ifdef IS_TRANSPARENT_SHADER
 			mainTexture *= adjustColor;
 		#else
 			mainTexture.rgb *= adjustColor.rgb;
 		#endif
-	#endif
+	}
 
 	UNITY_BRANCH
 	if (_Raymarcher_Type != 0)
@@ -309,10 +312,10 @@ float4 frag(VertexOutput i) : SV_Target
 	// cutout support, discard current pixel if alpha is less than 0.05
 	clip(mainTexture.a - 0.05);
 
-	#ifdef _DITHERED_TRANSPARENCY_ON
+	if (_UseDitheredTransparency != 0)
+	{
 		clip(mainTexture.a - triangularPDFNoiseDithering(i.pos.xy));
-	#else
-	#endif
+	}
 
 	float3 normal = i.normal;
 
@@ -357,33 +360,23 @@ float4 frag(VertexOutput i) : SV_Target
 
 		// non cookie directional light, or no lights at all (just ambient, light probes and vertex lights)
 		
-		// TODO: proxy volume support, see: ShadeSHPerPixel
-
-		// ambient color, skybox, light probes are baked in spherical harmonics in ShadeSH9
-		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
-		//half3 averageLightProbes = (ShadeSH9(half4(1, 0, 0, 1))+ShadeSH9(half4(0, 1, 0, 1))+ShadeSH9(half4(0, 0, 1, 1))+ShadeSH9(half4(-1, 0, 0, 1))+ShadeSH9(half4(0, -1, 0, 1))+ShadeSH9(half4(0, 0, -1, 1))) / 6.0;
-		//half3 averageLightProbes = ShadeSH9Average();
-
 		half3 lightProbes = ShadeSH9(half4(lerp(normal, half3(0, 0, 0), _BakedLightingFlatness), 1));
-		//half3 lightProbes = ShadeSH9(half4(normal, 1));
-		//half3 lightProbes = lerp(ShadeSH9(half4(normal, 1)), ShadeSH9(half4(0, 0, 0, 1)), _BakedLightingFlatness);
 
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
-		//float3 vertexLights = i.vertexLightsReal.rgb;
 		
 		diffuseLightRGB += vertexLights + lightProbes;
 
-		// DEBUG
-		//return float4(1, 0, 0, 1);
-		//return float4(lightProbes, 1);
-
-		// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
-		// so we we averge all ambient like sources that are used
-		//float3 unlit = lightProbes + i.vertexLightsAverage + _LightColor0.rgb;
-		// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
-		//float unlitTargetGrayness = max(0, grayness(_LightColor0.rgb) - _Shadow);
-		//unlit *= unlitTargetGrayness / max(0.001, grayness(unlit));
-
+		float3 unlitColor;
+		UNITY_BRANCH
+		if (_UseRamp == 0)
+		{
+			// normally unlit color is black, but we want to show some color there to be closer to Cubed's toon
+			// so we we averge all ambient like sources that are used
+			unlitColor = lightProbes + i.vertexLightsAverage + _LightColor0.rgb;
+			// then adjust the grayness so it's equal to (lightColor grayness - _Shadow)
+			float unlitTargetGrayness = max(0, grayness(_LightColor0.rgb) - _Shadow);
+			unlitColor *= unlitTargetGrayness / max(0.001, grayness(unlitColor));
+		}
 		
 		UNITY_BRANCH
 		if (!any(specularLightColor))
@@ -398,6 +391,8 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 
 		// apply ramp to baked indirect diffuse
+		UNITY_BRANCH
+		if (_UseRamp == 1)
 		{
 			float rampNdotL = dot(normal, lightDir) * 0.5 + 0.5;
 			rampNdotL = lerp(rampNdotL, 1, 0.5);
@@ -421,7 +416,7 @@ float4 frag(VertexOutput i) : SV_Target
 	float NdotL = dot(normal, lightDir);
 	float NdotV = dot(normal, viewDir);
 	float NdotH = saturate(dot(normal, halfDir));
-
+	
 	UNITY_BRANCH
 	if (any(lightDir)) 
 	{
@@ -438,20 +433,47 @@ float4 frag(VertexOutput i) : SV_Target
 		// diffuse
 		UNITY_BRANCH
 		if (any(diffuseLightColor))
-		{
-			float rampNdotL = NdotL * 0.5 + 0.5;
-			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
-
-			float3 diffuseColor = lightAttenuation * diffuseLightColor * shadowRamp;
+		{			
 			#ifdef UNITY_PASS_FORWARDBASE
 			#else
 				// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
 				// lets make sure its not too bright
-				float g = grayness(diffuseColor);
-				if (g > 1) diffuseColor /= g;
+				float g = grayness(diffuseLightColor);
+				UNITY_BRANCH
+				if (g > 1) diffuseLightColor /= g;
 			#endif
 
-			diffuseLightRGB += diffuseColor;
+			UNITY_BRANCH
+			if (_UseRamp == 0)
+			{
+				float diffuseWeight = saturate(NdotL);
+				UNITY_BRANCH
+
+				// simulated poor man's shading ramp with various smoothness
+				// 0 binary, same as Cubed's
+				// 1 default, same as Unity standard
+				// 2 smooth
+				if (_DirectionShadingSmoothness < 1) 
+					diffuseWeight = lerp(diffuseWeight * 10, diffuseWeight, _DirectionShadingSmoothness); // -10..10 to -1..1
+				else
+					diffuseWeight = lerp(diffuseWeight, diffuseWeight * 0.5 + 0.5, _DirectionShadingSmoothness - 1); // -1..1 to 0..1
+				diffuseWeight = saturate(diffuseWeight);
+
+				#ifdef UNITY_PASS_FORWARDBASE
+					diffuseLightRGB += lerp(unlitColor, diffuseLightColor, diffuseWeight) * lightAttenuation;
+				#else
+					diffuseLightRGB += diffuseWeight * diffuseLightColor * lightAttenuation;
+				#endif
+			}
+			else
+			{
+				float rampNdotL = NdotL * 0.5 + 0.5;
+				float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
+				diffuseLightRGB += 
+					shadowRamp *
+					diffuseLightColor *
+					lightAttenuation;
+			}
 		}
 	}
 
@@ -559,8 +581,12 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
 {
 	half alpha = tex2D(_MainTex, i.tex).a * _Color.a;
 	clip(alpha - 0.05);
-	#if defined(IS_TRANSPARENT_SHADER) || defined(_DITHERED_TRANSPARENCY_ON)
-		clip(alpha - triangularPDFNoiseDithering(vpos.xy));
+	#if defined(IS_TRANSPARENT_SHADER)
+		UNITY_BRANCH
+		if (_UseDitheredTransparency != 0)
+		{
+			clip(alpha - triangularPDFNoiseDithering(vpos.xy));
+		}
 	#endif
 
 	SHADOW_CASTER_FRAGMENT(i)
