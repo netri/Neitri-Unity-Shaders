@@ -18,9 +18,6 @@ Shader "Neitri/World Position"
 
 		Pass
 		{
-			// based on https://gamedev.stackexchange.com/a/132845/41980
-			// and Unity built in shader "Particle Add.shader" https://unity3d.com/get-unity/download/archive
-
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -29,31 +26,70 @@ Shader "Neitri/World Position"
 			struct appdata
 			{
 				float4 vertex : POSITION;
+				float2 uv : TEXCOORD0;
 			};
+
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float4 projPos : TEXCOORD0;
-				float3 ray : TEXCOORD1;
+				float4 screenPos : TEXCOORD1;
+				float4 direction : TEXCOORD2;
 			};
 
 			UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
-			v2f vert (appdata v)
+			// Dj Lukis.LT's correction for oblique view frustrum (happens in VRChat mirrors)
+			// https://github.com/lukis101/VRCUnityStuffs/blob/master/Shaders/DJL/Overlays/WorldPosOblique.shader
+			#define UMP UNITY_MATRIX_P
+			inline float4 CalculateFrustumCorrection()
 			{
+				float x1 = -UMP._31 / (UMP._11 * UMP._34);
+				float x2 = -UMP._32 / (UMP._22 * UMP._34);
+				return float4(x1, x2, 0, UMP._33 / UMP._34 + x1 * UMP._13 + x2 * UMP._23);
+			}
+			static float4 FrustumCorrection = CalculateFrustumCorrection();
+			inline float CorrectedLinearEyeDepth(float z, float correctionFactor)
+			{
+				return 1.f / (z / UMP._34 + correctionFactor);
+			}
+			// Merlin's mirror detection
+			inline bool IsInMirror()
+			{
+				return UMP._31 != 0.f || UMP._32 != 0.f;
+			}
+			#undef UMP
+
+			v2f vert(appdata v)
+			{
+				float4 worldPosition = mul(UNITY_MATRIX_M, v.vertex);
 				v2f o;
-				float4 worldPos = mul(UNITY_MATRIX_M, v.vertex);
-				o.ray = worldPos.xyz - _WorldSpaceCameraPos;
-				o.vertex = mul(UNITY_MATRIX_VP, worldPos);
-				o.projPos = ComputeScreenPos (o.vertex);
-				o.projPos.z = -mul(UNITY_MATRIX_V, worldPos).z;
+				o.vertex = UnityObjectToClipPos(v.vertex);
+				o.screenPos = ComputeGrabScreenPos(o.vertex);
+				o.direction.xyz = worldPosition.xyz - _WorldSpaceCameraPos.xyz;
+				o.direction.w = dot(o.vertex, FrustumCorrection); // correction factor
 				return o;
 			}
 
-			float4 frag (v2f i) : SV_Target
+			float4 frag(v2f i) : SV_Target
 			{
-				float sceneDepth = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-				float3 worldPosition = sceneDepth * i.ray / i.projPos.z + _WorldSpaceCameraPos;
+				float perspectiveDivide = 1.f / i.vertex.w;
+				float4 direction = i.direction * perspectiveDivide;
+				float2 screenPos = i.screenPos.xy * perspectiveDivide;
+
+				float z = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, screenPos);
+
+				#if UNITY_REVERSED_Z
+				if (z == 0.f) {
+				#else
+				if (z == 1.f) {
+				#endif
+					// this is skybox, depth texture has default value
+					return float4(0.f, 0.f, 0.f, 1.f);
+				}
+
+				// linearize depth and use it to calculate background world position
+				float depth = CorrectedLinearEyeDepth(z, direction.w);
+				float3 worldPosition = direction.xyz * depth + _WorldSpaceCameraPos.xyz;
 
 				// demonstrate on tartan pattern
 				return float4(frac(worldPosition), 1.0f);
