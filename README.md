@@ -10,7 +10,7 @@ World Normal and World Positon shaders have been used as basis for more interest
 
 * Shader marked with &#x1F6AA; render what is behind them with some effect, they don't go on your avatar but ideally on some "window" that you will look thru. Post processing might ruin results of these shaders.
 * Shader marked with &#x1f4a1; need _CameraDepthTexture, to ensure _CameraDepthTexture is enabled please add a directional Light anywhere to your avatar (idally enabled only when the "window" is enabled) and set it's properties in the following way:<br>
-![](https://image.prntscr.com/image/fhYPlY4QTaGga1h2lpX6Og.png)<br>
+![](Images/Light to force _CameraDepthTexture.png)<br>
 The settings above should be optimized enough to not cause any additional render passes, if they do, the render passes should be low resolution.
 Intensity value has to be over 0, because if it's 0 Unity considers the light as disabled.
 You need to do this because Unity's forward rendering _CameraDepthTexture is enabled only if world has at least one light with shadows enabled or if game maker sets
@@ -18,36 +18,41 @@ You need to do this because Unity's forward rendering _CameraDepthTexture is ena
 
 ## Wireframe Overlay &#x1F6AA;&#x1f4a1;
 Overlays background color on top of original scene.
-![](https://image.prntscr.com/image/fnpAeHeITN602TKxwcOMog.png)
+![](Images/Wireframe Overlay.png)
 
 ## Wireframe Fade &#x1F6AA;&#x1f4a1;
 Fades into original scene color.
-![](https://image.prntscr.com/image/e7skT9zeTdKK1sSIjC00wA.png)
+![](Images/Wireframe Fade.png)
 
 ## World Normal Nice Slow &#x1F6AA;&#x1f4a1;
 Slow because it uses two passes instead of one.
-![](https://image.prntscr.com/image/C8jEwUwwS4SfFIY2tex16A.png)
+![](Images/World Normal Nice Slow.png)
 
 ## World Normal Ugly Fast &#x1F6AA;&#x1f4a1;
 Fast because it uses one pass, ugly because it uses `ddx` and `ddy` which work in 2x2 blocks.
-![](https://image.prntscr.com/image/9PsypMDdRIaS1zQwKiiOYg.png)
+![](Images/World Normal Ugly Fast.png)
 
 ## World Position &#x1F6AA;&#x1f4a1;
-![](https://image.prntscr.com/image/v_BsMeg5SZ6yJeSOzAtjrA.png)
+![](Images/World Position.png)
 
 ## Censor &#x1F6AA;
 Both VR and non VR see same censor squares.<br>
 Censor square size decreases as distance to it increases.
-![](https://image.prntscr.com/image/bhuRrmypRT62yb8e_cDQAw.png)
+![](Images/Censor.png)
 
 ## World Cutout Sphere &#x1F6AA;&#x1f4a1;
 Efficient single pass world cutout shader.
 Uses ray sphere intersection, so works only as spherical cutout.
-![](https://image.prntscr.com/image/pk4bLielQ1W_q1WvttVWAw.png)
+![](Images/World Cutout Sphere.png)
+
+## Distance Fade Outline &#x1f4a1;
+Fades outline (aka rim lighting) based on how far it is behind objects and how far it is from camera.
+Add it to bottom of material list in Renderer component, so whole object is rendered again with this material.
+![](Images/Distance Fade Outline.jpg)
 
 ## Shader Debug
 Avatar item that helps with world lighting debugging.
-![](https://image.prntscr.com/image/foDnh17GSD_RlaBEKggG2Q.png)
+![](Images/Shader Debug.png)
 
 # Credits
 Everyone in "VRC Shader Development" discord
@@ -56,7 +61,9 @@ mel0n - Wireframe Overlay idea<br>
 Merlin - Wireframe Fade<br>
 Migero - Distance Fade Outline idea<br>
 Nave - Script to generate 1 vert + X triangles mesh for Depth Mirror<br>
-error.mdl - first Depth Mirror<br>
+error.mdl - first Depth Mirror, single texture fetch triplanar<br>
 ScruffyRules - help with Depth Mirror debugging<br>
+Dj Lukis.LT - [correct depth sampling with oblique view frustums](https://github.com/lukis101/VRCUnityStuffs/blob/master/Shaders/DJL/Overlays/WorldPosOblique.shader)<br>
+
 
 
