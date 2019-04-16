@@ -54,6 +54,10 @@ Add it to bottom of material list in Renderer component, so whole object is rend
 Avatar item that helps with world lighting debugging.
 ![](Images/Shader_Debug.png)
 
+## Clispace Raymarching
+Example on how to construct world space ray from clispace uv.
+Useful as start for fully raymarched worlds.
+
 # Credits
 Everyone in "VRC Shader Development" discord
 

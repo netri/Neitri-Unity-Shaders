@@ -8,7 +8,7 @@ Material:
   m_PrefabInternal: {fileID: 0}
   m_Name: Neitri
   m_Shader: {fileID: 4800000, guid: 57083765fa174ea48ab19535cf85775e, type: 3}
-  m_ShaderKeywords: _RAYMARCHER_TYPE_NONE _SHADER_TYPE_NONE
+  m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -34,18 +34,24 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Ramp:
+        m_Texture: {fileID: 2800000, guid: dda8707f00c412c4bafa424967d1c740, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Floats:
+    - _BakedLightingFlatness: 0.7
     - _BumpScale: 0
-    - _COLOR_OVER_TIME_ON: 0
     - _ColorOverTime_Speed: 0.1
     - _Cull: 2
     - _Glossiness: 0
-    - _IndirectLightingFlatness: 0.7
-    - _LightCastedShadowStrength: 0.9
-    - _RAYMARCHER_TYPE: 0
     - _Raymarcher_Scale: 1
-    - _SHADER_TYPE: 0
-    - _Shadow: 0.4
+    - _Raymarcher_Type: 0
+    - _ShadingRampStretch: 0
+    - _Shadow: 0.7
+    - _UseColorOverTime: 0
+    - _UseDitheredTransparency: 1
+    - _ZTest: 4
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}

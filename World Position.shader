@@ -17,7 +17,7 @@ Shader "Neitri/World Position"
 		Cull Off
 
 		Pass
-		{		
+		{
 			// based on https://gamedev.stackexchange.com/a/132845/41980
 			// and Unity built in shader "Particle Add.shader" https://unity3d.com/get-unity/download/archive
 
@@ -55,7 +55,7 @@ Shader "Neitri/World Position"
 				float sceneDepth = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
 				float3 worldPosition = sceneDepth * i.ray / i.projPos.z + _WorldSpaceCameraPos;
 
-				// show world position fractional part as color
+				// demonstrate on tartan pattern
 				return float4(frac(worldPosition), 1.0f);
 			}
 
