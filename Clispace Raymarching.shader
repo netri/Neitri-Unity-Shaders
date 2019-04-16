@@ -1,4 +1,8 @@
-﻿Shader "Neitri/Clispace Raymarching "
+﻿// by Neitri, free of charge, free to redistribute
+// downloaded from https://github.com/netri/Neitri-Unity-Shaders
+
+// Example on how to construct world space ray from clispace uv
+Shader "Neitri/Clispace Raymarching"
 {
 	Properties
 	{
@@ -60,67 +64,73 @@
 
 			float distanceFunction(float3 p)
 			{
+				// 1 sphere
 				return length(p) - 0.5;
 
+				// grid of spheres
 				const float spacing = 0.1;
 				const float size = 0.01;
 				return length(abs(fmod(p, spacing * 2)) - spacing) - size;
 			}
 
 
-			struct RayMarchResult
+			float2 raymarch(float3 from, float3 direction) 
 			{
-				int steps;
-				float distance;
-			};
+				float totalDistance = 0.0;
+				float3 currentPos = from;
+				int steps = 0;
 
-			RayMarchResult rayMarch(float3 from, float3 direction) 
-			{
-				const int maxSteps = 100;
-				const float maxDistance = 200.0;
-				const float minDistance = 0.0002;
-    
-				RayMarchResult result;
-				result.distance = 0;
+				#define MIN_RAY_DISTANCE 0.0002
+				#define MAX_RAY_DISTANCE 200
+				#define MAX_RAY_STEPS 100
 
-				float currentDistance;
-
-				for(result.steps = 0; result.steps < maxSteps; result.steps++)
+				[loop]
+				for (steps = 0; steps < MAX_RAY_STEPS; steps++) 
 				{
-					currentDistance = distanceFunction(from + direction * result.distance);
-					if(currentDistance.x < minDistance || result.distance > maxDistance)
+					float distance = distanceFunction(currentPos);
+					currentPos += distance * direction;
+					totalDistance += distance;
+
+					if (distance < MIN_RAY_DISTANCE) 
 					{
-						break;
+						return float2(totalDistance, steps/(float)(MAX_RAY_STEPS));
 					}
-					result.distance += currentDistance;
+
+					if (totalDistance > MAX_RAY_DISTANCE) 
+					{
+						return float2(MAX_RAY_DISTANCE, 1);
+					}
 				}
 
-				return result;
+				return float2(totalDistance, steps/(float)(MAX_RAY_STEPS));
  			}
 
 
 			FragOut frag (VertToFrag i)
 			{
-				FragOut fragOut;
-
-				float3 worldRayStart = _WorldSpaceCameraPos;
+				float3 worldSpaceRayStart = _WorldSpaceCameraPos;
 				
 				// construct ray direction
-				float4 a = float4(0, 0, 1, 1);
-				a.xy = i.uv.xy * 2 - 1;
-				float4 b = mul(unity_CameraInvProjection, a);
-				float4 c = mul(unity_MatrixInvV, b);
-				float3 worldRayDir = normalize(c.xyz / c.w - worldRayStart);
+				float4 clipSpacePosition = float4(i.uv.xy * 2 - 1, 1, 1);
+				float4 cameraSpacePosition = mul(unity_CameraInvProjection, clipSpacePosition);
+				float4 worldSpacePosition = mul(unity_MatrixInvV, cameraSpacePosition);
+				float3 worldSpaceRayDirection = normalize(worldSpacePosition.xyz / worldSpacePosition.w - worldSpaceRayStart);
 
-				// move ray start forward
-				worldRayStart += worldRayDir * _ProjectionParams.y * 5;
+				// move ray start forward a bit
+				worldSpaceRayStart += worldSpaceRayDirection * _ProjectionParams.y * 5;
 
-				RayMarchResult rayMarchResult = rayMarch(worldRayStart, worldRayDir);
-				fragOut.color = 1 - rayMarchResult.steps / 20;
+				float2 raymarchResult = raymarch(worldSpaceRayStart, worldSpaceRayDirection);
+
+				// discard if we hit nothing
+				clip(0.99 - raymarchResult.y);
+
+				FragOut fragOut;
+				
+				fragOut.color = 1 - raymarchResult.y;
 				fragOut.color.a = 1;
 
-				float4 clipPos = mul(UNITY_MATRIX_VP, float4(worldRayStart + worldRayDir * rayMarchResult.distance, 1.0));
-				fragOut.depth = clipPos.z / clipPos.w;
+				clipSpacePosition = mul(UNITY_MATRIX_VP, float4(worldSpaceRayStart + worldSpaceRayDirection * raymarchResult.x, 1.0));
+				fragOut.depth = clipSpacePosition.z / clipSpacePosition.w;
 		
 				return fragOut;
 			}
