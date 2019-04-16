@@ -22,8 +22,6 @@ Shader "Neitri/World Triplanar Mapped"
 
 		Pass
 		{
-			// based on "Neitri/World Normal Ugly Fast"
-
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -33,13 +31,16 @@ Shader "Neitri/World Triplanar Mapped"
 			{
 				float4 vertex : POSITION;
 			};
+
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float4 modelCenterPos : TEXCOORD0;
-				float4 projPos : TEXCOORD1;
-				float3 ray : TEXCOORD2;
+				float4 depthTextureGrabPos : TEXCOORD1;
+				float4 rayFromCamera : TEXCOORD2;
+				float4 modelCenterPos : TEXCOORD3;
 			};
+
+
 
 			UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
@@ -47,10 +48,12 @@ Shader "Neitri/World Triplanar Mapped"
 			float _Scale;
 			float _Range;
 
-			float4 neitriTriPlanar1(sampler2D tex, float3 position, float3 modelPos, float3 normal, float scale) 
+			// default most naive triplanar
+			// 3 texture reads, best blending
+			float4 defaultTriplanar(sampler2D tex, float3 position, float3 modelPos, float3 normal, float scale) 
 			{
 				position = (position - modelPos) / scale + 0.5;
-							
+
 				float3 blendWeights = pow(abs(normal), 3);
 				blendWeights /= blendWeights.x + blendWeights.y + blendWeights.z;
 
@@ -59,7 +62,9 @@ Shader "Neitri/World Triplanar Mapped"
 						blendWeights.z * tex2D(tex, position.xy);
 			}
 			
-			float4 neitriTriPlanar2(sampler2D tex, float3 position, float3 modelPos, float3 normal, float scale) 
+			// based on Witcher 3 triplanar terrain mapping GDC presentation
+			// reads texture only if it's weight is over threshold, good blending
+			float4 witcherTriplanar(sampler2D tex, float3 position, float3 modelPos, float3 normal, float scale) 
 			{
 				position = (position - modelPos) / scale + 0.5;
 
@@ -81,7 +86,10 @@ Shader "Neitri/World Triplanar Mapped"
 				return result;
 			}
 
-			float4 errorTriPlanar(sampler2D tex, float3 position, float3 modelPos, float3 normal, float scale) 
+			// error.mdl's approach
+			// 1 texture read, no blending
+			// good for bullet holes
+			float4 errorTriplanar(sampler2D tex, float3 position, float3 modelPos, float3 normal, float scale) 
 			{
 				position = (position - modelPos) / scale + 0.5;
 				normal = abs(normal);
@@ -95,29 +103,75 @@ Shader "Neitri/World Triplanar Mapped"
 			}
 			
 
-			v2f vert (appdata v)
+			// Dj Lukis.LT's oblique view frustum correction (VRChat mirrors use such view frustum)
+			// https://github.com/lukis101/VRCUnityStuffs/blob/master/Shaders/DJL/Overlays/WorldPosOblique.shader
+			#define UMP UNITY_MATRIX_P
+			inline float4 CalculateObliqueFrustumCorrection()
 			{
+				float x1 = -UMP._31 / (UMP._11 * UMP._34);
+				float x2 = -UMP._32 / (UMP._22 * UMP._34);
+				return float4(x1, x2, 0, UMP._33 / UMP._34 + x1 * UMP._13 + x2 * UMP._23);
+			}
+			static float4 ObliqueFrustumCorrection = CalculateObliqueFrustumCorrection();
+			inline float CorrectedLinearEyeDepth(float z, float correctionFactor)
+			{
+				return 1.f / (z / UMP._34 + correctionFactor);
+			}
+			// Merlin's mirror detection
+			inline bool IsInMirror()
+			{
+				return UMP._31 != 0.f || UMP._32 != 0.f;
+			}
+			#undef UMP
+
+
+			v2f vert(appdata v)
+			{
+				float4 worldPosition = mul(UNITY_MATRIX_M, v.vertex);
 				v2f o;
-				float4 worldPos = mul(UNITY_MATRIX_M, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
+				o.depthTextureGrabPos = ComputeGrabScreenPos(o.vertex);
+				o.rayFromCamera.xyz = worldPosition.xyz - _WorldSpaceCameraPos.xyz;
+				o.rayFromCamera.w = dot(o.vertex, ObliqueFrustumCorrection); // oblique frustrum correction factor
 				o.modelCenterPos = mul(UNITY_MATRIX_M, float4(0, 0, 0, 1));
-				o.ray = worldPos.xyz - _WorldSpaceCameraPos;
-				o.vertex = mul(UNITY_MATRIX_VP, worldPos);
-				o.projPos = ComputeScreenPos (o.vertex);
-				o.projPos.z = -mul(UNITY_MATRIX_V, worldPos).z;
-				return o;
 				return o;
 			}
 
-			float4 frag (v2f i) : SV_Target
+			float4 frag(v2f i) : SV_Target
 			{
-				float sceneDepth = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-				float3 worldPosition = sceneDepth * i.ray / i.projPos.z + _WorldSpaceCameraPos;
-				fixed3 worldNormal = normalize(cross(-ddx(worldPosition), ddy(worldPosition)));
+				float perspectiveDivide = 1.f / i.vertex.w;
+				float4 rayFromCamera = i.rayFromCamera * perspectiveDivide;
+				float2 depthTextureGrabPos = i.depthTextureGrabPos.xy * perspectiveDivide;
+
+				float z = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, depthTextureGrabPos);
+
+				#if UNITY_REVERSED_Z
+				if (z == 0.f) {
+				#else
+				if (z == 1.f) {
+				#endif
+					// this is skybox, depth texture has default value
+					discard;
+				}
+
+				// linearize depth and use it to calculate background world position
+				float depth = CorrectedLinearEyeDepth(z, rayFromCamera.w);
+
+				float3 worldPosition = rayFromCamera.xyz * depth + _WorldSpaceCameraPos.xyz;
+
+				fixed3 worldNormal;
+				if (IsInMirror()) // VRChat mirrors render with GL.invertCulling = true;
+					worldNormal = cross(ddx(worldPosition), ddy(worldPosition));
+				else
+					worldNormal = cross(-ddx(worldPosition), ddy(worldPosition));
+
+				worldNormal = normalize(worldNormal);
+
 				clip(_Range - distance(worldPosition, i.modelCenterPos));
 
-				//fixed4 color = neitriTriPlanar1(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
-				//fixed4 color = neitriTriPlanar2(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
-				fixed4 color = errorTriPlanar(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
+				//fixed4 color = defaultTriplanar(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
+				fixed4 color = witcherTriplanar(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
+				//fixed4 color = errorTriplanar(_MainTex, worldPosition, i.modelCenterPos, worldNormal, _Scale);
 
 				clip(color.a - 0.01);
 				return color;

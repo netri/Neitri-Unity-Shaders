@@ -26,28 +26,27 @@ Shader "Neitri/World Normal Ugly Fast"
 			struct appdata
 			{
 				float4 vertex : POSITION;
-				float2 uv : TEXCOORD0;
 			};
 
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float4 screenPos : TEXCOORD1;
-				float4 direction : TEXCOORD2;
+				float4 depthTextureGrabPos : TEXCOORD1;
+				float4 rayFromCamera : TEXCOORD2;
 			};
 
 			UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
-			// Dj Lukis.LT's correction for oblique view frustrum (happens in VRChat mirrors)
+			// Dj Lukis.LT's oblique view frustum correction (VRChat mirrors use such view frustum)
 			// https://github.com/lukis101/VRCUnityStuffs/blob/master/Shaders/DJL/Overlays/WorldPosOblique.shader
 			#define UMP UNITY_MATRIX_P
-			inline float4 CalculateFrustumCorrection()
+			inline float4 CalculateObliqueFrustumCorrection()
 			{
 				float x1 = -UMP._31 / (UMP._11 * UMP._34);
 				float x2 = -UMP._32 / (UMP._22 * UMP._34);
 				return float4(x1, x2, 0, UMP._33 / UMP._34 + x1 * UMP._13 + x2 * UMP._23);
 			}
-			static float4 FrustumCorrection = CalculateFrustumCorrection();
+			static float4 ObliqueFrustumCorrection = CalculateObliqueFrustumCorrection();
 			inline float CorrectedLinearEyeDepth(float z, float correctionFactor)
 			{
 				return 1.f / (z / UMP._34 + correctionFactor);
@@ -64,19 +63,19 @@ Shader "Neitri/World Normal Ugly Fast"
 				float4 worldPosition = mul(UNITY_MATRIX_M, v.vertex);
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.screenPos = ComputeGrabScreenPos(o.vertex);
-				o.direction.xyz = worldPosition.xyz - _WorldSpaceCameraPos.xyz;
-				o.direction.w = dot(o.vertex, FrustumCorrection); // correction factor
+				o.depthTextureGrabPos = ComputeGrabScreenPos(o.vertex);
+				o.rayFromCamera.xyz = worldPosition.xyz - _WorldSpaceCameraPos.xyz;
+				o.rayFromCamera.w = dot(o.vertex, ObliqueFrustumCorrection); // oblique frustrum correction factor
 				return o;
 			}
 
 			float4 frag(v2f i) : SV_Target
 			{
 				float perspectiveDivide = 1.f / i.vertex.w;
-				float4 direction = i.direction * perspectiveDivide;
-				float2 screenPos = i.screenPos.xy * perspectiveDivide;
+				float4 rayFromCamera = i.rayFromCamera * perspectiveDivide;
+				float2 depthTextureGrabPos = i.depthTextureGrabPos.xy * perspectiveDivide;
 
-				float z = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, screenPos);
+				float z = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, depthTextureGrabPos);
 
 				#if UNITY_REVERSED_Z
 				if (z == 0.f) {
@@ -88,8 +87,9 @@ Shader "Neitri/World Normal Ugly Fast"
 				}
 
 				// linearize depth and use it to calculate background world position
-				float depth = CorrectedLinearEyeDepth(z, direction.w);
-				float3 worldPosition = direction.xyz * depth + _WorldSpaceCameraPos.xyz;
+				float depth = CorrectedLinearEyeDepth(z, rayFromCamera.w);
+
+				float3 worldPosition = rayFromCamera.xyz * depth + _WorldSpaceCameraPos.xyz;
 	
 				fixed3 worldNormal;
 				if (IsInMirror()) // VRChat mirrors render with GL.invertCulling = true;
