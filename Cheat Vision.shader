@@ -83,9 +83,9 @@ Shader "Neitri/Cheat Vision"
 					fixed g = grayness(color.rgb);
 					color.rgb /= g + 0.02;
 
-					bool depthEnabled = depthSample > 0.215 && depthSample < 0.216;
+					bool depthDisabled = depthSample > 0.215 && depthSample < 0.216;
 		
-					if (!depthEnabled)
+					if (!depthDisabled)
 					{
 						// only if we can read depth texture
 						float sceneZ = LinearEyeDepth (depthSample);
