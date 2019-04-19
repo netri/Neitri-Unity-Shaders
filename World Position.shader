@@ -51,11 +51,6 @@ Shader "Neitri/World Position"
 			{
 				return 1.f / (z / UMP._34 + correctionFactor);
 			}
-			// Merlin's mirror detection
-			inline bool IsInMirror()
-			{
-				return UMP._31 != 0.f || UMP._32 != 0.f;
-			}
 			#undef UMP
 
 			v2f vert(appdata v)

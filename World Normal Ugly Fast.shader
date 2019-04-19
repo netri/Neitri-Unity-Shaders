@@ -52,10 +52,11 @@ Shader "Neitri/World Normal Ugly Fast"
 				return 1.f / (z / UMP._34 + correctionFactor);
 			}
 			// Merlin's mirror detection
-			inline bool IsInMirror()
+			inline bool CalculateIsInMirror()
 			{
 				return UMP._31 != 0.f || UMP._32 != 0.f;
 			}
+			static bool IsInMirror = CalculateIsInMirror();
 			#undef UMP
 
 			v2f vert(appdata v)
@@ -92,7 +93,7 @@ Shader "Neitri/World Normal Ugly Fast"
 				float3 worldPosition = rayFromCamera.xyz * depth + _WorldSpaceCameraPos.xyz;
 	
 				fixed3 worldNormal;
-				if (IsInMirror()) // VRChat mirrors render with GL.invertCulling = true;
+				if (IsInMirror) // VRChat mirrors render with GL.invertCulling = true;
 					worldNormal = cross(ddx(worldPosition), ddy(worldPosition));
 				else
 					worldNormal = cross(-ddx(worldPosition), ddy(worldPosition));
