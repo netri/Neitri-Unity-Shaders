@@ -8,6 +8,7 @@ Shader "Neitri/Clock V4"
 		_Color("_Color", Color) = (1,1,1,1)
 		_Color2("_Color2", Color) = (1,1,1,1)
 		_Color3("_Color3", Color) = (1,1,1,1)
+		_CirclesSpacing ("_CirclesSpacing", Range(0, 0.45)) = 0.1
 	}
 	SubShader
 	{
@@ -40,9 +41,7 @@ Shader "Neitri/Clock V4"
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float2 uv : TEXCOORD0;
-				float3 progress : TEXCOORD1;
-				float3 model : TEXCOORD2;
+				float3 uv : TEXCOORD0;
 				float4 color : COLOR;
 				UNITY_FOG_COORDS(1)
 			};
@@ -52,16 +51,14 @@ Shader "Neitri/Clock V4"
 			float4 _Color;
 			float4 _Color2;
 			float4 _Color3;
-			
-			float2 _CompassUvCenter;
+			float _CirclesSpacing;
 
 			v2f vert (appdata v)
 			{
 				v2f o;
-				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+				o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
+				o.uv.z = 0;
 				o.color = _Color;
-				o.progress = 0;
-				o.model = v.vertex;
 
 				uint s1 = floor(_Time.y);
 				uint s10 = floor(s1 / 10);
@@ -120,41 +117,14 @@ Shader "Neitri/Clock V4"
 							if (fps10 == 0) o.color *= 0.5;
 						}
 					}
-				} else { // v.color.r == 0.5
+				}
+				else { // v.color.r == 0.5
 					if (v.color.g == 0) {
-						o.color = _Color2;
 						if (v.color.b == 0) {
-							// 10 seconds progress circle
-							float d = fmod(_Time.y, 10) / 10;
-							o.progress = float3(d, 1, 0);
-						} else {
-							// minute progress circle
-							float d = fmod(_Time.y, 60) / 60;
-							o.progress = float3(d, 1, 0);
-						}
-					} else { // v.color.g != 0
-						o.color = _Color3;
-						if (v.color.b == 0) {
-							// fps circle
-							float d = clamp(0, unity_DeltaTime.w / 90.0, 1);
-							o.progress = float3(d, 1, 0);
-						} else {
-							// compass circle
-							float3 objectForward = normalize(UnityObjectToWorldNormal(float3(1, 0, 0)));
-							objectForward = normalize(objectForward - float3(0, 1, 0) * dot(objectForward, float3(0, 1, 0)));
-							float dotToXPlus = dot(float3(1, 0, 0), objectForward);
-							float a = acos(dotToXPlus) * sign(objectForward.z); // +PI..-PI
-							a = a / 3.14159265359 / 2;
-							a += 0.5; // 0..1
-
-							a += 0.25; // rotate to point to X+
-							a = 1 - frac(a);
-
-							o.progress = float3(a, 0.07, 0.07);
+							o.uv.z = 1; // is progress circles quad
 						}
 					}
 				}
-
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				return o;
@@ -163,19 +133,135 @@ Shader "Neitri/Clock V4"
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				fixed4 col = tex2D(_MainTex, i.uv) * i.color;
-				
-				if (i.progress.x > 0)
+				bool isProgressCirclesQuad = i.uv.z > 0.5;
+
+				UNITY_BRANCH
+				if (isProgressCirclesQuad)
 				{
-					float a = atan2(i.model.x, i.model.y) / 3.14 * 0.5;
-					if (i.model.x < 0) a = atan2(-i.model.x, -i.model.y) / 3.14 * 0.5 + 0.5;
-					clip(i.progress.x - a + i.progress.z);
-					clip(a - i.progress.x + i.progress.y);
+					const float width = 0.04;
+					const float halfWidthRcp = rcp(width) * 2;
+
+					float2 uv = i.uv.xy - 0.5;
+					float radius = sqrt(dot(uv, uv));
+
+					float distanceToEdge = 1;
+
+					radius -= 8*width;
+					clip(radius);  // inner empty circle
+					float e = fmod(radius, width) / width;
+					distanceToEdge = min(distanceToEdge, max(0, e)); // distance to circular edges between bars
+					distanceToEdge = min(distanceToEdge, max(0, 1 - e));
+
+					float thisPixelAngle = atan2(uv.x, uv.y) / UNITY_PI * 0.5;
+					if (uv.x < 0) thisPixelAngle = atan2(-uv.x, -uv.y) / UNITY_PI * 0.5 + 0.5;		
+					//         __ 0 __
+					//        /       \
+					//      /           \
+					// 0.75 |           | 0.25
+					//      \           /
+					//        \_______/
+					//           0.5
+
+					fixed4 color;
+
+					int type = ceil(radius / width);
+					switch (type)
+					{	
+						case 4:
+						{
+							// compass circle
+							float3 objectForward = normalize(UnityObjectToWorldNormal(float3(1, 0, 0)));
+
+							objectForward = normalize(objectForward * float3(1, 0, 1)); // remove Y
+							float dotToXPlus = dot(float3(1, 0, 0), objectForward);
+							float a = acos(dotToXPlus) * sign(objectForward.z); // +PI..-PI
+							a = a / UNITY_PI * 0.5; // +PI..-PI -> -0.5..0.5 
+							a += 0.5; // -0.5..0.5 -> 0..1
+
+							a += 0.25; // rotate to point to X+
+
+							bool isUpsideDown = UnityObjectToWorldNormal(float3(0, 0, 1)).y < 0;
+							a = isUpsideDown ? 0.5-a : a;
+
+							a = frac(a);
+
+							float c;
+
+							c = a - thisPixelAngle + 0.07;
+							clip(c);
+							distanceToEdge = min(distanceToEdge, c * halfWidthRcp);
+
+							c = thisPixelAngle - a + 0.07;
+							clip(c);
+							distanceToEdge = min(distanceToEdge, c * halfWidthRcp);
+							color = _Color3;
+							break;
+						}
+						case 3:
+						{
+							// minute progress circle
+							float d = fmod(_Time.y, 60) / 60;
+							float c = d - thisPixelAngle;
+							clip(c);
+							distanceToEdge = min(distanceToEdge, thisPixelAngle * halfWidthRcp); // distance to 0 angle
+							distanceToEdge = min(distanceToEdge, c * halfWidthRcp);
+							color = _Color2;
+							break;
+						}
+						case 2:
+						{
+							// 10 seconds progress circle
+							float d = fmod(_Time.y, 10) / 10;
+							float c = d - thisPixelAngle;
+							clip(c);
+							distanceToEdge = min(distanceToEdge, thisPixelAngle * halfWidthRcp); // distance to 0 angle
+							distanceToEdge = min(distanceToEdge, c * halfWidthRcp);
+							color = _Color2;
+							break;
+						}
+						case 1:
+						{
+							// fps circle
+							float d = clamp(0, unity_DeltaTime.w / 90.0, 1);
+							float c = d - thisPixelAngle;
+							clip(c);
+							distanceToEdge = min(distanceToEdge, thisPixelAngle * halfWidthRcp); // distance to 0 angle
+							distanceToEdge = min(distanceToEdge, c * halfWidthRcp);
+
+							color = _Color3;
+							break;
+						}
+						default:
+						{
+							clip(-1);
+							color = fixed4(0, 0, 0, 0);
+							break;
+						}
+					}
+
+					// DEBUG
+					//return distanceToEdge;
+
+					float spacing = _CirclesSpacing;
+					const float smoothEdges = 0.05;
+					clip(distanceToEdge - spacing);
+					color.a *= smoothstep(spacing, spacing + smoothEdges, distanceToEdge);
+
+					return color;
 				}
-				clip(col.a - 0.01);
-				// apply fog
-				UNITY_APPLY_FOG(i.fogCoord, col);
-				return col;
+				else
+				{
+					// number quad
+					fixed4 color = tex2D(_MainTex, i.uv);
+					clip(color.a - 0.1);
+
+					color *= i.color;
+
+					// apply fog
+					UNITY_APPLY_FOG(i.fogCoord, col);
+					return color;
+				}
+		
 			}
 			ENDCG
 		}
