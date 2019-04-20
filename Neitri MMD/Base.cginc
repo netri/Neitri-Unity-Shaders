@@ -265,17 +265,6 @@ float3 getLightDirectionFromSphericalHarmonics()
 	return normalize(unity_SHAr.xyz * 0.3 + unity_SHAg.xyz * 0.59 + unity_SHAb.xyz * 0.11);
 }
 
-
-
-
-
-
-
-
-
-
-
-
 sampler2D _CameraDepthTexture;
 
 float getScreenDepth(float4 pos)
@@ -287,7 +276,6 @@ float getScreenDepth(float4 pos)
 	float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, screenUV))) / pos.w;
 	return depth;
 }
-
 
 float getDefaultZ()
 {
@@ -525,29 +513,19 @@ float4 frag(VertexOutput i) : SV_Target
 		// Should be 1.0 pixel, but some artefacts appear if we use perfect value
 		float2 offset = rcp(_ScreenParams.xy) * pos.w;
 
-		float depth11 = getScreenDepth(pos);
+		float depth01 = getScreenDepth(pos + float4(-offset.x, 0, 0, 0));
 		UNITY_BRANCH
-		if (depth11 != getDefaultZ())
+		if (depth01 != getDefaultZ())
 		{
-			float depth00 = getScreenDepth(pos + float4(-offset.x, -offset.y, 0, 0));
-			float depth01 = getScreenDepth(pos + float4(-offset.x, 0, 0, 0));
-			float depth02 = getScreenDepth(pos + float4(-offset.x, offset.y, 0, 0));
-
 			float depth10 = getScreenDepth(pos + float4(0, -offset.y, 0, 0));
-			//float depth11 = getScreenDepth(pos + float4(0, 0, 0, 0));
 			float depth12 = getScreenDepth(pos + float4(0, offset.y, 0, 0));
-
-			float depth20 = getScreenDepth(pos + float4(offset.x, -offset.y, 0, 0));
 			float depth21 = getScreenDepth(pos + float4(offset.x, 0, 0, 0));
-			float depth22 = getScreenDepth(pos + float4(offset.x, offset.y, 0, 0));
-			
-			float x = depth00 + depth01 * 10 + depth02 - depth20 - depth21 * 10 - depth22;
-			float y = depth00 + depth10 * 10 + depth20 - depth02 - depth12 * 10 - depth22;
-			//float x = depth01 * 10 - depth21 * 10;
-			//float y = depth10 * 10 - depth12 * 10;
+
+			float x = depth01 * 10 - depth21 * 10;
+			float y = depth10 * 10 - depth12 * 10;
 			float d = x * x + y * y;
 
-			finalRGB *= 1 - smoothstep(0.5, 1, saturate(d * 10));
+			finalRGB *= 1 - smoothstep(0.2, 1, saturate(d * 50));
 		}
 	}
 
