@@ -28,16 +28,18 @@ struct VertexInput {
 	float4 tangent : TANGENT;
 	float2 texcoord0 : TEXCOORD0;
 };
+
 struct VertexOutput {
-	float4 pos : SV_POSITION;
+	float4 pos : SV_POSITION; // must be called pos, because TRANSFER_VERTEX_TO_FRAGMENT expects it
 	float4 color : COLOR;
 	float4 uv0 : TEXCOORD0; // TODO: uv.w == isOutline, 0 for no, 1 for yes
-	float4 posWorld : TEXCOORD1;
+	float4 worldPos : TEXCOORD1;
 	float3 normal : TEXCOORD2;
 	LIGHTING_COORDS(3,4) // shadow coords
 	UNITY_FOG_COORDS(5) 
+	float3 modelPos : TEXCOORD6;
 	#ifdef UNITY_PASS_FORWARDBASE
-		#if defined(LIGHTMAP_ON) || defined(UNITY_SHOULD_SAMPLE_SH)
+		#ifdef VERTEXLIGHT_ON
 			float4 vertexLightsReal : TEXCOORD7;
 			float4 vertexLightsAverage : TEXCOORD8;
 		#endif
@@ -97,9 +99,9 @@ VertexOutput vert (VertexInput v)
 		o.tangentDir = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0.0)).xyz);
 		o.bitangentDir = normalize(cross(o.normal, o.tangentDir) * v.tangent.w);
 	#endif
-	o.posWorld = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
-	o.pos = mul(UNITY_MATRIX_VP, o.posWorld);
-
+	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
+	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
+	o.modelPos = v.vertex;
 
 	
 #ifdef _MESH_DEFORMATION_ON
@@ -107,7 +109,7 @@ VertexOutput vert (VertexInput v)
 	float4 projPos = ComputeScreenPos(o.pos);
 	float4 pcoord = float4(projPos.xy / projPos.w, 0, 0);
 	float sceneDepth = LinearEyeDepth (tex2Dlod(_CameraDepthTexture, pcoord));
-	float vertexDepth = mul(UNITY_MATRIX_V, o.posWorld).z;
+	float vertexDepth = mul(UNITY_MATRIX_V, o.worldPos).z;
 
 	float value = (vertexDepth - sceneDepth) / _ProjectionParams.z * 0.1;
 	value = value * (abs(value) > 0.1);
@@ -116,8 +118,8 @@ VertexOutput vert (VertexInput v)
 	o.normal.z += value;
 	o.normal.z = normalize(o.normal.z);
 
-	o.posWorld = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
-	o.pos = mul(UNITY_MATRIX_VP, o.posWorld);
+	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
+	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
 
 #endif
 
@@ -135,7 +137,7 @@ VertexOutput vert (VertexInput v)
 			o.vertexLightsReal.rgb = Shade4PointLights (
 				unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
 				unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
-				unity_4LightAtten0, o.posWorld, o.normal);
+				unity_4LightAtten0, o.worldPos, o.normal);
 			o.vertexLightsAverage.rgb = AverageShade4PointLights (
 				unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
 				unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
@@ -171,7 +173,7 @@ fixed4 _EmissionColor;
 
 float _Shadow; // name from Cubed's
 float3 _ShadowColor;
-float _BakedLightingFlatness;	
+float _BakedLightingFlatness;
 
 sampler2D _Ramp; // name from Xiexe's
 float _ShadingRampStretch;
@@ -181,14 +183,16 @@ sampler2D _ColorOverTime_Ramp;
 float _ColorOverTime_Speed;
 
 int _UseDitheredTransparency;
-sampler3D _DitherMaskLOD;
+int _UseOnePixelOutline;
+
+
+
 
 #define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
 float grayness(float3 color) 
 {
 	return dot(color, GRAYSCALE_VECTOR);
 }
-
 
 // from: https://www.shadertoy.com/view/MslGR8
 // note: valve edition
@@ -261,6 +265,42 @@ float3 getLightDirectionFromSphericalHarmonics()
 	return normalize(unity_SHAr.xyz * 0.3 + unity_SHAg.xyz * 0.59 + unity_SHAb.xyz * 0.11);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+sampler2D _CameraDepthTexture;
+
+float getScreenDepth(float4 pos)
+{
+	float2 screenUV = pos.xy / pos.w;
+	screenUV.y *= _ProjectionParams.x;
+	screenUV = screenUV * 0.5f + 0.5f;
+	screenUV = UnityStereoTransformScreenSpaceTex(screenUV);
+	float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, screenUV))) / pos.w;
+	return depth;
+}
+
+
+float getDefaultZ()
+{
+#if UNITY_REVERSED_Z
+	return 0.f;
+#else
+	return 1.f;
+#endif
+}
+
+
+
+
 #ifdef OUTPUT_DEPTH
 struct FragOut
 {
@@ -300,7 +340,7 @@ float4 frag(VertexOutput i) : SV_Target
 	if (_Raymarcher_Type != 0)
 	{
 		float raymarchedScreenDepth;
-		raymarch(i.posWorld.xyz, mainTexture.rgb, raymarchedScreenDepth);
+		raymarch(i.worldPos.xyz, mainTexture.rgb, raymarchedScreenDepth);
 		#ifdef OUTPUT_DEPTH
 			float realDepthWeight = i.color.r;
 			fragOut.depth = lerp(raymarchedScreenDepth, i.pos.z, realDepthWeight);
@@ -335,14 +375,14 @@ float4 frag(VertexOutput i) : SV_Target
 	normal = normalize(normal);
 
 	// direction from pixel towards camera
-	float3 viewDir = normalize(worldSpaceCameraPos - i.posWorld.xyz);
+	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
 
 	// direction from pixel towards light
-	float3 unityLightDir = UnityWorldSpaceLightDir(i.posWorld.xyz);
+	float3 unityLightDir = UnityWorldSpaceLightDir(i.worldPos.xyz);
 	float3 lightDir = unityLightDir;
 
 	// shadows, spot/point light distance calculations, light cookies
-	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.posWorld.xyz);
+	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.worldPos.xyz);
 	#ifdef UNITY_PASS_FORWARDBASE
 		unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
 	#endif
@@ -362,18 +402,24 @@ float4 frag(VertexOutput i) : SV_Target
 
 	#ifdef UNITY_PASS_FORWARDBASE
 
-		// non cookie directional light, or no lights at all (just ambient, light probes and vertex lights)
-		
-		half3 lightProbes = ShadeSH9(half4(lerp(normal, half3(0, 0, 0), _BakedLightingFlatness), 1));
+		// non cookie directional light, or no lights at all (just ambient, light probes and vertex lights)		
 
-		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
-		
-		diffuseLightRGB += vertexLights + lightProbes;
+		half3 lightProbes = ShadeSH9(half4(lerp(normal, half3(0, 0, 0), _BakedLightingFlatness), 1));
+		diffuseLightRGB += lightProbes;
+
+		#ifdef VERTEXLIGHT_ON
+			float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
+			diffuseLightRGB += vertexLights;
+		#endif
 
 		UNITY_BRANCH
 		if (!any(specularLightColor))
 		{
-			specularLightColor = (1 + lightProbes + i.vertexLightsAverage) * 0.3f;
+			specularLightColor = 1 + lightProbes;
+			#ifdef VERTEXLIGHT_ON
+				specularLightColor += i.vertexLightsAverage;
+			#endif
+			specularLightColor *= 0.3f;
 		}
 
 		UNITY_BRANCH
@@ -426,7 +472,7 @@ float4 frag(VertexOutput i) : SV_Target
 		// diffuse
 		UNITY_BRANCH
 		if (any(diffuseLightColor))
-		{			
+		{
 			#ifdef UNITY_PASS_FORWARDBASE
 			#else
 				// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
@@ -471,9 +517,30 @@ float4 frag(VertexOutput i) : SV_Target
 		finalRGB = lerp(finalRGB, emissive.rgb, emissiveWeight);
 	#else
 	#endif
-	   
+
+	UNITY_BRANCH
+	if (_UseOnePixelOutline)
+	{
+		float4 pos = UnityObjectToClipPos(i.modelPos);
+		// Should be 1.0 pixel, but some artefacts appear if we use perfect value
+		float2 offset = rcp(_ScreenParams.xy) * pos.w;
+
+		//float depth11 = getScreenDepth(pos);
+		float depth01 = getScreenDepth(pos + float4(offset.x, 0, 0, 0));
+		UNITY_BRANCH
+		if (depth01 != getDefaultZ())
+		{
+			float depth21 = getScreenDepth(pos + float4(-offset.x, 0, 0, 0));
+			float depth10 = getScreenDepth(pos + float4(0, offset.y, 0, 0));
+			float depth12 = getScreenDepth(pos + float4(0, -offset.y, 0, 0));
+
+			float d = (depth01 - depth21) + (depth10 - depth12);
+			finalRGB *= 1 - saturate(d * 20);
+		}
+	}
+
 	fixed4 finalRGBA = fixed4(finalRGB, mainTexture.a);
-	
+
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_APPLY_FOG(i.fogCoord, finalRGBA);
 	#else
@@ -488,6 +555,11 @@ float4 frag(VertexOutput i) : SV_Target
 	#endif
 
 }
+
+
+
+
+
 
 
 
