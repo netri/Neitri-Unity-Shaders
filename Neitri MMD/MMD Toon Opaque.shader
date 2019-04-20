@@ -28,19 +28,20 @@ Shader "Neitri/MMD Toon Opaque" {
 		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.7
 
 		[Header(Change color over time)]
-		_UseColorOverTime ("Enable", Range(0, 1)) = 0 // [Toggle(_COLOR_OVER_TIME_ON)]
+		[NeitriToggle]_UseColorOverTime ("Enable", Range(0, 1)) = 0
 		_ColorOverTime_Ramp ("Colors Texture", 2D) = "white" {}
 		_ColorOverTime_Speed ("Time Speed Multiplier", Range(0.01, 10)) = 0.1
 
 		[Header(Raymarched Pattern)]
-		_Raymarcher_Type ("Type", Range(0, 2)) = 0 // [Enum(None,Spheres,Hearts)] 
+		[Enum(None,0,Spheres,1,Hearts,2)] _Raymarcher_Type ("Type", Range(0, 2)) = 0
 		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
-		_UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1 // [Toggle(_DITHERED_TRANSPARENCY_ON)] 
-		// _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0 //[Toggle(_MESH_DEFORMATION_ON)]
+		[NeitriToggle] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
+		[NeitriToggle] _UseOnePixelOutline ("One Pixel Outline", Range(0, 1)) = 0
+		//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader {
 		Tags {
