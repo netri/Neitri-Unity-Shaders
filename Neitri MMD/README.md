@@ -17,6 +17,10 @@ This shader was made with the following goals in mind:
 
 
 
-# Nice references
+# Inspiration images and videos
 https://chinagamenews.net/market-info-126/
 https://www.youtube.com/watch?v=lrfhA6Grwr0
+https://www.youtube.com/watch?v=egHSE0dpWRw
+
+# Inspiration code
+https://github.com/kayru/Probulator/blob/d5993a30df54f4850311045e3ef7f28624e20924/Source/Probulator/SphericalHarmonics.h#L136

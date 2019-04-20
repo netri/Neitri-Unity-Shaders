@@ -383,8 +383,9 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 
 		// apply ramp to baked indirect diffuse
-		UNITY_BRANCH
-		/*if (any(lightDir))
+		// BAD: this breaks colors
+		/*UNITY_BRANCH
+		if (any(lightDir))
 		{
 			float rampNdotL = dot(normal, lightDir) * 0.5 + 0.5;
 			rampNdotL = lerp(rampNdotL, 1, 0.5);
@@ -457,6 +458,11 @@ float4 frag(VertexOutput i) : SV_Target
 	// prevent bloom, final failsafe
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
 	//finalRGB = saturate(finalRGB);
+
+	#if defined(_SHADER_TYPE_SKIN)
+	// view based shading, adds MMD like feel
+		//finalRGB *= lerp(1, maxDot(viewDir, normal), 0.2);
+	#endif
 
 
 	#ifdef UNITY_PASS_FORWARDBASE
@@ -544,9 +550,7 @@ void vertShadowCaster (VertexInputShadowCaster v
 	#endif
 }
 
-half4 fragShadowCaster (UNITY_POSITION(vpos)
-	, VertexOutputShadowCaster i
-) : SV_Target
+half4 fragShadowCaster(float4 vpos : SV_POSITION, VertexOutputShadowCaster i) : SV_Target
 {
 	half alpha = tex2D(_MainTex, i.tex).a * _Color.a;
 	clip(alpha - 0.05);
