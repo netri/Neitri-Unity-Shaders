@@ -525,17 +525,29 @@ float4 frag(VertexOutput i) : SV_Target
 		// Should be 1.0 pixel, but some artefacts appear if we use perfect value
 		float2 offset = rcp(_ScreenParams.xy) * pos.w;
 
-		//float depth11 = getScreenDepth(pos);
-		float depth01 = getScreenDepth(pos + float4(offset.x, 0, 0, 0));
+		float depth11 = getScreenDepth(pos);
 		UNITY_BRANCH
-		if (depth01 != getDefaultZ())
+		if (depth11 != getDefaultZ())
 		{
-			float depth21 = getScreenDepth(pos + float4(-offset.x, 0, 0, 0));
-			float depth10 = getScreenDepth(pos + float4(0, offset.y, 0, 0));
-			float depth12 = getScreenDepth(pos + float4(0, -offset.y, 0, 0));
+			float depth00 = getScreenDepth(pos + float4(-offset.x, -offset.y, 0, 0));
+			float depth01 = getScreenDepth(pos + float4(-offset.x, 0, 0, 0));
+			float depth02 = getScreenDepth(pos + float4(-offset.x, offset.y, 0, 0));
 
-			float d = (depth01 - depth21) + (depth10 - depth12);
-			finalRGB *= 1 - saturate(d * 20);
+			float depth10 = getScreenDepth(pos + float4(0, -offset.y, 0, 0));
+			//float depth11 = getScreenDepth(pos + float4(0, 0, 0, 0));
+			float depth12 = getScreenDepth(pos + float4(0, offset.y, 0, 0));
+
+			float depth20 = getScreenDepth(pos + float4(offset.x, -offset.y, 0, 0));
+			float depth21 = getScreenDepth(pos + float4(offset.x, 0, 0, 0));
+			float depth22 = getScreenDepth(pos + float4(offset.x, offset.y, 0, 0));
+			
+			float x = depth00 + depth01 * 10 + depth02 - depth20 - depth21 * 10 - depth22;
+			float y = depth00 + depth10 * 10 + depth20 - depth02 - depth12 * 10 - depth22;
+			//float x = depth01 * 10 - depth21 * 10;
+			//float y = depth10 * 10 - depth12 * 10;
+			float d = x * x + y * y;
+
+			finalRGB *= 1 - smoothstep(0.5, 1, saturate(d * 10));
 		}
 	}
 
