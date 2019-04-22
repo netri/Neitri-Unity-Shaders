@@ -175,6 +175,11 @@ float _Shadow; // name from Cubed's
 float3 _ShadowColor;
 float _BakedLightingFlatness;
 
+float3 _RimColorAdjustment;
+float _RimWidth;
+float _RimShape;
+float _RimSharpness;
+
 sampler2D _Ramp; // name from Xiexe's
 float _ShadingRampStretch;
 
@@ -371,12 +376,9 @@ float4 frag(VertexOutput i) : SV_Target
 
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.worldPos.xyz);
-	#ifdef UNITY_PASS_FORWARDBASE
-		unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
-	#endif
-	float3 lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
-	
+	float3 lightAttenuation; // assigned later
 
+	//return float4(lightAttenuation, 1); // DEBUG
 
 	fixed3 specularLightColor = _LightColor0.rgb;
 	fixed3 diffuseLightColor = _LightColor0.rgb;
@@ -390,15 +392,30 @@ float4 frag(VertexOutput i) : SV_Target
 
 	#ifdef UNITY_PASS_FORWARDBASE
 
-		// non cookie directional light, or no lights at all (just ambient, light probes and vertex lights)		
+		// non cookie directional light
 
+		// environment (ambient) lighting + light probes
 		half3 lightProbes = ShadeSH9(half4(lerp(normal, half3(0, 0, 0), _BakedLightingFlatness), 1));
 		diffuseLightRGB += lightProbes;
 
+		// vertex lights
 		#ifdef VERTEXLIGHT_ON
 			float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
 			diffuseLightRGB += vertexLights;
 		#endif
+
+		bool completelyInDarkness = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
+
+		if (completelyInDarkness)
+		{
+			lightAttenuation = unityLightAttenuation;
+		}
+		else
+		{
+			unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
+			lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
+		}
+			
 
 		UNITY_BRANCH
 		if (!any(specularLightColor))
@@ -432,6 +449,9 @@ float4 frag(VertexOutput i) : SV_Target
 	#else
 		
 		// all spot lights, all point lights, cookie directional lights
+
+		// don't adjust shadows at all for additional lights
+		lightAttenuation = unityLightAttenuation;
 
 	#endif
 
@@ -471,9 +491,9 @@ float4 frag(VertexOutput i) : SV_Target
 			#endif
 
 			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
-			// lazy fast way to remap shadow ramp
-			rampNdotL = lerp(_ShadingRampStretch, 1, rampNdotL); // remap 0..1 to (_ShadingRampStretch-1)..1
+			rampNdotL = lerp(_ShadingRampStretch, 1, rampNdotL); // remap 0..1 to _ShadingRampStretch..1
 			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
+			//shadowRamp = max(0, NdotL + 0.1); // DEBUG, phong
 			diffuseLightRGB += 
 				shadowRamp *
 				diffuseLightColor *
@@ -482,7 +502,7 @@ float4 frag(VertexOutput i) : SV_Target
 	}
 
 	finalRGB += diffuseLightRGB * mainTexture.rgb;
-	
+
 	#ifdef UNITY_PASS_FORWARDBASE
 	#else
 	#endif
@@ -493,16 +513,36 @@ float4 frag(VertexOutput i) : SV_Target
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
 	//finalRGB = saturate(finalRGB);
 
-	#if defined(_SHADER_TYPE_SKIN)
+	// rim lighting
+	UNITY_BRANCH
+	if (_RimWidth > 0)
+	{
+		float rim = max(0, 1 - NdotV);
+		rim = max(0, NdotV) / _RimWidth; // remap 0.._RimWidth to 0..1
+		rim = saturate(1 - rim);
+		rim = smoothstep(_RimSharpness, 1 - _RimSharpness, rim);
+		
+		float3 rimAdjustment = lerp(1, _RimColorAdjustment, rim);
+		//return float4(rimAdjustment, 1); // DEBUG
+		finalRGB *= rimAdjustment;
+	}
+
+
+	// OLD _SKIN_TYPE keyword
 	// view based shading, adds MMD like feel
-		//finalRGB *= lerp(1, maxDot(viewDir, normal), 0.2);
-	#endif
+	//finalRGB *= lerp(1, saturate(dot(viewDir, normal)), 0.2);
 
 
 	#ifdef UNITY_PASS_FORWARDBASE
-		fixed4 emissive = tex2D(_EmissionMap,TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
-		float emissiveWeight = smoothstep(-1, 1, grayness(emissive.rgb) - grayness(finalRGB));
-		finalRGB = lerp(finalRGB, emissive.rgb, emissiveWeight);
+		UNITY_BRANCH
+		if (any(_EmissionColor))
+		{
+			fixed4 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
+			float emissiveWeight = grayness(emissive.rgb) - grayness(finalRGB);
+			// BAD: emissiveWeight = smoothstep(-1, 1, emissiveWeight); causes darker color on not emissive pixel 
+			emissiveWeight = smoothstep(0, 1, emissiveWeight);
+			finalRGB = lerp(finalRGB, emissive.rgb, emissive);
+		}
 	#else
 	#endif
 
@@ -530,6 +570,7 @@ float4 frag(VertexOutput i) : SV_Target
 	}
 
 	fixed4 finalRGBA = fixed4(finalRGB, mainTexture.a);
+
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_APPLY_FOG(i.fogCoord, finalRGBA);

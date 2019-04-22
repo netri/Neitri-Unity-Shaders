@@ -5,7 +5,7 @@
 
 Shader "Neitri/MMD Toon Transparent" {
 	Properties{
-[Header(Main)]
+		[Header(Main)]
 		_MainTex("Texture", 2D) = "white" {}
 		_Color("Color", Color) = (1,1,1,1)
 		_Glossiness("Glossiness", Range(0, 1)) = 0
@@ -19,8 +19,9 @@ Shader "Neitri/MMD Toon Transparent" {
 		[HDR] _EmissionColor("Color", Color) = (1,1,1,1)
 
 		[Header(Shading Ramp)]
-		[NoScaleOffset] _Ramp("Shading Ramp", 2D) = "white" {}
-		_ShadingRampStretch("Shading Ramp stretch", Range(0, 2)) = 0
+		[HDR] _RampColorAdjustment("Color", Color) = (1,1,1,1)
+		_ShadingRampStretch("Ramp stretch", Range(0, 1)) = 0
+		[NoScaleOffset] _Ramp("Ramp", 2D) = "white" {}
 
 		[Header(Shadow)]
 		_Shadow("Shadow darkness", Range(0, 1)) = 0.7
@@ -28,6 +29,11 @@ Shader "Neitri/MMD Toon Transparent" {
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness("Baked lighting flatness", Range(0, 1)) = 0.7
+
+		[Header(Rim Lighting)]
+		[HDR] _RimColorAdjustment("Color", Color) = (1,1,1,1)
+		_RimWidth("Width", Range(0, 1)) = 0
+		_RimSharpness("Sharpness", Range(0, 0.5)) = 0
 
 		[Header(Change color over time)]
 		[NeitriToggle]_UseColorOverTime("Enable", Range(0, 1)) = 0
@@ -43,7 +49,7 @@ Shader "Neitri/MMD Toon Transparent" {
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4
 		[NeitriToggle] _UseDitheredTransparency("Dithered Transparency", Range(0, 1)) = 1
 		[NeitriToggle] _UseOnePixelOutline("One Pixel Outline", Range(0, 1)) = 0
-		//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
+			//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader{
 		Tags {
@@ -114,4 +120,5 @@ Shader "Neitri/MMD Toon Transparent" {
 		}
 	}
 	FallBack Off
+	CustomEditor "NeitriMMDToonEditor"
 }
