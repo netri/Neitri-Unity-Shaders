@@ -174,6 +174,7 @@ fixed4 _EmissionColor;
 float _Shadow; // name from Cubed's
 float3 _ShadowColor;
 float _BakedLightingFlatness;
+int _UseFakeLight;
 
 float3 _RimColorAdjustment;
 float _RimWidth;
@@ -395,7 +396,10 @@ float4 frag(VertexOutput i) : SV_Target
 		// non cookie directional light
 
 		// environment (ambient) lighting + light probes
-		half3 lightProbes = ShadeSH9(half4(lerp(normal, half3(0, 0, 0), _BakedLightingFlatness), 1));
+		half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
+		//half3 averageLightProbes = ShadeSH9Average();
+		half3 realLightProbes = ShadeSH9(half4(normal, 1));
+		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		diffuseLightRGB += lightProbes;
 
 		// vertex lights
@@ -404,9 +408,8 @@ float4 frag(VertexOutput i) : SV_Target
 			diffuseLightRGB += vertexLights;
 		#endif
 
-		bool completelyInDarkness = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
-
-		if (completelyInDarkness)
+		bool isInCompleteDark = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
+		if (isInCompleteDark)
 		{
 			lightAttenuation = unityLightAttenuation;
 		}
@@ -415,16 +418,28 @@ float4 frag(VertexOutput i) : SV_Target
 			unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
 			lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
 		}
-			
+
+		#ifdef VERTEXLIGHT_ON
+			float3 averageLightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
+		#else
+			float3 averageLightColor = averageLightProbes;
+		#endif
 
 		UNITY_BRANCH
 		if (!any(specularLightColor))
 		{
-			specularLightColor = 1 + lightProbes;
-			#ifdef VERTEXLIGHT_ON
-				specularLightColor += i.vertexLightsAverage;
-			#endif
-			specularLightColor *= 0.3f;
+			specularLightColor = averageLightColor;
+		}
+
+		UNITY_BRANCH
+		if (_UseFakeLight)
+		{
+			UNITY_BRANCH
+			if (!any(diffuseLightColor))
+			{
+				// diffuseLightRGB *= 0.3f; // BAD: In older versions I didnt dim it, better way would be to normalize all spherical harmonics so none is too bright
+				diffuseLightColor = averageLightColor;
+			}
 		}
 
 		UNITY_BRANCH
@@ -474,6 +489,7 @@ float4 frag(VertexOutput i) : SV_Target
 			float gloss = _Glossiness;
 			float specPow = exp2(gloss * 10.0);
 			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * gloss;
+			// specular light does not enter surface, it is reflected off surface so it does not get any surface color
 			finalRGB += lightAttenuation * specularLightColor * specularReflection;
 		}
 
@@ -501,6 +517,7 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 	}
 
+	// diffuse light goes into surface and exits with surface color (mainTexture.rgb is surface color)
 	finalRGB += diffuseLightRGB * mainTexture.rgb;
 
 	#ifdef UNITY_PASS_FORWARDBASE
