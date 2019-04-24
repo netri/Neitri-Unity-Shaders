@@ -43,6 +43,7 @@ Censor square size decreases as distance to it increases.
 ## World Cutout Sphere &#x1F6AA;&#x1f4a1;
 Efficient single pass world cutout shader.
 Uses ray sphere intersection, so works only as spherical cutout.
+[Used in migero's Foosball 1vs1 Or 2vs2](https://vrchat.net/home/launch?worldId=wrld_79b8ae0e-4c80-416f-9ef8-573fb10dfc34)
 ![](Images/World_Cutout_Sphere.png)
 
 ## Distance Fade Outline &#x1f4a1;
@@ -61,13 +62,12 @@ Useful as start for fully raymarched worlds.
 # Credits
 Everyone in "VRC Shader Development" discord
 
-mel0n - Wireframe Overlay idea<br>
+Mel0n - Wireframe Overlay idea<br>
 Merlin - Wireframe Fade<br>
-Migero - Distance Fade Outline idea<br>
+migero - Distance Fade Outline idea<br>
 Nave - Script to generate 1 vert + X triangles mesh for Depth Mirror<br>
-error.mdl - first Depth Mirror, single texture fetch triplanar<br>
+error.mdl - original Depth Mirror idea, single texture fetch triplanar<br>
 ScruffyRules - help with Depth Mirror debugging<br>
 Dj Lukis.LT - [correct depth sampling with oblique view frustums](https://github.com/lukis101/VRCUnityStuffs/blob/master/Shaders/DJL/Overlays/WorldPosOblique.shader)<br>
-
-
+d4rkpl4y3r - HDR detection idea
 
