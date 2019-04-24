@@ -32,7 +32,7 @@ struct VertexInput {
 struct VertexOutput {
 	float4 pos : SV_POSITION; // must be called pos, because TRANSFER_VERTEX_TO_FRAGMENT expects it
 	float4 color : COLOR;
-	float4 uv0 : TEXCOORD0; // TODO: uv.w == isOutline, 0 for no, 1 for yes
+	float4 uv0 : TEXCOORD0;
 	float4 worldPos : TEXCOORD1;
 	float3 normal : TEXCOORD2;
 	LIGHTING_COORDS(3,4) // shadow coords
@@ -105,28 +105,24 @@ VertexOutput vert (VertexInput v)
 
 	
 #ifdef _MESH_DEFORMATION_ON
-
+	// TODO, broken now
+	// inspiration: https://gumroad.com/naelstrof Contact Shader for VRChat, https://www.youtube.com/watch?v=JAIbjUHZyNg
 	float4 projPos = ComputeScreenPos(o.pos);
 	float4 pcoord = float4(projPos.xy / projPos.w, 0, 0);
 	float sceneDepth = LinearEyeDepth (tex2Dlod(_CameraDepthTexture, pcoord));
 	float vertexDepth = mul(UNITY_MATRIX_V, o.worldPos).z;
-
 	float value = (vertexDepth - sceneDepth) / _ProjectionParams.z * 0.1;
 	value = value * (abs(value) > 0.1);
-	v.vertex += v.normal * value;
-	
+	v.vertex += v.normal * value;	
 	o.normal.z += value;
 	o.normal.z = normalize(o.normal.z);
-
 	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
 	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
-
 #endif
 
-	float3 posModel = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
-
+	float3 objectWorldPos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 	
-	// vertex lights are a cheap way to calculate 4 lights without shadows at once	
+	// vertex lights are a cheap way to calculate 4 lights without shadows at once
 	// Unity renders first few lights as pixel lights with shadows in base/delta pass
 	// next 4 are calculated using vertex lights
 	// next are added to light probes
@@ -141,7 +137,7 @@ VertexOutput vert (VertexInput v)
 			o.vertexLightsAverage.rgb = AverageShade4PointLights (
 				unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
 				unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
-				unity_4LightAtten0, posModel);		
+				unity_4LightAtten0, objectWorldPos);
 		#endif
 	#endif
 
@@ -355,31 +351,28 @@ float4 frag(VertexOutput i) : SV_Target
 	UNITY_BRANCH
 	if (_BumpScale != 0)
 	{
-		float3x3 tangentToWorld = float3x3(i.tangentDir, i.bitangentDir, normal);
+		float3x3 tangentSpaceToWorldSpace = float3x3(i.tangentDir, i.bitangentDir, normal);
 		float3 normalTangentSpace = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0, _BumpMap)));
 		normalTangentSpace = lerp(float3(0, 0, 1), normalTangentSpace, _BumpScale);
-		normal = normalize(mul(normalTangentSpace, tangentToWorld));
+		normal = normalize(mul(normalTangentSpace, tangentSpaceToWorldSpace));
 	}
 #endif
 
 	float3 worldSpaceCameraPos = getCameraPosition();
 
 	// slightly dither normal over time to hide obvious normal interpolation
-	//normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 10.0);
-	normal = normalize(normal);
+	normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 10.0);
+	//normal = normalize(normal);
 
 	// direction from pixel towards camera
 	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
 
 	// direction from pixel towards light
-	float3 unityLightDir = UnityWorldSpaceLightDir(i.worldPos.xyz);
-	float3 lightDir = unityLightDir;
+	float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos.xyz));
 
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.worldPos.xyz);
 	float3 lightAttenuation; // assigned later
-
-	//return float4(lightAttenuation, 1); // DEBUG
 
 	fixed3 specularLightColor = _LightColor0.rgb;
 	fixed3 diffuseLightColor = _LightColor0.rgb;
@@ -408,6 +401,7 @@ float4 frag(VertexOutput i) : SV_Target
 			diffuseLightRGB += vertexLights;
 		#endif
 
+		// if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
 		bool isInCompleteDark = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
 		if (isInCompleteDark)
 		{
@@ -449,7 +443,7 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 
 		// apply ramp to baked indirect diffuse
-		// BAD: this breaks colors
+		// BAD: this washes out colors
 		/*UNITY_BRANCH
 		if (any(lightDir))
 		{
@@ -472,12 +466,11 @@ float4 frag(VertexOutput i) : SV_Target
 
 	float3 finalRGB = 0;
 
-	lightDir = normalize(lightDir);
 	float3 halfDir = normalize(lightDir + viewDir);
 
 	float NdotL = dot(normal, lightDir);
 	float NdotV = dot(normal, viewDir);
-	float NdotH = saturate(dot(normal, halfDir));
+	float NdotH = dot(normal, halfDir);
 	
 	UNITY_BRANCH
 	if (any(lightDir)) 
@@ -534,18 +527,17 @@ float4 frag(VertexOutput i) : SV_Target
 	UNITY_BRANCH
 	if (_RimWidth > 0)
 	{
-		float rim = max(0, 1 - NdotV);
-		rim = max(0, NdotV) / _RimWidth; // remap 0.._RimWidth to 0..1
+		float rim = NdotV;
+		rim = max(0, rim) / _RimWidth; // remap 0.._RimWidth to 0..1
 		rim = saturate(1 - rim);
 		rim = smoothstep(_RimSharpness, 1 - _RimSharpness, rim);
-		
 		float3 rimAdjustment = lerp(1, _RimColorAdjustment, rim);
 		//return float4(rimAdjustment, 1); // DEBUG
 		finalRGB *= rimAdjustment;
 	}
 
 
-	// OLD _SKIN_TYPE keyword
+	// OLD _TYPE_SKIN keyword, now simulated with rim lighting
 	// view based shading, adds MMD like feel
 	//finalRGB *= lerp(1, saturate(dot(viewDir, normal)), 0.2);
 
@@ -566,10 +558,9 @@ float4 frag(VertexOutput i) : SV_Target
 	UNITY_BRANCH
 	if (_UseOnePixelOutline)
 	{
+		// depth texture based one pixel outline
 		float4 pos = UnityObjectToClipPos(i.modelPos);
-		// Should be 1.0 pixel, but some artefacts appear if we use perfect value
 		float2 offset = rcp(_ScreenParams.xy) * pos.w;
-
 		float depth01 = getScreenDepth(pos + float4(-offset.x, 0, 0, 0));
 		UNITY_BRANCH
 		if (depth01 != getDefaultZ())
@@ -577,17 +568,14 @@ float4 frag(VertexOutput i) : SV_Target
 			float depth10 = getScreenDepth(pos + float4(0, -offset.y, 0, 0));
 			float depth12 = getScreenDepth(pos + float4(0, offset.y, 0, 0));
 			float depth21 = getScreenDepth(pos + float4(offset.x, 0, 0, 0));
-
 			float x = depth01 * 10 - depth21 * 10;
 			float y = depth10 * 10 - depth12 * 10;
 			float d = x * x + y * y;
-
 			finalRGB *= 1 - smoothstep(0.2, 1, saturate(d * 50));
 		}
 	}
 
 	fixed4 finalRGBA = fixed4(finalRGB, mainTexture.a);
-
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_APPLY_FOG(i.fogCoord, finalRGBA);
