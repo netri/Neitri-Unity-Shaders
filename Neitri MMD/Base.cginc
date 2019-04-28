@@ -267,6 +267,107 @@ float3 getLightDirectionFromSphericalHarmonics()
 	return normalize(unity_SHAr.xyz * 0.3 + unity_SHAg.xyz * 0.59 + unity_SHAb.xyz * 0.11);
 }
 
+
+float shEvaluateDiffuseL1Geomerics(float L0, float3 L1, float3 n)
+{
+	// average energy
+	float R0 = L0;
+
+	// avg direction of incoming light
+	float3 R1 = 0.5f * L1;
+
+	// directional brightness
+	float lenR1 = length(R1);
+
+	// linear angle between normal and direction 0-1
+	//float q = 0.5f * (1.0f + dot(R1 / lenR1, n));
+	//float q = dot(R1 / lenR1, n) * 0.5 + 0.5;
+	float q = dot(normalize(R1), n) * 0.5 + 0.5;
+
+	// power for q
+	// lerps from 1 (linear) to 3 (cubic) based on directionality
+	float p = 1.0f + 2.0f * lenR1 / R0;
+
+	// dynamic range constant
+	// should vary between 4 (highly directional) and 0 (ambient)
+	float a = (1.0f - lenR1 / R0) / (1.0f + lenR1 / R0);
+
+	return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
+}
+
+
+
+// based on ShadeSH9 from \Unity\builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardUtils.cginc:
+void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLightProbes)
+{
+
+	averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+
+	realLightProbes = 0;
+	//normal.w = 0; // DEBUG
+	//return average; // DEBUG
+
+	float4 SHAr = unity_SHAr;
+	float4 SHAg = unity_SHAg;
+	float4 SHAb = unity_SHAb;
+	float4 SHBr = unity_SHBr;
+	float4 SHBg = unity_SHBg;
+	float4 SHBb = unity_SHBb;
+
+	UNITY_BRANCH
+	if (_BakedLightingFlatness > 0)
+	{
+		// issue: sometimes intensity of baked lights is too big, so lets try to normalize their color range here
+
+		half3 thresholdsMax = lerp(1, 0.5, _BakedLightingFlatness);
+		
+		// BAD: this adds more colors we dont want
+		//half3 thresholdsMin = lerp(0, 0.5, _BakedLightingFlatness);
+
+		float len;
+#define ADJUST(VECTOR, CHANNEL) \
+		len = length(VECTOR); \
+		if (len > thresholdsMax.CHANNEL) VECTOR *= thresholdsMax.CHANNEL / len;
+		//else if (len < thresholdsMin.CHANNEL) VECTOR *= thresholdsMin.CHANNEL / len;
+
+		ADJUST(SHAr, r);
+		ADJUST(SHAg, g);
+		ADJUST(SHAb, b);
+		ADJUST(SHBr, r);
+		ADJUST(SHBg, g);
+		ADJUST(SHBb, b);
+
+#undef ADJUST
+	}
+
+#define EVALUATE(VECTOR, NORMAL) \
+	dot(VECTOR, NORMAL)
+
+	// Linear (L1) + constant (L0) polynomial terms
+	realLightProbes.r = EVALUATE(SHAr, normal);
+	realLightProbes.g = EVALUATE(SHAg, normal);
+	realLightProbes.b = EVALUATE(SHAb, normal);
+
+	half3 x1;
+	// 4 of the quadratic (L2) polynomials
+	half4 vB = normal.xyzz * normal.yzzx;
+	x1.r = EVALUATE(SHBr, vB);
+	x1.g = EVALUATE(SHBg, vB);
+	x1.b = EVALUATE(SHBb, vB);
+	realLightProbes += x1;
+
+	// Final (5th) quadratic (L2) polynomial
+	//half vC = normal.x * normal.x - normal.y * normal.y;
+	//realLightProbes += unity_SHC.rgb * vC;
+	
+#undef EVALUATE
+
+#ifdef UNITY_COLORSPACE_GAMMA
+	realLightProbes = LinearToGammaSpace(realLightProbes);
+#endif
+}
+
+
 sampler2D _CameraDepthTexture;
 
 float getScreenDepth(float4 pos)
@@ -389,9 +490,14 @@ float4 frag(VertexOutput i) : SV_Target
 		// non cookie directional light
 
 		// environment (ambient) lighting + light probes
-		half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
+		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
 		//half3 averageLightProbes = ShadeSH9Average();
-		half3 realLightProbes = ShadeSH9(half4(normal, 1));
+		//half3 realLightProbes = ShadeSH9(half4(normal, 1));
+
+		half3 averageLightProbes;
+		half3 realLightProbes;
+		NeitriShadeSH9(half4(normal, 1), realLightProbes, averageLightProbes);
+
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		diffuseLightRGB += lightProbes;
 
@@ -401,17 +507,14 @@ float4 frag(VertexOutput i) : SV_Target
 			diffuseLightRGB += vertexLights;
 		#endif
 
-		// if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
-		bool isInCompleteDark = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
-		if (isInCompleteDark)
-		{
-			lightAttenuation = unityLightAttenuation;
-		}
-		else
-		{
-			unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
-			lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
-		}
+		
+		// BAD: we cant tell where is complete darkness
+		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
+		// bool isInCompleteDark = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
+
+		unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
+		lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
+
 
 		#ifdef VERTEXLIGHT_ON
 			float3 averageLightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
@@ -431,7 +534,7 @@ float4 frag(VertexOutput i) : SV_Target
 			UNITY_BRANCH
 			if (!any(diffuseLightColor))
 			{
-				// diffuseLightRGB *= 0.3f; // BAD: In older versions I didnt dim it, better way would be to normalize all spherical harmonics so none is too bright
+				//diffuseLightRGB *= 0.5f; // BAD: In older versions I didnt dim it, better way would be to normalize all spherical harmonics so none is too bright
 				diffuseLightColor = averageLightColor;
 			}
 		}
@@ -537,9 +640,9 @@ float4 frag(VertexOutput i) : SV_Target
 	}
 
 
-	// OLD _TYPE_SKIN keyword, now simulated with rim lighting
-	// view based shading, adds MMD like feel
-	//finalRGB *= lerp(1, saturate(dot(viewDir, normal)), 0.2);
+	// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
+	// it just looks super good, adds more depth just where its needed
+	finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.1);
 
 
 	#ifdef UNITY_PASS_FORWARDBASE
