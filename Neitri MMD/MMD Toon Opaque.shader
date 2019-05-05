@@ -21,6 +21,12 @@ Shader "Neitri/MMD Toon Opaque" {
 		_ShadingRampStretch("Ramp stretch", Range(0, 1)) = 0
 		[NoScaleOffset] _Ramp("Ramp", 2D) = "white" {}
 
+		/*
+		[Header(Matcap)]
+		[HDR] _MatcapColorAdjustment("Color", Color) = (1,1,1,1)
+		[NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
+		*/
+
 		[Header(Shadow)]
 		_Shadow ("Shadow darkness", Range(0, 1)) = 0.7
 		[HDR] _ShadowColor ("Shadow color", Color) = (0,0,0,1)
@@ -47,7 +53,6 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
 		[NeitriToggle] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
-		[NeitriToggle] _UseOnePixelOutline ("One Pixel Outline", Range(0, 1)) = 0
 		//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader {

@@ -49,8 +49,7 @@ Shader "Neitri/MMD Toon Transparent" {
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4
 		[NeitriToggle] _UseDitheredTransparency("Dithered Transparency", Range(0, 1)) = 1
-		[NeitriToggle] _UseOnePixelOutline("One Pixel Outline", Range(0, 1)) = 0
-			//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
+		//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader{
 		Tags {

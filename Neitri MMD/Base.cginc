@@ -177,15 +177,18 @@ float _RimWidth;
 float _RimShape;
 float _RimSharpness;
 
+float3 _RampColorAdjustment;
 sampler2D _Ramp; // name from Xiexe's
 float _ShadingRampStretch;
+
+float3 _MatcapColorAdjustment;
+sampler2D _Matcap;
 
 int _UseColorOverTime;
 sampler2D _ColorOverTime_Ramp;
 float _ColorOverTime_Speed;
 
 int _UseDitheredTransparency;
-int _UseOnePixelOutline;
 
 
 
@@ -237,8 +240,9 @@ float3 getCameraPosition()
 {
 	#ifdef USING_STEREO_MATRICES
 		return lerp(unity_StereoWorldSpaceCameraPos[0], unity_StereoWorldSpaceCameraPos[1], 0.5);
+	#else
+		return _WorldSpaceCameraPos;
 	#endif
-	return _WorldSpaceCameraPos;
 }
 
 // from poiyomi's shader
@@ -253,6 +257,17 @@ float3 getCameraForward()
 	#endif
 	return normalize(p2 - p1);
 }
+
+float3 getCameraRight()
+{
+#if UNITY_SINGLE_PASS_STEREO
+	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(1, 0, 0, 0));
+#else
+	float3 p1 = mul(unity_CameraToWorld, float4(1, 0, 0, 0));
+#endif
+	return normalize(p1);
+}
+
 
 // dominant light direction approximation from spherical harmonics
 float3 getLightDirectionFromSphericalHarmonics()
@@ -368,29 +383,6 @@ void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLi
 }
 
 
-sampler2D _CameraDepthTexture;
-
-float getScreenDepth(float4 pos)
-{
-	float2 screenUV = pos.xy / pos.w;
-	screenUV.y *= _ProjectionParams.x;
-	screenUV = screenUV * 0.5f + 0.5f;
-	screenUV = UnityStereoTransformScreenSpaceTex(screenUV);
-	float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, screenUV))) / pos.w;
-	return depth;
-}
-
-float getDefaultZ()
-{
-#if UNITY_REVERSED_Z
-	return 0.f;
-#else
-	return 1.f;
-#endif
-}
-
-
-
 
 #ifdef OUTPUT_DEPTH
 struct FragOut
@@ -462,8 +454,8 @@ float4 frag(VertexOutput i) : SV_Target
 	float3 worldSpaceCameraPos = getCameraPosition();
 
 	// slightly dither normal over time to hide obvious normal interpolation
-	normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 10.0);
-	//normal = normalize(normal);
+	//normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 10.0);
+	normal = normalize(normal);
 
 	// direction from pixel towards camera
 	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
@@ -604,7 +596,7 @@ float4 frag(VertexOutput i) : SV_Target
 
 			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
 			rampNdotL = lerp(_ShadingRampStretch, 1, rampNdotL); // remap 0..1 to _ShadingRampStretch..1
-			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
+			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb * _RampColorAdjustment;
 			//shadowRamp = max(0, NdotL + 0.1); // DEBUG, phong
 			diffuseLightRGB += 
 				shadowRamp *
@@ -640,6 +632,18 @@ float4 frag(VertexOutput i) : SV_Target
 	}
 
 
+	// matcap
+	/*{
+		float3 up = float3(0, 1, 0);
+		float3 adjustedNormal = normalize(float3(normal.x, 0, normal.z));
+		float3 adjustedViewDir = normalize(float3(viewDir.x, 0, viewDir.z));
+		float2 uv = float2(1 - dot(adjustedNormal, adjustedViewDir), dot(normal, up)) * 0.5 + 0.5;
+		float3 matcap = tex2D(_Matcap, uv).rgb * _MatcapColorAdjustment;
+		//return float4(matcap, 1); // DEBUG
+		//finalRGB *= matcap;
+	}*/
+
+
 	// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
 	// it just looks super good, adds more depth just where its needed
 	finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.1);
@@ -657,26 +661,6 @@ float4 frag(VertexOutput i) : SV_Target
 		}
 	#else
 	#endif
-
-	UNITY_BRANCH
-	if (_UseOnePixelOutline)
-	{
-		// depth texture based one pixel outline
-		float4 pos = UnityObjectToClipPos(i.modelPos);
-		float2 offset = rcp(_ScreenParams.xy) * pos.w;
-		float depth01 = getScreenDepth(pos + float4(-offset.x, 0, 0, 0));
-		UNITY_BRANCH
-		if (depth01 != getDefaultZ())
-		{
-			float depth10 = getScreenDepth(pos + float4(0, -offset.y, 0, 0));
-			float depth12 = getScreenDepth(pos + float4(0, offset.y, 0, 0));
-			float depth21 = getScreenDepth(pos + float4(offset.x, 0, 0, 0));
-			float x = depth01 * 10 - depth21 * 10;
-			float y = depth10 * 10 - depth12 * 10;
-			float d = x * x + y * y;
-			finalRGB *= 1 - smoothstep(0.2, 1, saturate(d * 50));
-		}
-	}
 
 	fixed4 finalRGBA = fixed4(finalRGB, mainTexture.a);
 
