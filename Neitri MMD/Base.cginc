@@ -172,16 +172,13 @@ float3 _ShadowColor;
 float _BakedLightingFlatness;
 int _UseFakeLight;
 
-float3 _RimColorAdjustment;
-float _RimWidth;
-float _RimShape;
-float _RimSharpness;
-
 float3 _RampColorAdjustment;
 sampler2D _Ramp; // name from Xiexe's
 float _ShadingRampStretch;
 
+int _MatcapType;
 float3 _MatcapColorAdjustment;
+int _MatcapAnchor;
 sampler2D _Matcap;
 
 int _UseColorOverTime;
@@ -191,6 +188,10 @@ float _ColorOverTime_Speed;
 int _UseDitheredTransparency;
 
 
+
+// DEBUG
+int _DebugInt1;
+int _DebugInt2;
 
 
 #define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
@@ -267,6 +268,18 @@ float3 getCameraRight()
 #endif
 	return normalize(p1);
 }
+
+
+float3 getCameraUp()
+{
+#if UNITY_SINGLE_PASS_STEREO
+	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 1, 0, 0));
+#else
+	float3 p1 = mul(unity_CameraToWorld, float4(0, 1, 0, 0));
+#endif
+	return normalize(p1);
+}
+
 
 
 // dominant light direction approximation from spherical harmonics
@@ -618,36 +631,63 @@ float4 frag(VertexOutput i) : SV_Target
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
 	//finalRGB = saturate(finalRGB);
 
-	// rim lighting
-	UNITY_BRANCH
-	if (_RimWidth > 0)
-	{
-		float rim = NdotV;
-		rim = max(0, rim) / _RimWidth; // remap 0.._RimWidth to 0..1
-		rim = saturate(1 - rim);
-		rim = smoothstep(_RimSharpness, 1 - _RimSharpness, rim);
-		float3 rimAdjustment = lerp(1, _RimColorAdjustment, rim);
-		//return float4(rimAdjustment, 1); // DEBUG
-		finalRGB *= rimAdjustment;
-	}
-
-
 	// matcap
-	/*{
-		float3 up = float3(0, 1, 0);
-		float3 adjustedNormal = normalize(float3(normal.x, 0, normal.z));
-		float3 adjustedViewDir = normalize(float3(viewDir.x, 0, viewDir.z));
-		float2 uv = float2(1 - dot(adjustedNormal, adjustedViewDir), dot(normal, up)) * 0.5 + 0.5;
-		float3 matcap = tex2D(_Matcap, uv).rgb * _MatcapColorAdjustment;
+	UNITY_BRANCH
+	if (_MatcapType != 0)
+	{
+		float2 matcapUv;
+
+		UNITY_BRANCH
+		if (_MatcapAnchor == 0)
+		{
+			// Anchored to world up
+			const float3 up = float3(0, 1, 0);
+			float3 adjustedNormal = normalize(float3(normal.x, 0, normal.z));
+			float3 adjustedViewDir = normalize(float3(viewDir.x, 0, viewDir.z));
+			matcapUv = float2(1 - dot(adjustedNormal, adjustedViewDir), dot(normal, up)) * 0.5 + 0.5;
+		}
+		else
+		{
+			UNITY_BRANCH
+			if (_MatcapAnchor == 1)
+			{
+				// Anchored to view direction
+				const float3 worldUp = float3(0, 1, 0);
+				float3 right = normalize(cross(viewDir, worldUp));
+				float3 up = -normalize(cross(viewDir, right));
+				matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
+			}
+			else
+			{
+				// Anchored to camera rotation
+				float3 up = getCameraUp();
+				float3 right = getCameraRight();
+				matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
+			}
+		}
+
+		float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapColorAdjustment;
+
+		if (_MatcapType == 1)
+		{
+			// add
+			finalRGB += matcap;
+		}
+		else
+		{
+			// multiply
+			finalRGB *= matcap;
+		}
+
+		// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
+		// it just looks super good, adds more depth just where its needed
+		// finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.2);
+		// now dont with matcap, I faced issue where these two curves are not the same: cos(x), 1-abs(cos(x+PI/2)), from 0 to PI/2
+		// because above uses dot with viewDir, whereas matcap uses dot with right/up vector, I countered it by creating radial matcap with following values
+		// Table[N[round(100*(cos(-(acos((1-((100-x)/100*PI/2)))-PI/2))))],{x,40,100,10}]
+
 		//return float4(matcap, 1); // DEBUG
-		//finalRGB *= matcap;
-	}*/
-
-
-	// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
-	// it just looks super good, adds more depth just where its needed
-	finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.1);
-
+	}
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_BRANCH

@@ -8,7 +8,7 @@ Shader "Neitri/MMD Toon Opaque" {
 		_Color ("Color", Color) = (1,1,1,1)
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
 
-		[Header(Normal)] 
+		[Header(Normal Map)]
 		_BumpMap("Normal Map", 2D) = "bump" {}
 		_BumpScale("Weight", Range(0, 2)) = 0
 
@@ -21,11 +21,11 @@ Shader "Neitri/MMD Toon Opaque" {
 		_ShadingRampStretch("Ramp stretch", Range(0, 1)) = 0
 		[NoScaleOffset] _Ramp("Ramp", 2D) = "white" {}
 
-		/*
 		[Header(Matcap)]
+		[Enum(Disabled,0,Add to final color,1,Multiply final color,2)] _MatcapType("Type", Range(0, 2)) = 2
 		[HDR] _MatcapColorAdjustment("Color", Color) = (1,1,1,1)
+		[Enum(Anchored to world up,0,Anchored direction to camera,1,Anchored to camera rotation,2)] _MatcapAnchor("Anchor", Range(0, 2)) = 1
 		[NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
-		*/
 
 		[Header(Shadow)]
 		_Shadow ("Shadow darkness", Range(0, 1)) = 0.7
@@ -34,11 +34,6 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
 		[NeitriToggle] _UseFakeLight("Approximate fake light", Range(0, 1)) = 1
-
-		[Header(Rim Lighting)]
-		[HDR] _RimColorAdjustment("Color", Color) = (1,1,1,1)
-		_RimWidth ("Width", Range(0, 1)) = 0
-		_RimSharpness ("Sharpness", Range(0, 0.5)) = 0
 
 		[Header(Change color over time)]
 		[NeitriToggle]_UseColorOverTime ("Enable", Range(0, 1)) = 0
@@ -53,6 +48,8 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
 		[NeitriToggle] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
+		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
+		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
 		//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader {
