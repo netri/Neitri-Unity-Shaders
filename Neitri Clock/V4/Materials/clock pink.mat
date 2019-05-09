@@ -22,7 +22,8 @@ Material:
         m_Texture: {fileID: 2800000, guid: 1c341ba6c0e554f4eb4e71653bde4cbe, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    m_Floats: []
+    m_Floats:
+    - _CirclesSpacing: 0.4
     m_Colors:
     - _Color: {r: 1, g: 0.972549, b: 0.9411765, a: 1}
     - _Color2: {r: 1, g: 0.06666666, b: 0.39494252, a: 1}

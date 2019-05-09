@@ -8,7 +8,7 @@ Shader "Neitri/Clock V4"
 		_Color("_Color", Color) = (1,1,1,1)
 		_Color2("_Color2", Color) = (1,1,1,1)
 		_Color3("_Color3", Color) = (1,1,1,1)
-		_CirclesSpacing ("_CirclesSpacing", Range(0, 0.45)) = 0.1
+		_CirclesSpacing ("_CirclesSpacing", Range(0, 0.45)) = 0.4
 	}
 	SubShader
 	{
