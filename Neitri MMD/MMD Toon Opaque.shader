@@ -33,10 +33,10 @@ Shader "Neitri/MMD Toon Opaque" {
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
-		[NeitriToggle] _UseFakeLight("Approximate fake light", Range(0, 1)) = 1
+		[Toggle(_)] _UseFakeLight("Approximate fake light", Range(0, 1)) = 1
 
 		[Header(Change color over time)]
-		[NeitriToggle]_UseColorOverTime ("Enable", Range(0, 1)) = 0
+		[Toggle(_)]_UseColorOverTime ("Enable", Range(0, 1)) = 0
 		_ColorOverTime_Ramp ("Colors Texture", 2D) = "white" {}
 		_ColorOverTime_Speed ("Time Speed Multiplier", Range(0.01, 10)) = 0.1
 
@@ -47,7 +47,7 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
-		[NeitriToggle] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
+		[Toggle(_)] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
 		//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
