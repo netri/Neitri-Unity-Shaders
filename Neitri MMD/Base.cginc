@@ -22,14 +22,32 @@
 #endif
 
 struct VertexInput {
-	float3 vertex : POSITION;
+	float4 vertex : POSITION;
 	float3 normal : NORMAL;
 	float4 color : COLOR;
 	float4 tangent : TANGENT;
 	float2 texcoord0 : TEXCOORD0;
 };
 
-struct VertexOutput {
+struct GeometryInput {
+	float4 vertex : SV_POSITION;
+	float3 normal : TEXCOORD0;
+	float4 color : TEXCOORD1;
+	float4 tangent : TEXCOORD2;
+	float2 texcoord0 : TEXCOORD3;
+};
+
+void CopyVertexInput(in VertexInput from, out GeometryInput to)
+{
+	to.vertex = from.vertex;
+	to.normal = from.normal;
+	to.color = from.color;
+	to.tangent = from.tangent;
+	to.texcoord0 = from.texcoord0;
+}
+
+
+struct FragmentInput {
 	float4 pos : SV_POSITION; // must be called pos, because TRANSFER_VERTEX_TO_FRAGMENT expects it
 	float4 color : COLOR;
 	float4 uv0 : TEXCOORD0;
@@ -49,6 +67,8 @@ struct VertexOutput {
 		float3 bitangentDir : TEXCOORD10;
 	#endif
 };
+
+
 
 
 // based off Shade4PointLights from "\Unity\builtin_shaders-5.6.5f1\CGIncludes\UnityCG.cginc"
@@ -84,14 +104,25 @@ float3 AverageShade4PointLights (
 	return col;
 }
 
+
+
+#ifdef IS_OUTLINE_SHADER
+	#define USE_GEOMETRY_STAGE
+#endif
+
+
 #ifdef _MESH_DEFORMATION_ON
 	UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 #endif
 
 
-VertexOutput vert (VertexInput v) 
+#ifdef USE_GEOMETRY_STAGE
+FragmentInput vertReal(in GeometryInput v) 
+#else
+FragmentInput vertReal(in VertexInput v)
+#endif
 {
-	VertexOutput o = (VertexOutput)0;
+	FragmentInput o = (FragmentInput)0;
 	o.uv0.xy = v.texcoord0;
 	o.color = v.color;
 	o.normal = UnityObjectToWorldNormal(v.normal);
@@ -99,7 +130,7 @@ VertexOutput vert (VertexInput v)
 		o.tangentDir = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0.0)).xyz);
 		o.bitangentDir = normalize(cross(o.normal, o.tangentDir) * v.tangent.w);
 	#endif
-	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
+	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0));
 	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
 	o.modelPos = v.vertex;
 
@@ -148,11 +179,76 @@ VertexOutput vert (VertexInput v)
 }
 
 
+
+
+
+#ifdef USE_GEOMETRY_STAGE
+	GeometryInput vert(VertexInput v)
+	{
+		GeometryInput o = (GeometryInput)0;
+		CopyVertexInput(v, o);
+		return o;
+	}
+#else
+	FragmentInput vert(VertexInput v)
+	{
+		return vertReal(v);
+	}
+#endif
+
+
+
+
+
+
+
+
+
+[maxvertexcount(6)]
+void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> tristream)
+{
+	for (int i = 0; i < 3; i++)
+	{
+		FragmentInput o = vertReal(v[i]);
+		tristream.Append(o);
+	}
+
+
+#ifdef IS_OUTLINE_SHADER
+	tristream.RestartStrip();
+
+	for (int i = 2; i >= 0; i--)
+	{
+		FragmentInput o = (FragmentInput)0;
+		o.color = float4(0, 0, 0, 5);
+		float3 worldNormal = UnityObjectToWorldNormal(v[i].normal);
+		float4 worldPos = mul(unity_ObjectToWorld, float4(v[i].vertex.xyz, 1.0));
+		worldPos.xyz += worldNormal * 0.001;
+		o.pos = mul(UNITY_MATRIX_VP, worldPos);
+
+		tristream.Append(o);
+	}
+#endif
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 int _Raymarcher_Type;
 float _Raymarcher_Scale;
 #include "RayMarcher.cginc"
-
-
 
 
 sampler2D _MainTex; float4 _MainTex_ST;
@@ -369,13 +465,22 @@ struct FragOut
 	float depth : SV_Depth;
 	float4 color : SV_Target;
 };
-FragOut frag(VertexOutput i)
+FragOut frag(FragmentInput i)
 {
 	FragOut fragOut;
 #else
-float4 frag(VertexOutput i) : SV_Target 
+float4 frag(FragmentInput i) : SV_Target 
 {
 #endif
+
+	#ifdef IS_OUTLINE_SHADER
+	if (i.color.a > 4.5)
+	{
+		// this is outline fragment
+		return float4(0, 0, 0, 1);
+	}
+	#endif
+
 
 	float4 mainTexture = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
 
