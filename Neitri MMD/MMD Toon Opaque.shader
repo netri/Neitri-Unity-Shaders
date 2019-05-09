@@ -24,7 +24,7 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Header(Matcap)]
 		[Enum(Disabled,0,Add to final color,1,Multiply final color,2)] _MatcapType("Type", Range(0, 2)) = 2
 		[HDR] _MatcapColorAdjustment("Color", Color) = (1,1,1,1)
-		[Enum(Anchored to world up,0,Anchored direction to camera,1,Anchored to camera rotation,2)] _MatcapAnchor("Anchor", Range(0, 2)) = 1
+		[Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor", Range(0, 2)) = 0
 		[NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
 
 		[Header(Shadow)]
@@ -50,7 +50,7 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Toggle(_)] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
-		//[NeitriToggle] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
+		//[Toggle(_)] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader {
 		Tags {

@@ -246,37 +246,33 @@ float3 getCameraPosition()
 	#endif
 }
 
-// from poiyomi's shader
 float3 getCameraForward()
 {
 	#if UNITY_SINGLE_PASS_STEREO
-		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 1));
-		float3 p2 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 0, 1));
+		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 0));
 	#else
-		float3 p1 = mul(unity_CameraToWorld, float4(0, 0, 1, 1));
-		float3 p2 = mul(unity_CameraToWorld, float4(0, 0, 0, 1));
+		float3 p1 = mul(unity_CameraToWorld, float4(0, 0, 1, 0));
 	#endif
-	return normalize(p2 - p1);
+	return normalize(p1);
 }
 
 float3 getCameraRight()
 {
-#if UNITY_SINGLE_PASS_STEREO
-	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(1, 0, 0, 0));
-#else
-	float3 p1 = mul(unity_CameraToWorld, float4(1, 0, 0, 0));
-#endif
+	#if UNITY_SINGLE_PASS_STEREO
+		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(1, 0, 0, 0));
+	#else
+		float3 p1 = mul(unity_CameraToWorld, float4(1, 0, 0, 0));
+	#endif
 	return normalize(p1);
 }
 
-
 float3 getCameraUp()
 {
-#if UNITY_SINGLE_PASS_STEREO
-	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 1, 0, 0));
-#else
-	float3 p1 = mul(unity_CameraToWorld, float4(0, 1, 0, 0));
-#endif
+	#if UNITY_SINGLE_PASS_STEREO
+		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 1, 0, 0));
+	#else
+		float3 p1 = mul(unity_CameraToWorld, float4(0, 1, 0, 0));
+	#endif
 	return normalize(p1);
 }
 
@@ -296,39 +292,9 @@ float3 getLightDirectionFromSphericalHarmonics()
 }
 
 
-float shEvaluateDiffuseL1Geomerics(float L0, float3 L1, float3 n)
-{
-	// average energy
-	float R0 = L0;
-
-	// avg direction of incoming light
-	float3 R1 = 0.5f * L1;
-
-	// directional brightness
-	float lenR1 = length(R1);
-
-	// linear angle between normal and direction 0-1
-	//float q = 0.5f * (1.0f + dot(R1 / lenR1, n));
-	//float q = dot(R1 / lenR1, n) * 0.5 + 0.5;
-	float q = dot(normalize(R1), n) * 0.5 + 0.5;
-
-	// power for q
-	// lerps from 1 (linear) to 3 (cubic) based on directionality
-	float p = 1.0f + 2.0f * lenR1 / R0;
-
-	// dynamic range constant
-	// should vary between 4 (highly directional) and 0 (ambient)
-	float a = (1.0f - lenR1 / R0) / (1.0f + lenR1 / R0);
-
-	return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
-}
-
-
-
 // based on ShadeSH9 from \Unity\builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardUtils.cginc:
 void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLightProbes)
 {
-
 	averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 
 	realLightProbes = 0;
@@ -511,7 +477,6 @@ float4 frag(VertexOutput i) : SV_Target
 			float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
 			diffuseLightRGB += vertexLights;
 		#endif
-
 		
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
@@ -519,7 +484,6 @@ float4 frag(VertexOutput i) : SV_Target
 
 		unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
 		lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
-
 
 		#ifdef VERTEXLIGHT_ON
 			float3 averageLightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
@@ -640,29 +604,29 @@ float4 frag(VertexOutput i) : SV_Target
 		UNITY_BRANCH
 		if (_MatcapAnchor == 0)
 		{
-			// Anchored to world up
-			const float3 up = float3(0, 1, 0);
-			float3 adjustedNormal = normalize(float3(normal.x, 0, normal.z));
-			float3 adjustedViewDir = normalize(float3(viewDir.x, 0, viewDir.z));
-			matcapUv = float2(1 - dot(adjustedNormal, adjustedViewDir), dot(normal, up)) * 0.5 + 0.5;
+			// Anchored to direction to camera
+			const float3 worldUp = float3(0, 1, 0);
+			float3 right = normalize(cross(viewDir, worldUp));
+			float3 up = -normalize(cross(viewDir, right));
+			matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
 		}
 		else
 		{
 			UNITY_BRANCH
 			if (_MatcapAnchor == 1)
 			{
-				// Anchored to view direction
-				const float3 worldUp = float3(0, 1, 0);
-				float3 right = normalize(cross(viewDir, worldUp));
-				float3 up = -normalize(cross(viewDir, right));
-				matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
-			}
-			else
-			{
 				// Anchored to camera rotation
 				float3 up = getCameraUp();
 				float3 right = getCameraRight();
 				matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
+			}
+			else
+			{
+				// Anchored to world up
+				const float3 up = float3(0, 1, 0);
+				float3 adjustedNormal = normalize(float3(normal.x, 0, normal.z));
+				float3 adjustedViewDir = normalize(float3(viewDir.x, 0, viewDir.z));
+				matcapUv = float2(1 - dot(adjustedNormal, adjustedViewDir), dot(normal, up)) * 0.5 + 0.5;
 			}
 		}
 
@@ -670,19 +634,19 @@ float4 frag(VertexOutput i) : SV_Target
 
 		if (_MatcapType == 1)
 		{
-			// add
+			// Add to final color
 			finalRGB += matcap;
 		}
 		else
 		{
-			// multiply
+			// Multiply final color
 			finalRGB *= matcap;
 		}
 
 		// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
 		// it just looks super good, adds more depth just where its needed
 		// finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.2);
-		// now dont with matcap, I faced issue where these two curves are not the same: cos(x), 1-abs(cos(x+PI/2)), from 0 to PI/2
+		// now done with matcap, I faced issue where these two curves are not the same: cos(x), 1-abs(cos(x+PI/2)), from 0 to PI/2
 		// because above uses dot with viewDir, whereas matcap uses dot with right/up vector, I countered it by creating radial matcap with following values
 		// Table[N[round(100*(cos(-(acos((1-((100-x)/100*PI/2)))-PI/2))))],{x,40,100,10}]
 
