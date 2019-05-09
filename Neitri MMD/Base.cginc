@@ -106,6 +106,51 @@ float3 AverageShade4PointLights (
 
 
 
+float3 getCameraPosition()
+{
+#ifdef USING_STEREO_MATRICES
+	//return lerp(unity_StereoWorldSpaceCameraPos[0], unity_StereoWorldSpaceCameraPos[1], 0.5);
+	return unity_StereoWorldSpaceCameraPos[0];
+#else
+	return _WorldSpaceCameraPos;
+#endif
+}
+
+float3 getCameraForward()
+{
+#if UNITY_SINGLE_PASS_STEREO
+	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 0));
+#else
+	float3 p1 = mul(unity_CameraToWorld, float4(0, 0, 1, 0));
+#endif
+	return normalize(p1);
+}
+
+float3 getCameraRight()
+{
+#if UNITY_SINGLE_PASS_STEREO
+	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(1, 0, 0, 0));
+#else
+	float3 p1 = mul(unity_CameraToWorld, float4(1, 0, 0, 0));
+#endif
+	return normalize(p1);
+}
+
+float3 getCameraUp()
+{
+#if UNITY_SINGLE_PASS_STEREO
+	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 1, 0, 0));
+#else
+	float3 p1 = mul(unity_CameraToWorld, float4(0, 1, 0, 0));
+#endif
+	return normalize(p1);
+}
+
+
+
+
+
+
 #ifdef IS_OUTLINE_SHADER
 	#define USE_GEOMETRY_STAGE
 #endif
@@ -114,6 +159,10 @@ float3 AverageShade4PointLights (
 #ifdef _MESH_DEFORMATION_ON
 	UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 #endif
+
+
+
+
 
 
 #ifdef USE_GEOMETRY_STAGE
@@ -207,26 +256,56 @@ FragmentInput vertReal(in VertexInput v)
 [maxvertexcount(6)]
 void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> tristream)
 {
-	for (int i = 0; i < 3; i++)
 	{
-		FragmentInput o = vertReal(v[i]);
-		tristream.Append(o);
+		for (int i = 0; i < 3; i++)
+		{
+			FragmentInput o = vertReal(v[i]);
+			tristream.Append(o);
+		}
 	}
 
 
 #ifdef IS_OUTLINE_SHADER
 	tristream.RestartStrip();
-
-	for (int i = 2; i >= 0; i--)
 	{
-		FragmentInput o = (FragmentInput)0;
-		o.color = float4(0, 0, 0, 5);
-		float3 worldNormal = UnityObjectToWorldNormal(v[i].normal);
-		float4 worldPos = mul(unity_ObjectToWorld, float4(v[i].vertex.xyz, 1.0));
-		worldPos.xyz += worldNormal * 0.001;
-		o.pos = mul(UNITY_MATRIX_VP, worldPos);
+		for (int i = 2; i >= 0; i--)
+		{
+			/*
+			o.clipPos = UnityObjectToClipPos(v.vertex);
+			o.clipPos /= o.clipPos.w;
+			float4 extrudedClipPos = UnityObjectToClipPos(v.vertex + float4(v.normal * 0.001, 0));
+			extrudedClipPos /= extrudedClipPos.w;
+			o.clipSpaceNormal = float4(normalize(extrudedClipPos.xy - o.clipPos.xy), 0.01 * (o.clipPos.z - extrudedClipPos.z), 0);
+			o.clipSpaceNormal.xy *= _OutlineSize * 2 / _ScreenParams.xy;
 
-		tristream.Append(o);
+			*/
+			float outlineWorldWidth = 0;
+
+
+			float4 worldPos = mul(UNITY_MATRIX_M, float4(v[i].vertex.xyz, 1.0));
+
+			float3 worldNormal = normalize(UnityObjectToWorldNormal(v[i].normal));
+			outlineWorldWidth = distance(worldPos.xyz / worldPos.w, getCameraPosition()) / max(_ScreenParams.x, _ScreenParams.y) * 2;
+
+			outlineWorldWidth = min(outlineWorldWidth, 0.05);
+
+			//float d = distance(worldPos.xyz / worldPos.w, getCameraPosition());
+			//d = (d - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
+			//d = length(mul(UNITY_MATRIX_V, float3(d, 0, 0)));
+			/*float3 worldVectorOnePixel = float3(rcp(_ScreenParams.x), rcp(_ScreenParams.y), d);
+			worldVectorOnePixel = mul(UNITY_MATRIX_I_V, worldVectorOnePixel);
+			float onePixelWorldLength = length(worldVectorOnePixel);
+			worldPos.xyz += worldNormal * onePixelWorldLength;*/
+			
+			
+			worldPos.xyz += worldNormal * outlineWorldWidth;
+
+			FragmentInput o = (FragmentInput)0;
+			o.color = float4(0, 0, 0, 5);
+			o.pos = mul(UNITY_MATRIX_VP, worldPos);
+
+			tristream.Append(o);
+		}
 	}
 #endif
 }
@@ -332,46 +411,6 @@ half3 ShadeSH9Average()
 	#endif
 	return res;
 }
-
-float3 getCameraPosition()
-{
-	#ifdef USING_STEREO_MATRICES
-		return lerp(unity_StereoWorldSpaceCameraPos[0], unity_StereoWorldSpaceCameraPos[1], 0.5);
-	#else
-		return _WorldSpaceCameraPos;
-	#endif
-}
-
-float3 getCameraForward()
-{
-	#if UNITY_SINGLE_PASS_STEREO
-		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 0));
-	#else
-		float3 p1 = mul(unity_CameraToWorld, float4(0, 0, 1, 0));
-	#endif
-	return normalize(p1);
-}
-
-float3 getCameraRight()
-{
-	#if UNITY_SINGLE_PASS_STEREO
-		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(1, 0, 0, 0));
-	#else
-		float3 p1 = mul(unity_CameraToWorld, float4(1, 0, 0, 0));
-	#endif
-	return normalize(p1);
-}
-
-float3 getCameraUp()
-{
-	#if UNITY_SINGLE_PASS_STEREO
-		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 1, 0, 0));
-	#else
-		float3 p1 = mul(unity_CameraToWorld, float4(0, 1, 0, 0));
-	#endif
-	return normalize(p1);
-}
-
 
 
 // dominant light direction approximation from spherical harmonics

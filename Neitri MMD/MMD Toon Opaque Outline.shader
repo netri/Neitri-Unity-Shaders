@@ -93,7 +93,6 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			#pragma geometry geom
 			#pragma fragment frag
 			#define UNITY_PASS_FORWARDADD
-			#define IS_OUTLINE_SHADER
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 4.0
 			#pragma multi_compile_fwdadd_fullshadows
@@ -107,13 +106,13 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			ZWrite On
 			ZTest LEqual
 			CGPROGRAM
-			#pragma target 2.0
+			#pragma target 4.0
 			#pragma vertex vertShadowCaster
 			#pragma fragment fragShadowCaster
 			#include "Base.cginc"
 			ENDCG
 		}
 	}	
-	FallBack Off
+	FallBack "Neitri/Neitri/MMD Toon Opaque"
 	CustomEditor "NeitriMMDToonEditor"
 }
