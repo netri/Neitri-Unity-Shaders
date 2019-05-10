@@ -44,13 +44,14 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		[Enum(None,0,Spheres,1,Hearts,2)] _Raymarcher_Type ("Type", Range(0, 2)) = 0
 		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
 
+		[Header(Outline)]
+		[HDR] _OutlineColor("Color", Color) = (0,0,0,0.7)
+		_OutlineWidth("Width", Range(0, 10)) = 2
+
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
 		[Toggle(_)] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
-		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
-		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
-		//[Toggle(_)] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader {
 		Tags {
@@ -90,7 +91,6 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			ZTest LEqual
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma geometry geom
 			#pragma fragment frag
 			#define UNITY_PASS_FORWARDADD
 			#pragma only_renderers d3d11 glcore gles

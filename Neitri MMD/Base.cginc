@@ -16,10 +16,73 @@
 #include "UnityStandardBRDF.cginc"
 
 
+
+
 #define USE_NORMAL_MAP
+
 #ifdef USE_NORMAL_MAP
-	#define USE_TANGENT_BITANGENT
+#define USE_TANGENT_BITANGENT
 #endif
+
+#ifdef IS_OUTLINE_SHADER
+#define USE_GEOMETRY_STAGE
+#endif
+
+#ifdef _MESH_DEFORMATION_ON
+UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
+#endif
+
+
+
+
+
+sampler2D _MainTex; float4 _MainTex_ST;
+fixed4 _Color;
+float _Glossiness; // name from Unity's standard
+
+sampler2D _EmissionMap; float4 _EmissionMap_ST;
+fixed4 _EmissionColor;
+
+#ifdef USE_NORMAL_MAP
+sampler2D _BumpMap; float4 _BumpMap_ST;
+float _BumpScale;
+#endif
+
+float _Shadow; // name from Cubed's
+float3 _ShadowColor;
+float _BakedLightingFlatness;
+int _UseFakeLight;
+
+float3 _RampColorAdjustment;
+sampler2D _Ramp; // name from Xiexe's
+float _ShadingRampStretch;
+
+int _MatcapType;
+float3 _MatcapColorAdjustment;
+int _MatcapAnchor;
+sampler2D _Matcap;
+
+#ifdef IS_OUTLINE_SHADER
+float4 _OutlineColor;
+float _OutlineWidth;
+#endif
+
+int _UseColorOverTime;
+sampler2D _ColorOverTime_Ramp;
+float _ColorOverTime_Speed;
+
+int _Raymarcher_Type;
+float _Raymarcher_Scale;
+#include "RayMarcher.cginc"
+
+int _UseDitheredTransparency;
+
+
+// DEBUG
+int _DebugInt1;
+int _DebugInt2;
+
+
 
 struct VertexInput {
 	float4 vertex : POSITION;
@@ -151,20 +214,6 @@ float3 getCameraUp()
 
 
 
-#ifdef IS_OUTLINE_SHADER
-	#define USE_GEOMETRY_STAGE
-#endif
-
-
-#ifdef _MESH_DEFORMATION_ON
-	UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
-#endif
-
-
-
-
-
-
 #ifdef USE_GEOMETRY_STAGE
 FragmentInput vertReal(in GeometryInput v) 
 #else
@@ -266,38 +315,23 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 
 
 #ifdef IS_OUTLINE_SHADER
+
 	tristream.RestartStrip();
 	{
 		for (int i = 2; i >= 0; i--)
 		{
-			/*
-			o.clipPos = UnityObjectToClipPos(v.vertex);
-			o.clipPos /= o.clipPos.w;
-			float4 extrudedClipPos = UnityObjectToClipPos(v.vertex + float4(v.normal * 0.001, 0));
-			extrudedClipPos /= extrudedClipPos.w;
-			o.clipSpaceNormal = float4(normalize(extrudedClipPos.xy - o.clipPos.xy), 0.01 * (o.clipPos.z - extrudedClipPos.z), 0);
-			o.clipSpaceNormal.xy *= _OutlineSize * 2 / _ScreenParams.xy;
-
-			*/
 			float outlineWorldWidth = 0;
-
-
 			float4 worldPos = mul(UNITY_MATRIX_M, float4(v[i].vertex.xyz, 1.0));
-
 			float3 worldNormal = normalize(UnityObjectToWorldNormal(v[i].normal));
-			outlineWorldWidth = distance(worldPos.xyz / worldPos.w, getCameraPosition()) / max(_ScreenParams.x, _ScreenParams.y) * 2;
+			float vertexDistanceToCamera = distance(worldPos.xyz / worldPos.w, getCameraPosition());
+			outlineWorldWidth = vertexDistanceToCamera / max(_ScreenParams.x, _ScreenParams.y) * _OutlineWidth;
+			if (vertexDistanceToCamera > 30)
+			{
+				return;
+			}
 
-			outlineWorldWidth = min(outlineWorldWidth, 0.05);
+			outlineWorldWidth *= smoothstep(30, 20, vertexDistanceToCamera); // decrease outline width, the further we are
 
-			//float d = distance(worldPos.xyz / worldPos.w, getCameraPosition());
-			//d = (d - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
-			//d = length(mul(UNITY_MATRIX_V, float3(d, 0, 0)));
-			/*float3 worldVectorOnePixel = float3(rcp(_ScreenParams.x), rcp(_ScreenParams.y), d);
-			worldVectorOnePixel = mul(UNITY_MATRIX_I_V, worldVectorOnePixel);
-			float onePixelWorldLength = length(worldVectorOnePixel);
-			worldPos.xyz += worldNormal * onePixelWorldLength;*/
-			
-			
 			worldPos.xyz += worldNormal * outlineWorldWidth;
 
 			FragmentInput o = (FragmentInput)0;
@@ -321,52 +355,6 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 
 
 
-
-
-
-
-int _Raymarcher_Type;
-float _Raymarcher_Scale;
-#include "RayMarcher.cginc"
-
-
-sampler2D _MainTex; float4 _MainTex_ST;
-fixed4 _Color;
-float _Glossiness; // name from Unity's standard
-
-sampler2D _EmissionMap; float4 _EmissionMap_ST;
-fixed4 _EmissionColor;
-
-#ifdef USE_NORMAL_MAP
-	sampler2D _BumpMap; float4 _BumpMap_ST;
-	float _BumpScale;
-#endif
-
-float _Shadow; // name from Cubed's
-float3 _ShadowColor;
-float _BakedLightingFlatness;
-int _UseFakeLight;
-
-float3 _RampColorAdjustment;
-sampler2D _Ramp; // name from Xiexe's
-float _ShadingRampStretch;
-
-int _MatcapType;
-float3 _MatcapColorAdjustment;
-int _MatcapAnchor;
-sampler2D _Matcap;
-
-int _UseColorOverTime;
-sampler2D _ColorOverTime_Ramp;
-float _ColorOverTime_Speed;
-
-int _UseDitheredTransparency;
-
-
-
-// DEBUG
-int _DebugInt1;
-int _DebugInt2;
 
 
 #define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
@@ -516,7 +504,7 @@ float4 frag(FragmentInput i) : SV_Target
 	if (i.color.a > 4.5)
 	{
 		// this is outline fragment
-		return float4(0, 0, 0, 1);
+		return _OutlineColor;
 	}
 	#endif
 
