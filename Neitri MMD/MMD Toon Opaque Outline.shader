@@ -35,15 +35,6 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
 		[Toggle(_)] _UseFakeLight("Approximate fake light", Range(0, 1)) = 1
 
-		[Header(Change color over time)]
-		[Toggle(_)]_UseColorOverTime ("Enable", Range(0, 1)) = 0
-		_ColorOverTime_Ramp ("Colors Texture", 2D) = "white" {}
-		_ColorOverTime_Speed ("Time Speed Multiplier", Range(0.01, 10)) = 0.1
-
-		[Header(Raymarched Pattern)]
-		[Enum(None,0,Spheres,1,Hearts,2)] _Raymarcher_Type ("Type", Range(0, 2)) = 0
-		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0
-
 		[Header(Outline)]
 		[HDR] _OutlineColor("Color", Color) = (0,0,0,0.7)
 		_OutlineWidth("Width", Range(0, 10)) = 2

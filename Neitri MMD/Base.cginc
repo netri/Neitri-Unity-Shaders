@@ -67,14 +67,6 @@ float4 _OutlineColor;
 float _OutlineWidth;
 #endif
 
-int _UseColorOverTime;
-sampler2D _ColorOverTime_Ramp;
-float _ColorOverTime_Speed;
-
-int _Raymarcher_Type;
-float _Raymarcher_Scale;
-#include "RayMarcher.cginc"
-
 int _UseDitheredTransparency;
 
 
@@ -519,28 +511,6 @@ float4 frag(FragmentInput i) : SV_Target
 	mainTexture.rgb *= _Color.rgb;
 	#endif
 
-	UNITY_BRANCH
-	if (_UseColorOverTime != 0)
-	{
-		float u = _Time.x * _ColorOverTime_Speed;
-		float4 adjustColor = tex2Dlod(_ColorOverTime_Ramp, float4(u, u, 0, 0));
-		#ifdef IS_TRANSPARENT_SHADER
-			mainTexture *= adjustColor;
-		#else
-			mainTexture.rgb *= adjustColor.rgb;
-		#endif
-	}
-
-	UNITY_BRANCH
-	if (_Raymarcher_Type != 0)
-	{
-		float raymarchedScreenDepth;
-		raymarch(i.worldPos.xyz, mainTexture.rgb, raymarchedScreenDepth);
-		#ifdef OUTPUT_DEPTH
-			float realDepthWeight = i.color.r;
-			fragOut.depth = lerp(raymarchedScreenDepth, i.pos.z, realDepthWeight);
-		#endif
-	}
 
 	// cutout support, discard current pixel if alpha is less than 0.05
 	clip(mainTexture.a - 0.05);
