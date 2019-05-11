@@ -49,7 +49,6 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		_OutlineWidth("Width", Range(0, 10)) = 2
 
 		[Header(Other)]
-		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
 		[Toggle(_)] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
 	}
@@ -62,7 +61,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		Pass {
 			Name "ForwardBase"
 			Tags { "LightMode" = "ForwardBase" }
-			Cull [_Cull]
+			Cull Back
 			ZTest [_ZTest]
 			Blend One Zero
 			AlphaToMask On
@@ -82,7 +81,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		Pass {
 			Name "ForwardAdd"
 			Tags { "LightMode" = "ForwardAdd" }
-			Cull [_Cull]
+			Cull Back
 			ZTest [_ZTest]
 			Blend SrcAlpha One
 			AlphaToMask On

@@ -313,11 +313,12 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 		}
 	}
 
-
 #ifdef IS_OUTLINE_SHADER
-
-	tristream.RestartStrip();
+	UNITY_BRANCH
+	if (_OutlineWidth > 0)
 	{
+		tristream.RestartStrip();
+
 		for (int i = 2; i >= 0; i--)
 		{
 			float outlineWorldWidth = 0;
@@ -325,12 +326,12 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 			float3 worldNormal = normalize(UnityObjectToWorldNormal(v[i].normal));
 			float vertexDistanceToCamera = distance(worldPos.xyz / worldPos.w, getCameraPosition());
 			outlineWorldWidth = vertexDistanceToCamera / max(_ScreenParams.x, _ScreenParams.y) * _OutlineWidth;
-			if (vertexDistanceToCamera > 30)
+			if (vertexDistanceToCamera > 10)
 			{
 				return;
 			}
 
-			outlineWorldWidth *= smoothstep(30, 20, vertexDistanceToCamera); // decrease outline width, the further we are
+			outlineWorldWidth *= smoothstep(10, 3, vertexDistanceToCamera); // decrease outline width, the further we are
 
 			worldPos.xyz += worldNormal * outlineWorldWidth;
 
