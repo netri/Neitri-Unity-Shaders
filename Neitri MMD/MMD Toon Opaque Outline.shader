@@ -28,7 +28,6 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		[NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
 
 		[Header(Shadow)]
-		_Shadow ("Shadow darkness", Range(0, 1)) = 0.7
 		[HDR] _ShadowColor ("Shadow color", Color) = (0,0,0,1)
 
 		[Header(Baked Lighting)]

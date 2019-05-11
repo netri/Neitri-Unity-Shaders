@@ -48,13 +48,13 @@ sampler2D _BumpMap; float4 _BumpMap_ST;
 float _BumpScale;
 #endif
 
-float _Shadow; // name from Cubed's
 float3 _ShadowColor;
 float _BakedLightingFlatness;
 int _UseFakeLight;
 
 float3 _RampColorAdjustment;
 sampler2D _Ramp; // name from Xiexe's
+float _Shadow; // name from Cubed's
 float _ShadingRampStretch;
 
 int _MatcapType;
@@ -585,7 +585,6 @@ float4 frag(FragmentInput i) : SV_Target
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
 		// bool isInCompleteDark = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
 
-		unityLightAttenuation = lerp(1, unityLightAttenuation, _Shadow);
 		lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
 
 		#ifdef VERTEXLIGHT_ON
