@@ -50,11 +50,11 @@ float _BumpScale;
 
 float3 _ShadowColor;
 float _BakedLightingFlatness;
+float _BakedLightingGrayness;
 int _UseFakeLight;
 
 float3 _RampColorAdjustment;
 sampler2D _Ramp; // name from Xiexe's
-float _Shadow; // name from Cubed's
 float _ShadingRampStretch;
 
 int _MatcapType;
@@ -572,7 +572,11 @@ float4 frag(FragmentInput i) : SV_Target
 		half3 realLightProbes;
 		NeitriShadeSH9(half4(normal, 1), realLightProbes, averageLightProbes);
 
+		averageLightProbes = lerp(averageLightProbes, grayness(averageLightProbes), _BakedLightingGrayness);
+		realLightProbes = lerp(realLightProbes, grayness(realLightProbes), _BakedLightingGrayness);
+
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
+		
 		diffuseLightRGB += lightProbes;
 
 		// vertex lights
@@ -605,8 +609,8 @@ float4 frag(FragmentInput i) : SV_Target
 			UNITY_BRANCH
 			if (!any(diffuseLightColor))
 			{
-				//diffuseLightRGB *= 0.5f; // BAD: In older versions I didnt dim it, better way would be to normalize all spherical harmonics so none is too bright
-				diffuseLightColor = averageLightColor;
+				diffuseLightRGB *= 0.5f; // BAD: In older versions I didnt dim it, better way would be to normalize all spherical harmonics so none is too bright
+				diffuseLightColor = averageLightColor * 0.5f;
 			}
 		}
 
@@ -760,10 +764,14 @@ float4 frag(FragmentInput i) : SV_Target
 		if (any(_EmissionColor))
 		{
 			fixed4 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
+			finalRGB += emissive.rgb;
+			/*
+			TODO: Eimission type,  Normal,0,Show only in darkness,1
 			float emissiveWeight = grayness(emissive.rgb) - grayness(finalRGB);
 			// BAD: emissiveWeight = smoothstep(-1, 1, emissiveWeight); causes darker color on not emissive pixel 
 			emissiveWeight = smoothstep(0, 1, emissiveWeight);
-			finalRGB = lerp(finalRGB, emissive.rgb, emissive);
+			//finalRGB = lerp(finalRGB, emissive.rgb, emissive);
+			finalRGB = lerp(finalRGB, emissive.rgb, emissive);*/
 		}
 	#else
 	#endif

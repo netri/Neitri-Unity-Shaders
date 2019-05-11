@@ -31,8 +31,9 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		[HDR] _ShadowColor ("Shadow color", Color) = (0,0,0,1)
 
 		[Header(Baked Lighting)]
-		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
-		[Toggle(_)] _UseFakeLight("Approximate fake light", Range(0, 1)) = 1
+		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.8
+		_BakedLightingGrayness("Baked lighting grayness", Range(0, 1)) = 0.2
+		[Toggle(_)] _UseFakeLight("Approximate fake light", Range(0, 1)) = 0
 
 		[Header(Outline)]
 		[HDR] _OutlineColor("Color", Color) = (0,0,0,0.7)
@@ -40,7 +41,6 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
-		[Toggle(_)] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
 	}
 	SubShader {
 		Tags {

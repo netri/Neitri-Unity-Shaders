@@ -31,8 +31,9 @@ Shader "Neitri/MMD Toon Opaque" {
 		[HDR] _ShadowColor ("Shadow color", Color) = (0,0,0,1)
 
 		[Header(Baked Lighting)]
-		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
-		[Toggle(_)] _UseFakeLight("Approximate fake light", Range(0, 1)) = 1
+		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.8
+		_BakedLightingGrayness("Baked lighting grayness", Range(0, 1)) = 0.2
+		[Toggle(_)] _UseFakeLight("Approximate fake light", Range(0, 1)) = 0
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
