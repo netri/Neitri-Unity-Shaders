@@ -50,8 +50,7 @@ float _BumpScale;
 
 float3 _ShadowColor;
 float _BakedLightingFlatness;
-float _BakedLightingGrayness;
-int _UseFakeLight;
+int _ApproximateFakeLight;
 
 float3 _RampColorAdjustment;
 sampler2D _Ramp; // name from Xiexe's
@@ -413,6 +412,9 @@ void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLi
 {
 	averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 
+
+	realLightProbes = ShadeSH9(normal); return;
+
 	realLightProbes = 0;
 	//normal.w = 0; // DEBUG
 	//return average; // DEBUG
@@ -543,14 +545,13 @@ float4 frag(FragmentInput i) : SV_Target
 	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
 
 	// direction from pixel towards light
-	float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos.xyz));
+	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
 
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.worldPos.xyz);
 	float3 lightAttenuation; // assigned later
 
-	fixed3 specularLightColor = _LightColor0.rgb;
-	fixed3 diffuseLightColor = _LightColor0.rgb;
+	fixed3 lightColor = _LightColor0.rgb;
 
 	// prevent bloom if light color is over 1
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
@@ -571,9 +572,6 @@ float4 frag(FragmentInput i) : SV_Target
 		half3 averageLightProbes;
 		half3 realLightProbes;
 		NeitriShadeSH9(half4(normal, 1), realLightProbes, averageLightProbes);
-
-		averageLightProbes = lerp(averageLightProbes, grayness(averageLightProbes), _BakedLightingGrayness);
-		realLightProbes = lerp(realLightProbes, grayness(realLightProbes), _BakedLightingGrayness);
 
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		
@@ -598,40 +596,20 @@ float4 frag(FragmentInput i) : SV_Target
 		#endif
 
 		UNITY_BRANCH
-		if (!any(specularLightColor))
-		{
-			specularLightColor = averageLightColor;
-		}
-
-		UNITY_BRANCH
-		if (_UseFakeLight)
+		if (_ApproximateFakeLight > 0)
 		{
 			UNITY_BRANCH
-			if (!any(diffuseLightColor))
+			if (!any(lightDir))
 			{
-				diffuseLightRGB *= 0.5f; // BAD: In older versions I didnt dim it, better way would be to normalize all spherical harmonics so none is too bright
-				diffuseLightColor = averageLightColor * 0.5f;
+				lightDir = getLightDirectionFromSphericalHarmonics();
+			}
+
+			UNITY_BRANCH
+			if (!any(lightColor))
+			{
+				lightColor = averageLightColor;
 			}
 		}
-
-		UNITY_BRANCH
-		if (!any(lightDir))
-		{
-			lightDir = getLightDirectionFromSphericalHarmonics();
-		}
-
-		// apply ramp to baked indirect diffuse
-		// BAD: this washes out colors
-		/*UNITY_BRANCH
-		if (any(lightDir))
-		{
-			float rampNdotL = dot(normal, lightDir) * 0.5 + 0.5;
-			rampNdotL = lerp(rampNdotL, 1, 0.5);
-			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb;
-			float g = grayness(diffuseLightRGB); // maintain same darkness
-			diffuseLightRGB += shadowRamp;
-			diffuseLightRGB *= g / grayness(diffuseLightRGB);
-		}*/
 
 	#else
 		
@@ -644,37 +622,33 @@ float4 frag(FragmentInput i) : SV_Target
 
 	float3 finalRGB = 0;
 
+	lightDir = normalize(lightDir);
 	float3 halfDir = normalize(lightDir + viewDir);
-
 	float NdotL = dot(normal, lightDir);
 	float NdotV = dot(normal, viewDir);
 	float NdotH = dot(normal, halfDir);
 	
 	UNITY_BRANCH
-	if (any(lightDir)) 
+	if (any(lightDir) && any(lightColor))
 	{
 		// specular
-		UNITY_BRANCH
-		if (any(specularLightColor))
 		{
 			float gloss = _Glossiness;
 			float specPow = exp2(gloss * 10.0);
 			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * gloss;
 			// specular light does not enter surface, it is reflected off surface so it does not get any surface color
-			finalRGB += lightAttenuation * specularLightColor * specularReflection;
+			finalRGB += lightAttenuation * lightColor * specularReflection;
 		}
 
 		// diffuse
-		UNITY_BRANCH
-		if (any(diffuseLightColor))
 		{
 			#ifdef UNITY_PASS_FORWARDBASE
 			#else
 				// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
 				// lets make sure its not too bright
-				float g = grayness(diffuseLightColor);
+				float g = grayness(lightColor);
 				UNITY_BRANCH
-				if (g > 1) diffuseLightColor /= g;
+				if (g > 1) lightColor /= g;
 			#endif
 
 			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
@@ -683,7 +657,7 @@ float4 frag(FragmentInput i) : SV_Target
 			//shadowRamp = max(0, NdotL + 0.1); // DEBUG, phong
 			diffuseLightRGB += 
 				shadowRamp *
-				diffuseLightColor *
+				lightColor*
 				lightAttenuation;
 		}
 	}
