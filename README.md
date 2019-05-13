@@ -43,12 +43,12 @@ Censor square size decreases as distance to it increases.
 ## World Cutout Sphere &#x1F6AA;&#x1f4a1;
 Efficient single pass world cutout shader.
 Uses ray sphere intersection, so works only as spherical cutout.
-[Used in migero's Foosball 1vs1 Or 2vs2](https://vrchat.net/home/launch?worldId=wrld_79b8ae0e-4c80-416f-9ef8-573fb10dfc34)
 ![](Images/World_Cutout_Sphere.png)
 
 ## Distance Fade Outline &#x1f4a1;
 Fades outline (aka rim lighting) based on how far it is behind objects and how far it is from camera.
 Add it to bottom of material list in Renderer component, so whole object is rendered again with this material.
+[Used in migero's Foosball 1vs1 Or 2vs2](https://vrchat.net/home/launch?worldId=wrld_79b8ae0e-4c80-416f-9ef8-573fb10dfc34)
 ![](Images/Distance_Fade_Outline.jpg)
 
 ## Shader Debug
