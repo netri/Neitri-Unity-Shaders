@@ -1,6 +1,6 @@
 # Current state
 [launch Example World](https://www.vrchat.com/home/launch?worldId=wrld_f4bc450a-6998-4496-bac6-7a53f44dd3ae)
-There is alot of silly/funky math so it might go NaN or reset randomly.
+Particles might go NaN or reset, happens more often the further they are away from 0,0,0.
 
 # How it works
 The data is stored in render texture, one pixel RGB is world XYZ of the particle.
