@@ -1,11 +1,11 @@
-#Credits
+# Credits
 Phi16 - Making the first GPU particles I saw
 Mel0n, Des - Showing and explaining me the GPU particles
 Merlin, Nave - Optimization tips and ideas
 Des - Making avatar held version work
 
 
-#How it works
+# How it works
 The data is stored in render texture, one pixel RGB is world XYZ of the particle.
 To render the particles: You take mesh with alot of quads (or you make the quads in tesselation or geometry shader stage), identify every quad for examply by SV_VertexID and move it to positon stored in the texture.
 To move the particles: You have a camera that sees only the render texture, and you render the render texture in front of the camera with some special shader that adjusts it's contents, for example it moves every position closer to some point.
