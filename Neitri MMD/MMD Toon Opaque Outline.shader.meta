@@ -2,7 +2,12 @@ fileFormatVersion: 2
 guid: cd39b12935acaa14f9485d1b90751f47
 ShaderImporter:
   externalObjects: {}
-  defaultTextures: []
+  defaultTextures:
+  - _MainTex: {instanceID: 0}
+  - _BumpMap: {instanceID: 0}
+  - _EmissionMap: {instanceID: 0}
+  - _Ramp: {fileID: 2800000, guid: dda8707f00c412c4bafa424967d1c740, type: 3}
+  - _Matcap: {fileID: 2800000, guid: fc97398b94ec4c74faef69b1cb644ae2, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

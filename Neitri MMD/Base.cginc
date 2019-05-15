@@ -413,7 +413,7 @@ void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLi
 	averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 
 
-	realLightProbes = ShadeSH9(normal); return;
+	//realLightProbes = ShadeSH9(normal); return;
 
 	realLightProbes = 0;
 	//normal.w = 0; // DEBUG
@@ -603,12 +603,12 @@ float4 frag(FragmentInput i) : SV_Target
 			{
 				lightDir = getLightDirectionFromSphericalHarmonics();
 			}
+		}
 
-			UNITY_BRANCH
-			if (!any(lightColor))
-			{
-				lightColor = averageLightColor;
-			}
+		UNITY_BRANCH
+		if (!any(lightColor))
+		{
+			lightColor = averageLightColor;
 		}
 
 	#else
@@ -712,6 +712,8 @@ float4 frag(FragmentInput i) : SV_Target
 
 		float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapColorAdjustment;
 
+
+		UNITY_BRANCH
 		if (_MatcapType == 1)
 		{
 			// Add to final color
@@ -719,9 +721,20 @@ float4 frag(FragmentInput i) : SV_Target
 		}
 		else
 		{
-			// Multiply final color
-			finalRGB *= matcap;
+			UNITY_BRANCH
+			if (_MatcapType == 2)
+			{
+				// Multiply final color
+				finalRGB *= matcap;
+			}
+			else
+			{
+				// Multiply by light color then add to final color
+				matcap *= lightColor;
+				finalRGB += matcap;
+			}
 		}
+
 
 		// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
 		// it just looks super good, adds more depth just where its needed
