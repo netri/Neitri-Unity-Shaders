@@ -32,15 +32,15 @@ Shader "Neitri/MMD Toon Opaque" {
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
-		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 1
+		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
 		[Toggle(_)] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
+		//[Toggle(_)] _UseContactDeformation ("Contact Deformation", Range(0, 1)) = 0
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
-		//[Toggle(_)] _UseMeshDeformation ("Mesh Deformation", Range(0, 1)) = 0
 	}
 	SubShader {
 		Tags {

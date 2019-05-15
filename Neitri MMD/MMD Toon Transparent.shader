@@ -34,7 +34,7 @@ Shader "Neitri/MMD Toon Transparent" {
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness("Baked lighting flatness", Range(0, 1)) = 0.9
-		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 1
+		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0
 
 		[Header(Other)]
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
