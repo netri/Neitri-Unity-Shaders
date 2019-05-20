@@ -1,21 +1,20 @@
 fileFormatVersion: 2
-guid: 5070e7f889b193b4ba47ceff0c14fa58
+guid: 1ed1f379e6983ee439eea0b42c8b277c
 ModelImporter:
   serializedVersion: 22
   fileIDToRecycleName:
     100000: //RootNode
     400000: //RootNode
-    2100000: No Name
+    2100000: Wireframe Projector Mesh
     2300000: //RootNode
     3300000: //RootNode
-    4300000: flashlight
-    4300002: flashlight mesh
+    4300000: Wireframe Projector Mesh
   externalObjects:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: No Name
-    second: {fileID: 2100000, guid: 48b7c3f4094be1c439da093326b5a042, type: 2}
+      name: Wireframe Projector Mesh
+    second: {fileID: 2100000, guid: 2615e04b98232d74c87031e6a49b7573, type: 2}
   materials:
     importMaterials: 1
     materialName: 0

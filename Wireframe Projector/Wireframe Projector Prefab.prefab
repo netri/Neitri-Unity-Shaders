@@ -121,8 +121,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1674046601012768}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.295, y: 1.096, z: 0}
+  m_LocalRotation: {x: 0.5, y: -0.5, z: 0.5, w: 0.5}
+  m_LocalPosition: {x: 5.384, y: 1.07, z: 2.286}
   m_LocalScale: {x: 100, y: 100, z: 100}
   m_Children:
   - {fileID: 224405473456186588}
@@ -158,7 +158,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_Materials:
-  - {fileID: 2100000, guid: 48b7c3f4094be1c439da093326b5a042, type: 2}
+  - {fileID: 2100000, guid: 2615e04b98232d74c87031e6a49b7573, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -184,7 +184,7 @@ MeshFilter:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1674046601012768}
-  m_Mesh: {fileID: 4300002, guid: 5070e7f889b193b4ba47ceff0c14fa58, type: 3}
+  m_Mesh: {fileID: 4300000, guid: 1ed1f379e6983ee439eea0b42c8b277c, type: 3}
 --- !u!54 &54553582543881186
 Rigidbody:
   m_ObjectHideFlags: 1
@@ -213,7 +213,7 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 14
   m_SkinWidth: 0.01
-  m_Mesh: {fileID: 4300002, guid: 5070e7f889b193b4ba47ceff0c14fa58, type: 3}
+  m_Mesh: {fileID: 4300000, guid: 1ed1f379e6983ee439eea0b42c8b277c, type: 3}
 --- !u!114 &114226585961086904
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -349,7 +349,7 @@ MonoBehaviour:
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 81267729c5944ca41888a21a8c8a032e, type: 3}
     m_FontSize: 28
     m_FontStyle: 0
     m_BestFit: 0
@@ -361,7 +361,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: wireframe projector
+  m_Text: Wireframe Projector
 --- !u!114 &114658865459546856
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -600,17 +600,17 @@ RectTransform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1228350294704776}
-  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: -0.001438}
+  m_LocalRotation: {x: -0.5, y: 0.5, z: 0.5, w: 0.5}
+  m_LocalPosition: {x: 0, y: 0, z: -0.00163}
   m_LocalScale: {x: 0.000005829654, y: 0.000005319118, z: 0.0003}
   m_Children:
   - {fileID: 224631669870657746}
   m_Father: {fileID: 4263729428218568}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 90, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -0.00019, y: 0.000015}
+  m_AnchoredPosition: {x: 0, y: -0.000181}
   m_SizeDelta: {x: 344.908, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!224 &224631669870657746
