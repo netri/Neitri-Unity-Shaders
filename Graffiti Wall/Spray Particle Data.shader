@@ -53,7 +53,7 @@
 				float progress = distance(i.uv, float2(0.5, 0.5));
 				clip(0.5 - progress);
 				float alpha = smoothstep(0.5, 0, progress);
-				return fixed4(_Color.rgb * i.color.rgb, alpha * _Color.a * i.color.a);
+				return fixed4(_Color.rgb * i.color.rgb, alpha * i.color.a * _Color.a);
 			}
 			ENDCG
 		}

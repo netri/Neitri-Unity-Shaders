@@ -56,10 +56,13 @@
 
 				if (spray.a > 0.1)
 				{
-					float d = 1 - min(1, distance(previous.rgb, spray.rgb));
-					float a = spray.a + d;
-					combined = fixed4(spray.rgb, a);
+					float similarity = 1.7 - min(1.7, distance(previous.rgb, spray.rgb)); // 0.01 ... 1.7
+					similarity = min(1, similarity * unity_DeltaTime.x * 100);
+					float alpha = spray.a + previous.a * similarity;
+					alpha = min(1, alpha);
+					combined = fixed4(spray.rgb, alpha);
 
+					//combined = fixed4(spray.rgb, spray.a); //DEBUG
 				}
 				else
 				{

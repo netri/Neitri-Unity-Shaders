@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 4330646163365602}
   - component: {fileID: 198405619014219634}
   - component: {fileID: 199693964354546662}
-  m_Layer: 28
+  m_Layer: 29
   m_Name: Spray Data
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -55,7 +55,7 @@ GameObject:
   - component: {fileID: 4353915638564704}
   - component: {fileID: 198708317609117332}
   - component: {fileID: 199008695214176968}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Spray Show
   m_TagString: Untagged
   m_Icon: {fileID: 0}
