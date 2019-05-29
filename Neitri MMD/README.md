@@ -12,10 +12,8 @@ This shader was made with the following goals in mind:
 - When standard is completely dark, be dark too
 
 
-# Inspiration images and videos
-https://chinagamenews.net/market-info-126/
-https://www.youtube.com/watch?v=lrfhA6Grwr0
-https://www.youtube.com/watch?v=egHSE0dpWRw
+# Good concepts/ideas
 
-# Inspiration code
-https://github.com/kayru/Probulator/blob/d5993a30df54f4850311045e3ef7f28624e20924/Source/Probulator/SphericalHarmonics.h#L136
+[From mobile to high-end PC: Achieving high quality anime style rendering on Unity](https://www.youtube.com/watch?v=egHSE0dpWRw), [Blog Post](https://blog.naver.com/mnpshino/221541025516)
+
+[The highest peak of Chinese 2D CG! When "miHoYo" of "3rd collapse" uses Unity, it becomes like this](https://chinagamenews.net/market-info-126/), [Video](https://www.youtube.com/watch?v=lrfhA6Grwr0)
