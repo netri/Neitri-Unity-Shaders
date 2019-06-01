@@ -139,7 +139,9 @@ float3 NeitriAverageVertexLights(float3 modelCenterPos)
 	// don't produce NaNs if some vertex position overlaps with the light
 	lengthSq = max(lengthSq, 0.000001);
 	// attenuation
-	float4 atten = 1.0 / (1.0 + lengthSq * unity_4LightAtten0);
+	// original: float4 atten = 1.0 / (1 + lengthSq * unity_4LightAtten0);
+	float4 atten = 1.0 / (1.0 + lengthSq * unity_4LightAtten0 * 2.0);
+	//atten = 1.0 / (1 + lengthSq * unity_4LightAtten0);
 	float4 diff = atten;
 	// final color
 	float3 col = 0;
@@ -173,7 +175,7 @@ float3 NeitriRealVertexLights(float3 pos, float3 normal)
 	float4 corr = rsqrt(lengthSq);
 	ndotl = max(float4(0, 0, 0, 0), ndotl * corr);
 	// attenuation
-	float4 atten = 1.0 / (1.0 + lengthSq * unity_4LightAtten0);
+	float4 atten = 1.0 / (1 + lengthSq * unity_4LightAtten0);
 	float4 diff = ndotl * atten;
 	// final color
 	float3 col = 0;
