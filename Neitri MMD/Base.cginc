@@ -66,7 +66,8 @@ float4 _OutlineColor;
 float _OutlineWidth;
 #endif
 
-int _UseDitheredTransparency;
+float _AlphaCutout;
+int _DitheredTransparencyType;
 
 
 // DEBUG
@@ -528,7 +529,7 @@ float4 frag(FragmentInput i) : SV_Target
 	#endif
 
 
-	float4 mainTexture = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
+	float4 mainTexture = tex2D(_MainTex, TRANSFORM_TEX(i.uv0, _MainTex));
 
 	#ifdef IS_TRANSPARENT_SHADER
 	// because people expect color alpha to work only on transparent shaders
@@ -537,14 +538,26 @@ float4 frag(FragmentInput i) : SV_Target
 	mainTexture.rgb *= _Color.rgb;
 	#endif
 
+	clip(mainTexture.a - _AlphaCutout);
 
-	// cutout support, discard current pixel if alpha is less than 0.05
-	clip(mainTexture.a - 0.05);
-
-	if (_UseDitheredTransparency != 0)
+	#ifndef IS_TRANSPARENT_SHADER
+	// dithering makes sence only in opaque shader
+	UNITY_BRANCH
+	if (_DitheredTransparencyType != 0)
 	{
-		clip(mainTexture.a - triangularPDFNoiseDithering(i.pos.xy));
+		UNITY_BRANCH
+		if (_DitheredTransparencyType == 1)
+		{
+			// Anchored to camera
+			clip(mainTexture.a - triangularPDFNoiseDithering(i.pos.xy));
+		}
+		else
+		{
+			// Anchored to texture coordinates
+			clip(mainTexture.a - triangularPDFNoiseDithering(i.uv0 * 5));
+		}
 	}
+	#endif
 
 	float3 normal = i.normal;
 
@@ -865,14 +878,32 @@ void vertShadowCaster (VertexInputShadowCaster v
 
 half4 fragShadowCaster(float4 vpos : SV_POSITION, VertexOutputShadowCaster i) : SV_Target
 {
-	half alpha = tex2D(_MainTex, i.tex).a * _Color.a;
-	clip(alpha - 0.05);
-	#if defined(IS_TRANSPARENT_SHADER)
+	half alpha = tex2D(_MainTex, TRANSFORM_TEX(i.tex, _MainTex)).a;
+
+	#ifdef IS_TRANSPARENT_SHADER
+	// because people expect color alpha to work only on transparent shaders
+	alpha *= _Color.a;
+	#endif
+
+	clip(alpha - _AlphaCutout);
+
+	#ifndef IS_TRANSPARENT_SHADER
+	// dithering makes sence only in opaque shader
+	UNITY_BRANCH
+	if (_DitheredTransparencyType != 0)
+	{
 		UNITY_BRANCH
-		if (_UseDitheredTransparency != 0)
+		if (_DitheredTransparencyType == 1)
 		{
+			// Anchored to camera
 			clip(alpha - triangularPDFNoiseDithering(vpos.xy));
 		}
+		else
+		{
+			// Anchored to texture coordinates
+			clip(alpha - triangularPDFNoiseDithering(i.tex.xy * 5));
+		}
+	}
 	#endif
 
 	SHADOW_CASTER_FRAGMENT(i)

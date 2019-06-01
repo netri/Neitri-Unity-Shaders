@@ -37,6 +37,7 @@ Shader "Neitri/MMD Toon Transparent" {
 		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0
 
 		[Header(Other)]
+		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4
 	}

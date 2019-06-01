@@ -35,9 +35,10 @@ Shader "Neitri/MMD Toon Opaque" {
 		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0
 
 		[Header(Other)]
+		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
+		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered Transparency", Range(0, 2)) = 0
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
-		[Toggle(_)] _UseDitheredTransparency ("Dithered Transparency", Range(0, 1)) = 1
 		//[Toggle(_)] _UseContactDeformation ("Contact Deformation", Range(0, 1)) = 0
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
