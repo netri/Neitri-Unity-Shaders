@@ -42,7 +42,7 @@ Shader "Neitri/Clock V3"
 				float2 uv : TEXCOORD0;
 				float3 progress : TEXCOORD1;
 				float4 color : COLOR;
-				UNITY_FOG_COORDS(1)
+				UNITY_FOG_COORDS(2)
 			};
 
 			sampler2D _MainTex;
