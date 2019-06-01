@@ -79,7 +79,6 @@ int _DebugInt2;
 struct VertexInput {
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
-	float4 color : COLOR;
 	float4 tangent : TANGENT;
 	float2 texcoord0 : TEXCOORD0;
 };
@@ -87,16 +86,14 @@ struct VertexInput {
 struct GeometryInput {
 	float4 vertex : SV_POSITION;
 	float3 normal : TEXCOORD0;
-	float4 color : TEXCOORD1;
-	float4 tangent : TEXCOORD2;
-	float2 texcoord0 : TEXCOORD3;
+	float4 tangent : TEXCOORD1;
+	float2 texcoord0 : TEXCOORD2;
 };
 
 void CopyVertexInput(in VertexInput from, out GeometryInput to)
 {
 	to.vertex = from.vertex;
 	to.normal = from.normal;
-	to.color = from.color;
 	to.tangent = from.tangent;
 	to.texcoord0 = from.texcoord0;
 }
@@ -104,8 +101,7 @@ void CopyVertexInput(in VertexInput from, out GeometryInput to)
 
 struct FragmentInput {
 	float4 pos : SV_POSITION; // must be called pos, because TRANSFER_VERTEX_TO_FRAGMENT expects it
-	float4 color : COLOR;
-	float4 uv0 : TEXCOORD0;
+	float4 uv0 : TEXCOORD0; // w == 1 marks outline pixel
 	float4 worldPos : TEXCOORD1;
 	float3 normal : TEXCOORD2;
 	LIGHTING_COORDS(3,4) // shadow coords
@@ -244,7 +240,6 @@ FragmentInput vertReal(in VertexInput v)
 {
 	FragmentInput o = (FragmentInput)0;
 	o.uv0.xy = v.texcoord0;
-	o.color = v.color;
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	#ifdef USE_TANGENT_BITANGENT
 		o.tangentDir = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0.0)).xyz);
@@ -352,8 +347,9 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 			worldPos.xyz += worldNormal * outlineWorldWidth;
 
 			FragmentInput o = (FragmentInput)0;
-			o.color = float4(0, 0, 0, 5);
 			o.pos = mul(UNITY_MATRIX_VP, worldPos);
+			o.uv0.xy = v[i].texcoord0; // outline should respect alpha cutout and dithering
+			o.uv0.w = 1; // mark outline pixel
 
 			tristream.Append(o);
 		}
@@ -507,6 +503,7 @@ void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLi
 
 
 #ifdef OUTPUT_DEPTH
+
 struct FragOut
 {
 	float depth : SV_Depth;
@@ -516,18 +513,11 @@ FragOut frag(FragmentInput i)
 {
 	FragOut fragOut;
 #else
-float4 frag(FragmentInput i) : SV_Target 
+
+float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 {
+
 #endif
-
-	#ifdef IS_OUTLINE_SHADER
-	if (i.color.a > 4.5)
-	{
-		// this is outline fragment
-		return _OutlineColor;
-	}
-	#endif
-
 
 	float4 mainTexture = tex2D(_MainTex, TRANSFORM_TEX(i.uv0, _MainTex));
 
@@ -541,7 +531,7 @@ float4 frag(FragmentInput i) : SV_Target
 	clip(mainTexture.a - _AlphaCutout);
 
 	#ifndef IS_TRANSPARENT_SHADER
-	// dithering makes sence only in opaque shader
+	// dithering makes sense only in opaque shader
 	UNITY_BRANCH
 	if (_DitheredTransparencyType != 0)
 	{
@@ -554,10 +544,22 @@ float4 frag(FragmentInput i) : SV_Target
 		else
 		{
 			// Anchored to texture coordinates
-			clip(mainTexture.a - triangularPDFNoiseDithering(i.uv0 * 5));
+			clip(mainTexture.a - triangularPDFNoiseDithering(i.uv0.xy * 5));
 		}
 	}
 	#endif
+
+	// outline should respect alpha cutout and dithering
+#ifdef IS_OUTLINE_SHADER
+	if (i.uv0.w > 0)
+	{
+		// this is outline pixel
+		clip(facing); // clip backfaces in case cull is off or front
+		return _OutlineColor;
+	}
+#endif
+
+
 
 	float3 normal = i.normal;
 
@@ -888,7 +890,7 @@ half4 fragShadowCaster(float4 vpos : SV_POSITION, VertexOutputShadowCaster i) : 
 	clip(alpha - _AlphaCutout);
 
 	#ifndef IS_TRANSPARENT_SHADER
-	// dithering makes sence only in opaque shader
+	// dithering makes sense only in opaque shader
 	UNITY_BRANCH
 	if (_DitheredTransparencyType != 0)
 	{

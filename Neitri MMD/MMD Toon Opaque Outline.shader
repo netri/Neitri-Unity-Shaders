@@ -35,7 +35,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0
 
 		[Header(Outline)]
-		[HDR] _OutlineColor("Color", Color) = (0,0,0,0.7)
+		[HDR] _OutlineColor("Color", Color) = (0,0,0,1)
 		_OutlineWidth("Width", Range(0, 10)) = 2
 
 		[Header(Other)]
@@ -53,8 +53,8 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		Pass {
 			Name "ForwardBase"
 			Tags { "LightMode" = "ForwardBase" }
-			Cull[_Cull]
-			ZTest[_ZTest]
+			Cull [_Cull]
+			ZTest [_ZTest]
 			Blend One Zero
 			AlphaToMask On
 			CGPROGRAM
@@ -73,8 +73,8 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		Pass {
 			Name "ForwardAdd"
 			Tags { "LightMode" = "ForwardAdd" }
-			Cull[_Cull]
-			ZTest[_ZTest]
+			Cull [_Cull]
+			ZTest [_ZTest]
 			Blend SrcAlpha One
 			AlphaToMask On
 			ZWrite Off
