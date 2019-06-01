@@ -111,10 +111,8 @@ struct FragmentInput {
 	UNITY_FOG_COORDS(5) 
 	float3 modelPos : TEXCOORD6;
 	#ifdef UNITY_PASS_FORWARDBASE
-		#ifdef VERTEXLIGHT_ON
-			float4 vertexLightsReal : TEXCOORD7;
-			float4 vertexLightsAverage : TEXCOORD8;
-		#endif
+		float4 vertexLightsReal : TEXCOORD7;
+		float4 vertexLightsAverage : TEXCOORD8;
 	#endif
 	#ifdef USE_TANGENT_BITANGENT
 		float3 tangentDir : TEXCOORD9;
@@ -123,22 +121,16 @@ struct FragmentInput {
 };
 
 
-
-
 // based off Shade4PointLights from "\Unity\builtin_shaders-5.6.5f1\CGIncludes\UnityCG.cginc"
-float3 AverageShade4PointLights (
-	float4 lightPosX, float4 lightPosY, float4 lightPosZ,
-	float3 lightColor0, float3 lightColor1, float3 lightColor2, float3 lightColor3,
-	float4 lightAttenSq,
-	float3 pos)
+float3 NeitriAverageVertexLights(float3 modelCenterPos)
 {
 	// BAD: does not take into account distance to lights
 	//return (lightColor0 + lightColor1 + lightColor2 + lightColor3) * 0.25;
 
 	// to light vectors
-	float4 toLightX = lightPosX - pos.x;
-	float4 toLightY = lightPosY - pos.y;
-	float4 toLightZ = lightPosZ - pos.z;
+	float4 toLightX = unity_4LightPosX0 - modelCenterPos.x;
+	float4 toLightY = unity_4LightPosY0 - modelCenterPos.y;
+	float4 toLightZ = unity_4LightPosZ0 - modelCenterPos.z;
 	// squared lengths
 	float4 lengthSq = 0;
 	lengthSq += toLightX * toLightX;
@@ -147,16 +139,52 @@ float3 AverageShade4PointLights (
 	// don't produce NaNs if some vertex position overlaps with the light
 	lengthSq = max(lengthSq, 0.000001);
 	// attenuation
-	float4 atten = 1.0 / (1.0 + lengthSq * lightAttenSq);
+	float4 atten = 1.0 / (1.0 + lengthSq * unity_4LightAtten0);
 	float4 diff = atten;
 	// final color
 	float3 col = 0;
-	col += lightColor0 * diff.x;
-	col += lightColor1 * diff.y;
-	col += lightColor2 * diff.z;
-	col += lightColor3 * diff.w;
+	col += unity_LightColor[0].rgb * diff.x;
+	col += unity_LightColor[1].rgb * diff.y;
+	col += unity_LightColor[2].rgb * diff.z;
+	col += unity_LightColor[3].rgb * diff.w;
 	return col;
 }
+
+// based off Shade4PointLights from "\Unity\builtin_shaders-5.6.5f1\CGIncludes\UnityCG.cginc"
+float3 NeitriRealVertexLights(float3 pos, float3 normal)
+{
+	// to light vectors
+	float4 toLightX = unity_4LightPosX0 - pos.x;
+	float4 toLightY = unity_4LightPosY0 - pos.y;
+	float4 toLightZ = unity_4LightPosZ0 - pos.z;
+	// squared lengths
+	float4 lengthSq = 0;
+	lengthSq += toLightX * toLightX;
+	lengthSq += toLightY * toLightY;
+	lengthSq += toLightZ * toLightZ;
+	// don't produce NaNs if some vertex position overlaps with the light
+	lengthSq = max(lengthSq, 0.000001);
+	// NdotL
+	float4 ndotl = 0;
+	ndotl += toLightX * normal.x;
+	ndotl += toLightY * normal.y;
+	ndotl += toLightZ * normal.z;
+	// correct NdotL
+	float4 corr = rsqrt(lengthSq);
+	ndotl = max(float4(0, 0, 0, 0), ndotl * corr);
+	// attenuation
+	float4 atten = 1.0 / (1.0 + lengthSq * unity_4LightAtten0);
+	float4 diff = ndotl * atten;
+	// final color
+	float3 col = 0;
+	col += unity_LightColor[0].rgb * diff.x;
+	col += unity_LightColor[1].rgb * diff.y;
+	col += unity_LightColor[2].rgb * diff.z;
+	col += unity_LightColor[3].rgb * diff.w;
+	return col;
+}
+
+
 
 
 
@@ -248,16 +276,10 @@ FragmentInput vertReal(in VertexInput v)
 	// next are added to light probes
 	// you can force light to be in vertex lights by setting Render Mode: Not Important
 	#ifdef UNITY_PASS_FORWARDBASE
-		#ifdef VERTEXLIGHT_ON
+		#ifdef VERTEXLIGHT_ON // defined only in frgament shader
 			// Approximated illumination from non-important point lights
-			o.vertexLightsReal.rgb = Shade4PointLights (
-				unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
-				unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
-				unity_4LightAtten0, o.worldPos, o.normal);
-			o.vertexLightsAverage.rgb = AverageShade4PointLights (
-				unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
-				unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
-				unity_4LightAtten0, objectWorldPos);
+			o.vertexLightsReal.rgb = NeitriRealVertexLights(o.worldPos, o.normal);
+			o.vertexLightsAverage.rgb = NeitriAverageVertexLights(objectWorldPos);
 		#endif
 	#endif
 
@@ -574,14 +596,11 @@ float4 frag(FragmentInput i) : SV_Target
 		NeitriShadeSH9(half4(normal, 1), realLightProbes, averageLightProbes);
 
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
-		
-		diffuseLightRGB += lightProbes;
+		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
 
 		// vertex lights
-		#ifdef VERTEXLIGHT_ON
-			float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
-			diffuseLightRGB += vertexLights;
-		#endif
+		// BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
+		diffuseLightRGB += lightProbes + vertexLights;
 		
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
@@ -589,11 +608,7 @@ float4 frag(FragmentInput i) : SV_Target
 
 		lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
 
-		#ifdef VERTEXLIGHT_ON
-			float3 averageLightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
-		#else
-			float3 averageLightColor = averageLightProbes;
-		#endif
+		float3 averageLightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
 
 		UNITY_BRANCH
 		if (_ApproximateFakeLight > 0)
