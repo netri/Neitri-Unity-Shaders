@@ -40,6 +40,7 @@ sampler2D _MainTex; float4 _MainTex_ST;
 fixed4 _Color;
 float _Glossiness; // name from Unity's standard
 
+int _EmissionType;
 sampler2D _EmissionMap; float4 _EmissionMap_ST;
 fixed4 _EmissionColor;
 
@@ -780,17 +781,24 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_BRANCH
-		if (any(_EmissionColor))
+		if (_EmissionType != 0 && any(_EmissionColor))
 		{
-			fixed4 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
-			finalRGB += emissive.rgb;
-			/*
-			TODO: Eimission type,  Normal,0,Show only in darkness,1
-			float emissiveWeight = grayness(emissive.rgb) - grayness(finalRGB);
-			// BAD: emissiveWeight = smoothstep(-1, 1, emissiveWeight); causes darker color on not emissive pixel 
-			emissiveWeight = smoothstep(0, 1, emissiveWeight);
-			//finalRGB = lerp(finalRGB, emissive.rgb, emissive);
-			finalRGB = lerp(finalRGB, emissive.rgb, emissive);*/
+			if (_EmissionType == 1)
+			{
+				// Glow always
+				fixed3 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)).rgb * _EmissionColor.rgb;
+				finalRGB += emissive;
+			}
+			else
+			{
+				// Glow only in darkness
+				fixed3 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)).rgb * _EmissionColor.rgb;
+				fixed lightWeight = unityLightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + lightColor, fixed3(1, 1, 1));
+				//emissive *= 1 - 2 * clamp(0, 0.5, lightWeight);
+				//emissive *= 1 - smoothstep(0, 1, lightWeight);
+				emissive *= 1 - clamp(0, 1, lightWeight);
+				finalRGB += emissive;
+			}
 		}
 	#else
 	#endif
