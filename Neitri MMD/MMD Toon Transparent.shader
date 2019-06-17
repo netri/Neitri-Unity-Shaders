@@ -35,7 +35,7 @@ Shader "Neitri/MMD Toon Transparent" {
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness("Baked lighting flatness", Range(0, 1)) = 0.9
-		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0
+		_ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0.7
 
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05

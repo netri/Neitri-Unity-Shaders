@@ -33,7 +33,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness("Baked lighting flatness", Range(0, 1)) = 0.9
-		[Toggle(_)] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0
+		_ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0.7
 
 		[Header(Outline)]
 		[HDR] _OutlineColor("Color", Color) = (0,0,0,1)

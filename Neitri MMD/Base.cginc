@@ -51,14 +51,14 @@ float _BumpScale;
 
 float3 _ShadowColor;
 float _BakedLightingFlatness;
-int _ApproximateFakeLight;
+float _ApproximateFakeLight;
 
 float3 _RampColorAdjustment;
 sampler2D _Ramp; // name from Xiexe's
 float _ShadingRampStretch;
 
 int _MatcapType;
-float3 _MatcapColorAdjustment;
+float4 _MatcapColorAdjustment;
 int _MatcapAnchor;
 sampler2D _Matcap;
 
@@ -333,16 +333,16 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 
 		for (int i = 2; i >= 0; i--)
 		{
-			float outlineWorldWidth = 0;
 			float4 worldPos = mul(UNITY_MATRIX_M, float4(v[i].vertex.xyz, 1.0));
 			float3 worldNormal = normalize(UnityObjectToWorldNormal(v[i].normal));
 			float vertexDistanceToCamera = distance(worldPos.xyz / worldPos.w, getCameraPosition());
-			outlineWorldWidth = vertexDistanceToCamera / max(_ScreenParams.x, _ScreenParams.y) * _OutlineWidth;
 			if (vertexDistanceToCamera > 10)
 			{
 				return;
 			}
 
+			float outlineWorldWidth = 0;
+			outlineWorldWidth = vertexDistanceToCamera / max(_ScreenParams.x, _ScreenParams.y) * _OutlineWidth;
 			outlineWorldWidth *= smoothstep(10, 3, vertexDistanceToCamera); // decrease outline width, the further we are
 
 			worldPos.xyz += worldNormal * outlineWorldWidth;
@@ -430,14 +430,10 @@ float3 getLightDirectionFromSphericalHarmonics()
 
 
 // based on ShadeSH9 from \Unity\builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardUtils.cginc:
-void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLightProbes)
+half3 NeitriShadeSH9(half4 normal)
 {
-	averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+	half3 realLightProbes = 0;
 
-
-	//realLightProbes = ShadeSH9(normal); return;
-
-	realLightProbes = 0;
 	//normal.w = 0; // DEBUG
 	//return average; // DEBUG
 
@@ -499,6 +495,8 @@ void NeitriShadeSH9(half4 normal, out half3 realLightProbes, out half3 averageLi
 #ifdef UNITY_COLORSPACE_GAMMA
 	realLightProbes = LinearToGammaSpace(realLightProbes);
 #endif
+
+	return realLightProbes;
 }
 
 
@@ -584,14 +582,9 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 	// direction from pixel towards camera
 	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
 
-	// direction from pixel towards light
-	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
-
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.worldPos.xyz);
 	float3 lightAttenuation; // assigned later
-
-	fixed3 lightColor = _LightColor0.rgb;
 
 	// prevent bloom if light color is over 1
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
@@ -609,40 +602,31 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		//half3 averageLightProbes = ShadeSH9Average();
 		//half3 realLightProbes = ShadeSH9(half4(normal, 1));
 
-		half3 averageLightProbes;
-		half3 realLightProbes;
-		NeitriShadeSH9(half4(normal, 1), realLightProbes, averageLightProbes);
-
-		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
-		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness);
-
-		// vertex lights
-		// BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
-		diffuseLightRGB += lightProbes + vertexLights;
+		half3 averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+		half3 realLightProbes = NeitriShadeSH9(half4(normal, 1));
 		
+		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);		
+		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
+
+		diffuseLightRGB = lightProbes + vertexLights;
+
+		UNITY_BRANCH
+		if (_ApproximateFakeLight > 0)
+		{
+			float3 lightDir = getLightDirectionFromSphericalHarmonics();
+			fixed3 lightColor = ShadeSH9(half4(lightDir, 1));
+			if (lightColor.r + lightColor.g + lightColor.b > 0)
+			{
+				float NdotL = max(0, dot(normal, lightDir));
+				diffuseLightRGB = lerp(diffuseLightRGB, lightColor, NdotL * _ApproximateFakeLight);
+			}
+		}
+
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
 		// bool isInCompleteDark = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
 
 		lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
-
-		float3 averageLightColor = (averageLightProbes + i.vertexLightsAverage) * 0.7f;
-
-		UNITY_BRANCH
-		if (_ApproximateFakeLight > 0)
-		{
-			UNITY_BRANCH
-			if (!any(lightDir))
-			{
-				lightDir = getLightDirectionFromSphericalHarmonics();
-			}
-		}
-
-		UNITY_BRANCH
-		if (!any(lightColor))
-		{
-			lightColor = averageLightColor;
-		}
 
 	#else
 		
@@ -653,18 +637,21 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 	#endif
 
+	fixed3 lightColor = _LightColor0.rgb;
+
 	float3 finalRGB = 0;
 
-	lightDir = normalize(lightDir);
-	float3 halfDir = normalize(lightDir + viewDir);
-	float NdotL = dot(normal, lightDir);
-	float NdotV = dot(normal, viewDir);
-	float NdotH = dot(normal, halfDir);
-	
 	UNITY_BRANCH
-	if (any(lightDir) && any(lightColor))
+	if (any(_WorldSpaceLightPos0))
 	{
-		// specular
+		// direction from pixel towards light
+		float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
+		float3 halfDir = normalize(lightDir + viewDir);
+		float NdotL = dot(normal, lightDir);
+		float NdotV = dot(normal, viewDir);
+		float NdotH = dot(normal, halfDir);
+
+		// Specular
 		{
 			float gloss = _Glossiness;
 			float specPow = exp2(gloss * 10.0);
@@ -673,7 +660,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 			finalRGB += lightAttenuation * lightColor * specularReflection;
 		}
 
-		// diffuse
+		// Diffuse
 		{
 			#ifdef UNITY_PASS_FORWARDBASE
 			#else
@@ -708,77 +695,80 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
 	//finalRGB = saturate(finalRGB);
 
-	// matcap
-	UNITY_BRANCH
-	if (_MatcapType != 0)
-	{
-		float2 matcapUv;
-
+	// Matcap
+	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_BRANCH
-		if (_MatcapAnchor == 0)
+		if (_MatcapType != 0)
 		{
-			// Anchored to direction to camera
-			const float3 worldUp = float3(0, 1, 0);
-			float3 right = normalize(cross(viewDir, worldUp));
-			float3 up = -normalize(cross(viewDir, right));
-			matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
-		}
-		else
-		{
+			float2 matcapUv;
+
 			UNITY_BRANCH
-			if (_MatcapAnchor == 1)
+			if (_MatcapAnchor == 0)
 			{
-				// Anchored to camera rotation
-				float3 up = getCameraUp();
-				float3 right = getCameraRight();
+				// Anchored to direction to camera
+				const float3 worldUp = float3(0, 1, 0);
+				float3 right = normalize(cross(viewDir, worldUp));
+				float3 up = -normalize(cross(viewDir, right));
 				matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
 			}
 			else
 			{
-				// Anchored to world up
-				const float3 up = float3(0, 1, 0);
-				float3 adjustedNormal = normalize(float3(normal.x, 0, normal.z));
-				float3 adjustedViewDir = normalize(float3(viewDir.x, 0, viewDir.z));
-				matcapUv = float2(1 - dot(adjustedNormal, adjustedViewDir), dot(normal, up)) * 0.5 + 0.5;
+				UNITY_BRANCH
+				if (_MatcapAnchor == 1)
+				{
+					// Anchored to camera rotation
+					float3 up = getCameraUp();
+					float3 right = getCameraRight();
+					matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
+				}
+				else
+				{
+					// Anchored to world up
+					const float3 up = float3(0, 1, 0);
+					float3 adjustedNormal = normalize(float3(normal.x, 0, normal.z));
+					float3 adjustedViewDir = normalize(float3(viewDir.x, 0, viewDir.z));
+					matcapUv = float2(1 - dot(adjustedNormal, adjustedViewDir), dot(normal, up)) * 0.5 + 0.5;
+				}
 			}
-		}
 
-		float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapColorAdjustment;
+			float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapColorAdjustment.rgb * _MatcapColorAdjustment.a;
 
 
-		UNITY_BRANCH
-		if (_MatcapType == 1)
-		{
-			// Add to final color
-			finalRGB += matcap;
-		}
-		else
-		{
 			UNITY_BRANCH
-			if (_MatcapType == 2)
+			if (_MatcapType == 1)
 			{
-				// Multiply final color
-				finalRGB *= matcap;
+				// Add to final color
+				finalRGB += matcap;
 			}
 			else
 			{
-				// Multiply by light color then add to final color
-				matcap *= lightColor;
-				finalRGB += matcap;
+				UNITY_BRANCH
+				if (_MatcapType == 2)
+				{
+					// Multiply final color
+					finalRGB *= matcap;
+				}
+				else
+				{
+					// Multiply by light color then add to final color
+					matcap *= lightColor;
+					finalRGB += matcap;
+				}
 			}
+
+
+			// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
+			// it just looks super good, adds more depth just where its needed
+			// finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.2);
+			// now done with matcap, I faced issue where these two curves are not the same: cos(x), 1-abs(cos(x+PI/2)), from 0 to PI/2
+			// because above uses dot with viewDir, whereas matcap uses dot with right/up vector, I countered it by creating radial matcap with following values
+			// Table[N[round(100*(cos(-(acos((1-((100-x)/100*PI/2)))-PI/2))))],{x,40,100,10}]
+
+			//return float4(matcap, 1); // DEBUG
 		}
+	#endif
 
-
-		// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
-		// it just looks super good, adds more depth just where its needed
-		// finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.2);
-		// now done with matcap, I faced issue where these two curves are not the same: cos(x), 1-abs(cos(x+PI/2)), from 0 to PI/2
-		// because above uses dot with viewDir, whereas matcap uses dot with right/up vector, I countered it by creating radial matcap with following values
-		// Table[N[round(100*(cos(-(acos((1-((100-x)/100*PI/2)))-PI/2))))],{x,40,100,10}]
-
-		//return float4(matcap, 1); // DEBUG
-	}
-
+	// Emission
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_BRANCH
 		if (_EmissionType != 0 && any(_EmissionColor))
@@ -794,8 +784,6 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 				// Glow only in darkness
 				fixed3 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)).rgb * _EmissionColor.rgb;
 				fixed lightWeight = unityLightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + lightColor, fixed3(1, 1, 1));
-				//emissive *= 1 - 2 * clamp(0, 0.5, lightWeight);
-				//emissive *= 1 - smoothstep(0, 1, lightWeight);
 				emissive *= 1 - clamp(0, 1, lightWeight);
 				finalRGB += emissive;
 			}
