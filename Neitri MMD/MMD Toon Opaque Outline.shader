@@ -24,7 +24,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 
 		[Header(Matcap)]
 		[Enum(Disabled,0,Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type", Range(0, 3)) = 2
-		[HDR] _MatcapColorAdjustment("Color", Color) = (1,1,1,1)
+		[HDR] _MatcapTint("Color", Color) = (1,1,1,1)
 		[Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor", Range(0, 2)) = 0
 		[NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
 

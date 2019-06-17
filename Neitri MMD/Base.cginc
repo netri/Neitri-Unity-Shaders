@@ -41,7 +41,7 @@ fixed4 _Color;
 float _Glossiness; // name from Unity's standard
 
 int _EmissionType;
-sampler2D _EmissionMap; float4 _EmissionMap_ST;
+sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
 fixed4 _EmissionColor;
 
 #ifdef USE_NORMAL_MAP
@@ -58,7 +58,7 @@ sampler2D _Ramp; // name from Xiexe's
 float _ShadingRampStretch;
 
 int _MatcapType;
-float4 _MatcapColorAdjustment;
+float4 _MatcapTint; // name from Xiexe's
 int _MatcapAnchor;
 sampler2D _Matcap;
 
@@ -677,7 +677,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 			//shadowRamp = max(0, NdotL + 0.1); // DEBUG, phong
 			diffuseLightRGB += 
 				shadowRamp *
-				lightColor*
+				lightColor *
 				lightAttenuation;
 		}
 	}
@@ -731,7 +731,8 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 				}
 			}
 
-			float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapColorAdjustment.rgb * _MatcapColorAdjustment.a;
+
+			float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapTint.rgb * _MatcapTint.a;
 
 
 			UNITY_BRANCH
@@ -748,7 +749,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 					// Multiply final color
 					finalRGB *= matcap;
 				}
-				else
+				else // 3
 				{
 					// Multiply by light color then add to final color
 					matcap *= lightColor;
