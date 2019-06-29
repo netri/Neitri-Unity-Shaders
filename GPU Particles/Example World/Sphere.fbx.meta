@@ -6,12 +6,25 @@ ModelImporter:
     100000: //RootNode
     400000: //RootNode
     2100000: No Name
+    2100002: Sphere Body
+    2100004: Sphere Emission
     2300000: //RootNode
     3300000: //RootNode
     4300000: Icosphere
-  externalObjects: {}
+    4300002: Sphere
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Sphere Body
+    second: {fileID: 2100000, guid: 0e8b2896f69bbd64c9a6d544a78cf789, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Sphere Emission
+    second: {fileID: 2100000, guid: 1a40bfdfb6584024d94748688c643d79, type: 2}
   materials:
-    importMaterials: 0
+    importMaterials: 1
     materialName: 0
     materialSearch: 1
     materialLocation: 1
