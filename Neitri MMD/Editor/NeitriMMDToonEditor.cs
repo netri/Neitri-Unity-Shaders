@@ -21,14 +21,14 @@ public class NeitriMMDToonEditor : ShaderGUI
 
 			if (GUILayout.Button(new GUIContent("Default", "Reverts changes done by other presets to default values"), GUILayout.ExpandWidth(false)))
 			{
-				SetTexture(material, "_Ramp", "dda8707f00c412c4bafa424967d1c740");
+				SetTexture(material, "_Ramp", "9ee4b8f69f9c58e41b44300696f300dd");
 				material.SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
 				material.SetColor("_ShadowRim", new Color(0.8f, 0.8f, 0.8f, 1f));
 			}
 
 			if (GUILayout.Button(new GUIContent("Skin", "Changes shading ramp, shadow color, shadow rim, to skin like values"), GUILayout.ExpandWidth(false)))
 			{
-				SetTexture(material, "_Ramp", "26b970b4d370ab849a1a38dab9297540");
+				SetTexture(material, "_Ramp", "56d182764dfbf6747955d65bfa1a79e0");
 				material.SetColor("_ShadowColor", new Color(0.2f, 0f, 0f, 1f));
 				material.SetColor("_ShadowRim", new Color(1f, 0.66f, 0.66f, 1f));
 			}
