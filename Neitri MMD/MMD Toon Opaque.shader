@@ -60,7 +60,9 @@ Shader "Neitri/MMD Toon Opaque" {
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#define UNITY_PASS_FORWARDBASE
+			#ifndef UNITY_PASS_FORWARDBASE
+				#define UNITY_PASS_FORWARDBASE
+			#endif
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
 			#pragma multi_compile_fwdbase
@@ -81,7 +83,9 @@ Shader "Neitri/MMD Toon Opaque" {
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#define UNITY_PASS_FORWARDADD
+			#ifndef UNITY_PASS_FORWARDADD
+				#define UNITY_PASS_FORWARDADD
+			#endif
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
 			#pragma multi_compile_fwdadd_fullshadows
@@ -98,6 +102,9 @@ Shader "Neitri/MMD Toon Opaque" {
 			#pragma target 2.0
 			#pragma vertex vertShadowCaster
 			#pragma fragment fragShadowCaster
+			#ifndef UNITY_PASS_SHADOWCASTER
+				#define UNITY_PASS_SHADOWCASTER
+			#endif
 			#include "Base.cginc"
 			ENDCG
 		}

@@ -62,7 +62,9 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			#pragma vertex vert
 			#pragma geometry geom
 			#pragma fragment frag
-			#define UNITY_PASS_FORWARDBASE
+			#ifndef UNITY_PASS_FORWARDBASE
+				#define UNITY_PASS_FORWARDBASE
+			#endif
 			#define IS_OUTLINE_SHADER
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 4.0
@@ -84,7 +86,9 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#define UNITY_PASS_FORWARDADD
+			#ifndef UNITY_PASS_FORWARDADD
+				#define UNITY_PASS_FORWARDADD
+			#endif
 			#pragma only_renderers d3d11 glcore gles
 			#pragma target 4.0
 			#pragma multi_compile_fwdadd_fullshadows
@@ -101,6 +105,9 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			#pragma target 4.0
 			#pragma vertex vertShadowCaster
 			#pragma fragment fragShadowCaster
+			#ifndef UNITY_PASS_SHADOWCASTER
+				#define UNITY_PASS_SHADOWCASTER
+			#endif
 			#include "Base.cginc"
 			ENDCG
 		}
