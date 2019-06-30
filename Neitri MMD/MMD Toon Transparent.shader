@@ -32,6 +32,7 @@ Shader "Neitri/MMD Toon Transparent" {
 
 		[Header(Shadow)]
 		[HDR] _ShadowColor("Shadow color", Color) = (0,0,0,1)
+		_ShadowRim("Shadow rim color", Color) = (0.8,0.8,0.8,1)
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness("Baked lighting flatness", Range(0, 1)) = 0.9

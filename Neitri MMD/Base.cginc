@@ -50,6 +50,9 @@ float _BumpScale;
 #endif
 
 float3 _ShadowColor;
+float3 _ShadowRim;
+float _ShadowRimWeight;
+
 float _BakedLightingFlatness;
 float _ApproximateFakeLight;
 
@@ -637,6 +640,13 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 	#endif
 
+	// direction from pixel towards light
+	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
+	float3 halfDir = normalize(lightDir + viewDir);
+	float NdotL = dot(normal, lightDir);
+	float NdotV = dot(normal, viewDir);
+	float NdotH = dot(normal, halfDir);
+
 	fixed3 lightColor = _LightColor0.rgb;
 
 	float3 finalRGB = 0;
@@ -644,12 +654,6 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 	UNITY_BRANCH
 	if (any(_WorldSpaceLightPos0))
 	{
-		// direction from pixel towards light
-		float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
-		float3 halfDir = normalize(lightDir + viewDir);
-		float NdotL = dot(normal, lightDir);
-		float NdotV = dot(normal, viewDir);
-		float NdotH = dot(normal, halfDir);
 
 		// Specular
 		{
@@ -768,6 +772,15 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 			//return float4(matcap, 1); // DEBUG
 		}
 	#endif
+
+
+	// Shadow rim
+	{
+		//float _ShadowRimWeight;
+		float3 adjustedFinalRGB = finalRGB * _ShadowRim;
+		float w = (1 - abs(NdotV)) * max(0, -NdotL);
+		finalRGB = lerp(finalRGB, adjustedFinalRGB, w);
+	}
 
 	// Emission
 	#ifdef UNITY_PASS_FORWARDBASE
