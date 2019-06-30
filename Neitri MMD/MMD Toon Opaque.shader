@@ -17,31 +17,32 @@ Shader "Neitri/MMD Toon Opaque" {
 		_EmissionMap ("Texture", 2D) = "black" {}
 		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
 
-		[Header(Shading Ramp)]
-		[HDR] _RampColorAdjustment("Color", Color) = (1,1,1,1)
-		_ShadingRampStretch("Ramp stretch", Range(0, 1)) = 0
-		[NoScaleOffset] _Ramp("Ramp", 2D) = "white" {}
+		[HideInInspector] [Header(Shading Ramp)]
+		[HideInInspector] [HDR] _RampColorAdjustment("Color", Color) = (1,1,1,1)
+		[HideInInspector] _ShadingRampStretch("Ramp stretch", Range(0, 1)) = 0
+		[HideInInspector] [NoScaleOffset] _Ramp("Ramp", 2D) = "white" {}
 
-		[Header(Matcap)]
-		[Enum(Disabled,0,Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type", Range(0, 3)) = 2
-		[HDR] _MatcapTint("Color", Color) = (1,1,1,1)
-		[Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor", Range(0, 2)) = 0
-		[NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
+		[HideInInspector] [Header(Matcap)]
+		[HideInInspector] [Enum(Disabled,0,Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type", Range(0, 3)) = 2
+		[HideInInspector] [HDR] _MatcapTint("Color", Color) = (1,1,1,1)
+		[HideInInspector] [Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor", Range(0, 2)) = 0
+		[HideInInspector] [NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
 
-		[Header(Shadow)]
-		[HDR] _ShadowColor ("Shadow color", Color) = (0,0,0,1)
-		_ShadowRim("Shadow rim color", Color) = (0.8,0.8,0.8,1)
-		//_ShadowRimWeight("Shadow rim weight", Range(0, 1)) = 0.7
+		[HideInInspector] [Header(Shadow)]
+		[HideInInspector] _ShadowColor ("Shadow color", Color) = (0,0,0,1)
+		[HideInInspector] _ShadowRim("Shadow rim color", Color) = (0.8,0.8,0.8,1)
+		//[HideInInspector] _ShadowRimWeight("Shadow rim weight", Range(0, 1)) = 0.7
 
-		[Header(Baked Lighting)]
-		_BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
-		_ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0.7
+		[HideInInspector] [Header(Baked Lighting)]
+		[HideInInspector] _BakedLightingFlatness ("Baked lighting flatness", Range(0, 1)) = 0.9
+		[HideInInspector] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0.7
 
-		[Header(Other)]
-		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
-		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered Transparency", Range(0, 2)) = 0
-		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
-		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
+		[HideInInspector] [Header(Other)]
+		[HideInInspector] _AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
+		[HideInInspector] [Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered Transparency", Range(0, 2)) = 0
+		[HideInInspector] [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
+		[HideInInspector] [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
+		
 		//[Toggle(_)] _UseContactDeformation ("Contact Deformation", Range(0, 1)) = 0
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
