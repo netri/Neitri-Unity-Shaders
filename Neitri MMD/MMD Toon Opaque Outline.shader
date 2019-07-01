@@ -37,8 +37,8 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		[HideInInspector] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0.7
 
 		[HideInInspector] [Header(Outline)]
-		[HideInInspector] [HDR] _OutlineColor("Color", Color) = (0,0,0,1)
-		[HideInInspector] _OutlineWidth("Width", Range(0, 10)) = 2
+		[HideInInspector] [HDR] _OutlineColor("Color", Color) = (0.1,0.1,0.1,1)
+		[HideInInspector] _OutlineWidth("Width", Range(0, 10)) = 1
 
 		[HideInInspector] [Header(Other)]
 		[HideInInspector] _AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05

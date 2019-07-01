@@ -561,26 +561,28 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 	}
 #endif
 
-
-
-	float3 normal = i.normal;
+	float3 normal;
 
 #ifdef USE_NORMAL_MAP
 	UNITY_BRANCH
-	if (_BumpScale != 0)
+	if (_BumpScale > 0)
 	{
-		float3x3 tangentSpaceToWorldSpace = float3x3(i.tangentDir, i.bitangentDir, normal);
+		float3x3 tangentSpaceToWorldSpace = float3x3(i.tangentDir, i.bitangentDir, i.normal);
 		float3 normalTangentSpace = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0, _BumpMap)));
 		normalTangentSpace = lerp(float3(0, 0, 1), normalTangentSpace, _BumpScale);
 		normal = normalize(mul(normalTangentSpace, tangentSpaceToWorldSpace));
 	}
+	else
 #endif
+	{
+		// slightly dither normal over time to hide obvious normal interpolation
+		//normal = normalize(i.normal + getScreenSpaceDither(i.pos.xy) / 10.0);
+		normal = normalize(i.normal);
+	}
 
 	float3 worldSpaceCameraPos = getCameraPosition();
+	float distanceToCamera = distance(i.worldPos.xyz / i.worldPos.w, worldSpaceCameraPos);
 
-	// slightly dither normal over time to hide obvious normal interpolation
-	//normal = normalize(normal + getScreenSpaceDither(i.pos.xy) / 10.0);
-	normal = normalize(normal);
 
 	// direction from pixel towards camera
 	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
@@ -613,14 +615,15 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 		diffuseLightRGB = lightProbes + vertexLights;
 
+		float3 bakedLightDir = getLightDirectionFromSphericalHarmonics();
+
 		UNITY_BRANCH
 		if (_ApproximateFakeLight > 0)
 		{
-			float3 lightDir = getLightDirectionFromSphericalHarmonics();
-			fixed3 lightColor = ShadeSH9(half4(lightDir, 1));
+			fixed3 lightColor = ShadeSH9(half4(bakedLightDir, 1));
 			if (lightColor.r + lightColor.g + lightColor.b > 0)
 			{
-				float NdotL = max(0, dot(normal, lightDir));
+				float NdotL = max(0, dot(normal, bakedLightDir));
 				diffuseLightRGB = lerp(diffuseLightRGB, lightColor, NdotL * _ApproximateFakeLight);
 			}
 		}
@@ -642,6 +645,16 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 	// direction from pixel towards light
 	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
+
+	#ifdef UNITY_PASS_FORWARDBASE
+		UNITY_BRANCH
+		if (!any(lightDir))
+		{
+			// we want shadow rim to work acceptably even if there is no real light
+			lightDir = bakedLightDir;
+		}
+	#endif
+
 	float3 halfDir = normalize(lightDir + viewDir);
 	float NdotL = dot(normal, lightDir);
 	float NdotV = dot(normal, viewDir);
@@ -654,7 +667,6 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 	UNITY_BRANCH
 	if (any(_WorldSpaceLightPos0))
 	{
-
 		// Specular
 		{
 			float gloss = _Glossiness;
