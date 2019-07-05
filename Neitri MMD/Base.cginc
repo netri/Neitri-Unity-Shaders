@@ -57,13 +57,13 @@ float _BakedLightingFlatness;
 float _ApproximateFakeLight;
 
 float3 _RampColorAdjustment;
-sampler2D _Ramp; // name from Xiexe's
+Texture2D _Ramp; // name from Xiexe's
 float _ShadingRampStretch;
 
 int _MatcapType;
 float4 _MatcapTint; // name from Xiexe's
 int _MatcapAnchor;
-sampler2D _Matcap;
+Texture2D _Matcap;
 
 #ifdef IS_OUTLINE_SHADER
 float4 _OutlineColor;
@@ -79,6 +79,11 @@ int _DebugInt1;
 int _DebugInt2;
 float _DebugFloat1;
 
+
+// ensure we sample with linar clamp sampler settings regardless of texture import settings
+// useful for ramp or matcap textures to prevent user errors
+// https://docs.unity3d.com/Manual/SL-SamplerStates.html
+SamplerState Sampler_Linear_Clamp;
 
 
 struct VertexInput {
@@ -693,7 +698,8 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
 			rampNdotL = lerp(_ShadingRampStretch, 1, rampNdotL); // remap 0..1 to _ShadingRampStretch..1
-			float3 shadowRamp = tex2D(_Ramp, float2(rampNdotL, rampNdotL)).rgb * _RampColorAdjustment;
+
+			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb * _RampColorAdjustment;
 			//shadowRamp = max(0, NdotL + 0.1); // DEBUG, phong
 			diffuseLightRGB += 
 				shadowRamp *
@@ -752,7 +758,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 			}
 
 
-			float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapTint.rgb * _MatcapTint.a;
+			float3 matcap = _Matcap.Sample(Sampler_Linear_Clamp, matcapUv).rgb * _MatcapTint.rgb * _MatcapTint.a;
 
 
 			UNITY_BRANCH
