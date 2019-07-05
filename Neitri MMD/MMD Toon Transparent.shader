@@ -40,6 +40,7 @@ Shader "Neitri/MMD Toon Transparent" {
 
 		[HideInInspector] [Header(Other)]
 		[HideInInspector] _AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
+		[HideInInspector] _ForceLightDirectionToForward("Force light to come from forward", Range(0, 1)) = 0.3
 		[HideInInspector] [Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
 		[HideInInspector] [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4
 	}

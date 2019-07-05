@@ -8,9 +8,17 @@ public class NeitriMMDToonEditor : ShaderGUI
 {
 	static bool ShowPresets = true;
 	static bool ShowAdvanced = false;
+
+	List<Material> materials = new List<Material>();
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
 	{
-		Material material = materialEditor.target as Material;
+		materials.Clear();
+		foreach (var obj in materialEditor.targets)
+		{
+			Material material = obj as Material;
+			if (!material) continue;
+			materials.Add(material);
+		}
 
 		ShowAdvanced = EditorGUILayout.Toggle("Show Advanced", ShowAdvanced);
 		ShowPresets = EditorGUILayout.Foldout(ShowPresets, "Presets", Styles.foldoutBold);
@@ -21,18 +29,18 @@ public class NeitriMMDToonEditor : ShaderGUI
 
 			if (GUILayout.Button(new GUIContent("Default", "Reverts changes done by other presets to default values"), GUILayout.ExpandWidth(false)))
 			{
-				SetTexture(material, "_Ramp", "96ad26bf5aa0f2147b6c1651287c1ae6");
-				SetTexture(material, "_Matcap", "fc97398b94ec4c74faef69b1cb644ae2");
-				material.SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
-				material.SetColor("_ShadowRim", new Color(0.8f, 0.8f, 0.8f, 1f));
+				SetTexture("_Ramp", "96ad26bf5aa0f2147b6c1651287c1ae6");
+				SetTexture("_Matcap", "fc97398b94ec4c74faef69b1cb644ae2");
+				SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
+				SetColor("_ShadowRim", new Color(0.8f, 0.8f, 0.8f, 1f));
 			}
 
 			if (GUILayout.Button(new GUIContent("Skin", "Changes shading ramp, shadow color, shadow rim, to skin like values"), GUILayout.ExpandWidth(false)))
 			{
-				SetTexture(material, "_Ramp", "56d182764dfbf6747955d65bfa1a79e0");
-				SetTexture(material, "_Matcap", "dc916bfb70935a74f9fc1461d7945a15");
-				material.SetColor("_ShadowColor", new Color(0.2f, 0f, 0f, 1f));
-				material.SetColor("_ShadowRim", new Color(1f, 0.66f, 0.66f, 1f));
+				SetTexture("_Ramp", "56d182764dfbf6747955d65bfa1a79e0");
+				SetTexture("_Matcap", "dc916bfb70935a74f9fc1461d7945a15");
+				SetColor("_ShadowColor", new Color(0.2f, 0f, 0f, 1f));
+				SetColor("_ShadowRim", new Color(1f, 0.66f, 0.66f, 1f));
 			}
 
 			GUILayout.EndHorizontal();
@@ -55,6 +63,25 @@ public class NeitriMMDToonEditor : ShaderGUI
 			materialEditor.RenderQueueField();
 		}
 	}
+
+
+
+	void SetTexture(string name, string guid)
+	{
+		foreach(var material in materials)
+		{
+			SetTexture(material, name, guid);
+		}
+	}
+
+	void SetColor(string name, Color color)
+	{
+		foreach(var material in materials)
+		{
+			material.SetColor(name, color);
+		}
+	}
+
 
 	static Texture2D FindTextureByGuid(string guid)
 	{

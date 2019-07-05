@@ -42,6 +42,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 
 		[HideInInspector] [Header(Other)]
 		[HideInInspector] _AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
+		[HideInInspector] _ForceLightDirectionToForward("Force light to come from forward", Range(0, 1)) = 0.3
 		[HideInInspector] [Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered Transparency", Range(0, 2)) = 0
 		[HideInInspector] [Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
 		[HideInInspector] [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4

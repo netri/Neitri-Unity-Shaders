@@ -72,11 +72,12 @@ float _OutlineWidth;
 
 float _AlphaCutout;
 int _DitheredTransparencyType;
-
+float _ForceLightDirectionToForward;
 
 // DEBUG
 int _DebugInt1;
 int _DebugInt2;
+float _DebugFloat1;
 
 
 
@@ -230,10 +231,6 @@ float3 getCameraUp()
 #endif
 	return normalize(p1);
 }
-
-
-
-
 
 
 #ifdef USE_GEOMETRY_STAGE
@@ -654,6 +651,13 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 			lightDir = bakedLightDir;
 		}
 	#endif
+
+	UNITY_BRANCH
+	if (_ForceLightDirectionToForward > 0)
+	{
+		float3 lightDirFromModelForward = mul(unity_ObjectToWorld, float3(0, 0, -1));
+		lightDir = normalize(lerp(lightDir, lightDirFromModelForward, _ForceLightDirectionToForward));
+	}
 
 	float3 halfDir = normalize(lightDir + viewDir);
 	float NdotL = dot(normal, lightDir);
