@@ -27,7 +27,7 @@ Shader "Neitri/GPU Particles/Render"
 			#pragma vertex vert
 			#pragma geometry geom
 			#pragma fragment frag
-						
+
 			#include "UnityCG.cginc"
 
 			#include "Common.cginc"
@@ -92,7 +92,7 @@ Shader "Neitri/GPU Particles/Render"
 				float dist = distance(_WorldSpaceCameraPos, position.xyz);
 
 				// reduce particles amount with distane
-				//if (fmod(primitiveId, dist) > 10) return;
+				if (fmod(primitiveId, dist) > 20) return;
 
 				// color based on particle speed and time
 				float speedLen = length(speed.xyz);

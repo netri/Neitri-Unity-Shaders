@@ -123,7 +123,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: material._AttractionSpeed
-    path: Quad - Attractor
+    path: Enable Global/Enable Local/Quad - Attractor
     classID: 23
     script: {fileID: 0}
   m_PPtrCurves: []
@@ -298,7 +298,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: material._AttractionSpeed
-    path: Quad - Attractor
+    path: Enable Global/Enable Local/Quad - Attractor
     classID: 23
     script: {fileID: 0}
   m_EulerEditorCurves: []

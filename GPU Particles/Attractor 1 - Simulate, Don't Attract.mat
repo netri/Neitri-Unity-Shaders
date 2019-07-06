@@ -72,8 +72,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _AttractionForce: 10
-    - _AttractionRadius: 10
-    - _AttractionSpeed: 1
+    - _AttractionRadius: 50
+    - _AttractionSpeed: 0
     - _AttractorNoiseRadius: 0.01
     - _AttractorNoiseWeight: 0
     - _AttractorPower: 10
@@ -86,7 +86,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _IdleNoiseWeight: 0.3
+    - _IdleNoiseWeight: 0.05
     - _MaxForce: 1
     - _MaxSpeed: 1
     - _Metallic: 0

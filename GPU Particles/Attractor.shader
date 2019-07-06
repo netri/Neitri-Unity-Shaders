@@ -6,10 +6,10 @@ Shader "Neitri/GPU Particles/Attractor"
 	{
 		_SimulationSpeed("_SimulationSpeed", Float) = 1
 		_AttractionSpeed("_AttractionSpeed", Float) = 1
-		_AttractionRadius("_AttractionRadius", Float) = 10
+		_AttractionRadius("_AttractionRadius", Float) = 50
 		_AttractorNoiseRadius("_AttractorNoiseRadius", Float) = 0.01
 		_AttractorSphereRadius("_AttractorSphereRadius", Float) = 0.1
-		_IdleNoiseWeight("_IdleNoiseWeight", Float) = 0.15
+		_IdleNoiseWeight("_IdleNoiseWeight", Float) = 0.05
 		_MaxForce("_MaxForce", Float) = 1
 		_MaxSpeed("_MaxSpeed", Float) = 1
 		_ParticlesData("_ParticlesData", 2D) = "white" {}
