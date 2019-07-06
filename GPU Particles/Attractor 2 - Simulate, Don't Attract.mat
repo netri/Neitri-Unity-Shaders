@@ -86,7 +86,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _IdleNoiseWeight: 0.3
+    - _IdleNoiseWeight: 0.15
     - _MaxForce: 1
     - _MaxSpeed: 1
     - _Metallic: 0

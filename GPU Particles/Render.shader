@@ -49,9 +49,23 @@ Shader "Neitri/GPU Particles/Render"
 				return v;
 			}
 
+
+
+//#define USE_POINT_STREAM
+#define USE_TRIANGLE_STREAM
+
+
 			[maxvertexcount(3)]
-			void geom(uint primitiveId : SV_PrimitiveID, point appdata IN[1], inout PointStream<fragIn> stream) //  LineStream stream
+			void geom(uint primitiveId : SV_PrimitiveID, point appdata IN[1], 
+#ifdef USE_POINT_STREAM
+				inout PointStream<fragIn> pointStream
+#endif
+#ifdef USE_TRIANGLE_STREAM
+				inout TriangleStream<fragIn> triangleStream
+#endif
+			) 
 			{
+				// reduce particle amount
 				//float _ParticlesAmount = 1; // [0, 1]
 				//if (primitiveId % (101 - clamp(int(_ParticlesAmount * 100), 0, 100)) != 0) return;
 
@@ -61,7 +75,7 @@ Shader "Neitri/GPU Particles/Render"
 				);
 
 				float4 data1, data2;
-				DataLoad(data1, data2, uv);				
+				DataLoad(data1, data2, uv);
 				float3 position = data1.xyz;
 				float3 speed = data2.xyz;
 		
@@ -71,46 +85,73 @@ Shader "Neitri/GPU Particles/Render"
 
 				float4 posClip = mul(UNITY_MATRIX_VP, float4(position.xyz, 1));
 				
+				// early out check if particle is out of screen
 				float2 earlyOut = posClip.xy / posClip.w;
 				if (any(floor(abs(earlyOut.xy)))) return; // if x >= 1 || x <= -1 || y >= 1 || y <= -1
 
-
 				float dist = distance(_WorldSpaceCameraPos, position.xyz);
 
-				if (fmod(primitiveId, dist) > 10) return;
+				// reduce particles amount with distane
+				//if (fmod(primitiveId, dist) > 10) return;
+
+				// color based on particle speed and time
+				float speedLen = length(speed.xyz);
+				fixed cv = speedLen*0.5 + _SinTime.x;
+
+				// slight variance in color based on particle id
+				cv += fmod(primitiveId, 100) * 0.001;
+
+				// modified IQ color palette, original: http://www.iquilezles.org/www/articles/palettes/palettes.htm
+				float3 color = (0.5 + 0.5*cos(3.14*2*(1*cv+fixed3(0.67,0,0.33))));
+	
+				// fade out as particle aproaches camera near plane
+				//color *= 1 - smoothstep(_ProjectionParams.y, _ProjectionParams.y + 0.01, posClip.z/posClip.w);
+
+#ifdef USE_POINT_STREAM
+				color /= max(0.9, dist);
 
 				fragIn o;
-				float vl = length(speed.xyz);
-				fixed cv = vl*0.5 + _SinTime.x;
-				// modified IQ color palette, original: http://www.iquilezles.org/www/articles/palettes/palettes.htm
-				o.color = (0.5 + 0.5*cos(3.14*2*(1*cv+fixed3(0.67,0,0.33))));
-				o.color /= max(0.9, dist);
-				
+				o.color = color;
 				o.position = posClip;
-				stream.Append(o);
-				/*
-				float2 parent = float2(data1.w, data2.w);
-				if (parent.x > 0)
-				{
-					DataLoad(data1, data2, parent);
-					position = data1.xyz;
-					speed = data2.xyz;
+				pointStream.Append(o);
+#endif
 
-					posClip = mul(UNITY_MATRIX_VP, float4(position.xyz, 1));
-					o.position = posClip;
-				}
-				else
-				{
-					float trailLength = clamp(vl, 0.0005, 0.003);
-					if (vl == 0) speed.xyz = float3(0.001, 0, 0);
-					else speed.xyz = speed.xyz / vl * trailLength;
+#ifdef USE_TRIANGLE_STREAM
+				//color /= max(0.9, dist / 10);
 
-					o.color = 0;
-					o.position = mul(UNITY_MATRIX_VP, float4(position.xyz - speed.xyz, 1));
-				}
-				
-				stream.Append(o);
-				*/
+				float scale = 0.002;
+				float rotation = primitiveId / 100.0f + speedLen;
+				float sinValue = sin(rotation) * scale;
+				float cosValue = cos(rotation) * scale;
+				float2x2 rotationMat = {
+					cosValue, -sinValue,
+					sinValue, cosValue
+				};
+
+				const float2 d1 = float2(0, -1);
+				const float2 d2 = float2(0.814181, 0.580611); // cos(360/3), sin(360/3)
+				const float2 d3 = float2(-0.814181, 0.580611); // -cos(360/3), sin(360/3)
+
+				float ratio = _ScreenParams.y / _ScreenParams.x;
+
+				float2 coords;
+
+				fragIn o;
+				o.color = color;
+				coords = mul(d1, rotationMat);
+				o.position = posClip + float4(coords.x * ratio, coords.y, 0, 0);
+				triangleStream.Append(o);
+
+				coords = mul(d2, rotationMat);
+				o.position = posClip + float4(coords.x * ratio, coords.y, 0, 0);
+				triangleStream.Append(o);
+
+				coords = mul(d3, rotationMat);
+				o.position = posClip + float4(coords.x * ratio, coords.y, 0, 0);
+				triangleStream.Append(o);
+#endif
+
+		
 			}
 
 			fixed4 frag (fragIn i) : SV_Target

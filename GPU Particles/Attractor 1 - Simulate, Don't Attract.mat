@@ -73,7 +73,7 @@ Material:
     m_Floats:
     - _AttractionForce: 10
     - _AttractionRadius: 10
-    - _AttractionSpeed: 0
+    - _AttractionSpeed: 1
     - _AttractorNoiseRadius: 0.01
     - _AttractorNoiseWeight: 0
     - _AttractorPower: 10
