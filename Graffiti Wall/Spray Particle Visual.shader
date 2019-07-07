@@ -1,16 +1,16 @@
-﻿Shader "Neitri/Graffiti Wall/Spray Particle Data"
+﻿Shader "Neitri/Graffiti Wall/Spray Particle Visual"
 {
 	Properties
 	{
 		_DepthMask("_DepthMask", 2D) = "white" {}
 	}
-	SubShader
+		SubShader
 	{
 		Tags {
 			"Queue" = "Transparent+100"
 			"RenderType" = "Transparent"
 		}
-		Blend One Zero
+		Blend SrcAlpha OneMinusSrcAlpha
 		ZWrite Off
 		Cull Off
 
@@ -19,7 +19,7 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			
+
 			#include "UnityCG.cginc"
 
 			struct appdata
@@ -37,8 +37,8 @@
 			};
 
 			sampler2D _DepthMask;
-			
-			v2f vert (appdata v)
+
+			v2f vert(appdata v)
 			{
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
@@ -46,14 +46,9 @@
 				o.uv = v.uv;
 				return o;
 			}
-			
+
 			fixed4 frag(v2f i) : SV_Target
 			{
-				// wall data camera has has near plane 0 and far plane 0.01
-				// we want this shader to be visible only in wall data camera
-				bool isWallCamera = (_ProjectionParams.z - _ProjectionParams.y) < 0.1;
-				clip(isWallCamera - 0.5);
-
 				float agePrecentage = i.uv.z;
 
 				float depthMask = tex2Dlod(_DepthMask, float4(i.uv.x, i.uv.y, 0, 0)).r;
@@ -68,10 +63,10 @@
 				float progress = distance(i.uv, float2(0.5, 0.5));
 				clip(0.5 - progress);
 				float alpha = smoothstep(0.5, 0, progress);
-				return fixed4(i.color.rgb, alpha * i.color.a );
+				return fixed4(i.color.rgb, alpha * i.color.a);
 			}
 			ENDCG
 		}
 	}
-	FallBack Off
+		FallBack Off
 }

@@ -54,7 +54,12 @@
 
 				fixed4 combined = 0;
 
-				if (spray.a > 0.1)
+				const fixed4 clearMarker = fixed4(1, 0, 1, 1);
+				if (distance(spray, clearMarker) < 0.01)
+				{
+					// wipe paint
+				}
+				else if (spray.a > 0.1)
 				{
 					float similarity = 1.7 - min(1.7, distance(previous.rgb, spray.rgb)); // 0.01 ... 1.7
 					similarity = min(1, similarity * unity_DeltaTime.x * 100);
