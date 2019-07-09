@@ -19,7 +19,7 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			
+
 			#include "UnityCG.cginc"
 
 			struct appdata
@@ -37,8 +37,8 @@
 			};
 
 			sampler2D _DepthMask;
-			
-			v2f vert (appdata v)
+
+			v2f vert(appdata v)
 			{
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
@@ -46,7 +46,7 @@
 				o.uv = v.uv;
 				return o;
 			}
-			
+
 			fixed4 frag(v2f i) : SV_Target
 			{
 				// wall data camera has has near plane 0 and far plane 0.01
@@ -68,7 +68,7 @@
 				float progress = distance(i.uv, float2(0.5, 0.5));
 				clip(0.5 - progress);
 				float alpha = smoothstep(0.5, 0, progress);
-				return fixed4(i.color.rgb, alpha * i.color.a );
+				return fixed4(i.color.rgb, alpha * i.color.a);
 			}
 			ENDCG
 		}
