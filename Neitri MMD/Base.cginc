@@ -71,6 +71,7 @@ float _OutlineWidth;
 #endif
 
 float _AlphaCutout;
+int _ShowInMirror;
 int _DitheredTransparencyType;
 float _ForceLightDirectionToForward;
 
@@ -89,14 +90,14 @@ SamplerState Sampler_Linear_Clamp;
 struct VertexInput {
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
-	float4 tangent : TANGENT;
+	float3 tangent : TANGENT;
 	float2 texcoord0 : TEXCOORD0;
 };
 
 struct GeometryInput {
 	float4 vertex : SV_POSITION;
 	float3 normal : TEXCOORD0;
-	float4 tangent : TEXCOORD1;
+	float3 tangent : TEXCOORD1;
 	float2 texcoord0 : TEXCOORD2;
 };
 
@@ -237,6 +238,11 @@ float3 getCameraUp()
 	return normalize(p1);
 }
 
+// Merlin's mirror detection
+inline bool isInMirror()
+{
+	return UNITY_MATRIX_P._31 != 0.f || UNITY_MATRIX_P._32 != 0.f;
+}
 
 #ifdef USE_GEOMETRY_STAGE
 FragmentInput vertReal(in GeometryInput v) 
@@ -248,8 +254,8 @@ FragmentInput vertReal(in VertexInput v)
 	o.uv0.xy = v.texcoord0;
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	#ifdef USE_TANGENT_BITANGENT
-		o.tangentDir = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0.0)).xyz);
-		o.bitangentDir = normalize(cross(o.normal, o.tangentDir) * v.tangent.w);
+		o.tangentDir = UnityObjectToWorldNormal(v.tangent);
+		o.bitangentDir = normalize(cross(o.normal, o.tangentDir));
 	#endif
 	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0));
 	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
@@ -522,6 +528,29 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 {
 
 #endif
+
+	UNITY_BRANCH
+	if (_ShowInMirror != 0)
+	{
+		UNITY_BRANCH
+		if (_ShowInMirror == 1) // Show only in mirror
+		{
+			UNITY_BRANCH
+			if (!isInMirror())
+			{
+				clip(-1);
+			}
+		}
+		else // 2
+		{
+			// Dont show in mirror
+			UNITY_BRANCH
+			if (isInMirror())
+			{
+				clip(-1);
+			}
+		}
+	}
 
 	float4 mainTexture = tex2D(_MainTex, TRANSFORM_TEX(i.uv0, _MainTex));
 
