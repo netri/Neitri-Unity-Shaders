@@ -6,7 +6,6 @@ using UnityEditor;
 
 public class NeitriMMDToonEditor : ShaderGUI
 {
-	static bool ShowPresets = true;
 	static bool ShowAdvanced = false;
 
 	List<Material> materials = new List<Material>();
@@ -20,12 +19,11 @@ public class NeitriMMDToonEditor : ShaderGUI
 			materials.Add(material);
 		}
 
-		ShowAdvanced = EditorGUILayout.Toggle("Show Advanced", ShowAdvanced);
-		ShowPresets = EditorGUILayout.Foldout(ShowPresets, "Presets", Styles.foldoutBold);
 
-		if (ShowPresets)
 		{
 			GUILayout.BeginHorizontal();
+
+			GUILayout.Label("Presets", GUILayout.ExpandWidth(false));
 
 			if (GUILayout.Button(new GUIContent("Default", "Reverts changes done by other presets to default values"), GUILayout.ExpandWidth(false)))
 			{
@@ -46,29 +44,64 @@ public class NeitriMMDToonEditor : ShaderGUI
 			GUILayout.EndHorizontal();
 		}
 
+
+
 		materialEditor.SetDefaultGUIWidths();
 
 		foreach (MaterialProperty property in properties)
 		{
 			if ((property.flags & MaterialProperty.PropFlags.PerRendererData) != 0) continue;
-			if (ShowAdvanced == false && (property.flags & MaterialProperty.PropFlags.HideInInspector) != 0) continue;
+			if ((property.flags & MaterialProperty.PropFlags.HideInInspector) != 0) continue;
 
-			float propertyHeight = materialEditor.GetPropertyHeight(property, property.displayName);
+			string displayName = property.displayName;
+
+			bool isAdvanced = false;
+			string advancedString = " -advanced";
+			int advancedIndex = displayName.IndexOf(advancedString);
+			if (advancedIndex != -1)
+			{
+				displayName = displayName.Remove(advancedIndex, advancedString.Length);
+				isAdvanced = true;
+			}
+
+			if (!ShowAdvanced && isAdvanced) continue;
+
+			float propertyHeight = materialEditor.GetPropertyHeight(property, displayName);
 			Rect controlRect = EditorGUILayout.GetControlRect(true, propertyHeight, EditorStyles.layerMaskField, new GUILayoutOption[0]);
-			materialEditor.ShaderProperty(controlRect, property, property.displayName);
+			materialEditor.ShaderProperty(controlRect, property, displayName);
 		}
 
 		if (ShowAdvanced)
 		{
 			materialEditor.RenderQueueField();
 		}
+
+		
+
+		GUILayout.Space(10);
+		if (ShowAdvanced)
+		{
+			if (GUILayout.Button("Hide advanced settings"))
+			{
+				ShowAdvanced = false;
+			}
+		}
+		else
+		{
+			if (GUILayout.Button("Show advanced settings"))
+			{
+				ShowAdvanced = true;
+			}
+		}
+
+
 	}
 
 
 
 	void SetTexture(string name, string guid)
 	{
-		foreach(var material in materials)
+		foreach (var material in materials)
 		{
 			SetTexture(material, name, guid);
 		}
@@ -76,7 +109,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 
 	void SetColor(string name, Color color)
 	{
-		foreach(var material in materials)
+		foreach (var material in materials)
 		{
 			material.SetColor(name, color);
 		}
@@ -102,7 +135,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 	}
 
 	static class Styles
-	{ 
+	{
 		public static GUIStyle foldoutBold = new GUIStyle(EditorStyles.foldout);
 
 		static Styles()

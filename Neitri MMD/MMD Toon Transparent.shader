@@ -19,31 +19,31 @@ Shader "Neitri/MMD Toon Transparent" {
 		_EmissionMap("Texture", 2D) = "black" {}
 		[HDR] _EmissionColor("Color", Color) = (1,1,1,1)
 
-		[HideInInspector] [Header(Shading Ramp)]
-		[HideInInspector] [HDR] _RampColorAdjustment("Color", Color) = (1,1,1,1)
-		[HideInInspector] _ShadingRampStretch("Ramp stretch", Range(0, 1)) = 0
-		[HideInInspector] [NoScaleOffset] _Ramp("Ramp", 2D) = "white" {}
+		[Header(Shading Ramp)]
+		[HDR] _RampColorAdjustment("Color -advanced", Color) = (1,1,1,1)
+		_ShadingRampStretch("Ramp stretch -advanced", Range(0, 1)) = 0
+		[NoScaleOffset] _Ramp("Ramp -advanced", 2D) = "white" {}
 
-		[HideInInspector] [Header(Matcap)]
-		[HideInInspector] [Enum(Disabled,0,Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type", Range(0, 3)) = 2
-		[HideInInspector] [HDR] _MatcapTint("Color", Color) = (1,1,1,1)
-		[HideInInspector] [Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor", Range(0, 2)) = 0
-		[HideInInspector] [NoScaleOffset] _Matcap("Matcap", 2D) = "white" {}
+		[Header(Matcap)]
+		[Enum(Disabled,0,Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type -advanced", Range(0, 3)) = 2
+		[HDR] _MatcapTint("Color -advanced", Color) = (1,1,1,1)
+		[Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor -advanced", Range(0, 2)) = 0
+		[NoScaleOffset] _Matcap("Matcap -advanced", 2D) = "white" {}
 
-		[HideInInspector] [Header(Shadow)]
-		[HideInInspector] [HDR] _ShadowColor("Shadow color", Color) = (0,0,0,1)
-		[HideInInspector] _ShadowRim("Shadow rim color", Color) = (0.8,0.8,0.8,1)
+		[Header(Shadow)]
+		[HDR] _ShadowColor("Shadow color -advanced", Color) = (0,0,0,1)
+		_ShadowRim("Shadow rim color -advanced", Color) = (0.8,0.8,0.8,1)
 
-		[HideInInspector] [Header(Baked Lighting)]
-		[HideInInspector] _BakedLightingFlatness("Baked lighting flatness", Range(0, 1)) = 0.9
-		[HideInInspector] _ApproximateFakeLight("Approximate fake light", Range(0, 1)) = 0.7
+		[Header(Baked Lighting)]
+		_BakedLightingFlatness("Baked lighting flatness -advanced", Range(0, 1)) = 0.9
+		_ApproximateFakeLight("Approximate fake light -advanced", Range(0, 1)) = 0.7
 
-		[HideInInspector] [Header(Other)]
-		[HideInInspector] _AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
-		[HideInInspector][Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror", Range(0, 2)) = 0
-		[HideInInspector] _ForceLightDirectionToForward("Force light to come from forward", Range(0, 1)) = 0.3
-		[HideInInspector] [Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
-		[HideInInspector] [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4
+		[Header(Other)]
+		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
+		[HideInInspector][Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror -advanced", Range(0, 2)) = 0
+		_ForceLightDirectionToForward("Force light to come from forward -advanced", Range(0, 1)) = 0.3
+		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 2
+		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest -advanced", Float) = 4
 	}
 	SubShader{
 		Tags {
