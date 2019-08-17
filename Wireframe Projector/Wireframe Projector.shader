@@ -144,7 +144,7 @@ Shader "Neitri/Wireframe Projector"
 				fixed z = i.projectorClip.x;
 				clip(z);
 				clip(1 - z);
-				fixed strength = 1 - distance(i.projectorPos.xy / i.projectorPos.w, float2(0.5, 0.5));
+				fixed strength = 0.5 - distance(i.projectorPos.xy / i.projectorPos.w, float2(0.5, 0.5));
 				clip(strength);
 
 				 float r = i.dist[3];
@@ -172,4 +172,6 @@ Shader "Neitri/Wireframe Projector"
 			ENDCG
 		}
 	}
+
+	FallBack Off
 }
