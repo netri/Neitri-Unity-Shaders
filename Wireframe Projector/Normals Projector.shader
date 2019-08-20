@@ -5,10 +5,10 @@ Shader "Neitri/Normals Projector"
 {
 	Properties
 	{
-
+		[Enum(Local Space,0,World Space,1)] _NormalsSpace("Normals Space", Range(0, 2)) = 1
 	}
 
-	SubShader
+		SubShader
 	{
 		Tags
 		{
@@ -28,6 +28,8 @@ Shader "Neitri/Normals Projector"
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
+
+			int _NormalsSpace;
 
 			float4x4 unity_Projector;
 			float4x4 unity_ProjectorClip;
@@ -54,7 +56,7 @@ Shader "Neitri/Normals Projector"
 				UNITY_SETUP_INSTANCE_ID(v);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 				o.screenPos = UnityObjectToClipPos(v.vertex);
-				o.normal = UnityObjectToWorldNormal(v.normal);
+				o.normal = _NormalsSpace == 0 ? v.normal : UnityObjectToWorldNormal(v.normal);
 				o.projectorPos = mul(unity_Projector, v.vertex);
 				o.projectorClip = mul(unity_ProjectorClip, v.vertex);
 				return o;
