@@ -10,7 +10,7 @@
 #include "UnityCG.cginc"
 
 #include "AutoLight.cginc"
-#include "Lighting.cginc"
+#include "Lighting.cginc" // _LightColor0
 
 #include "UnityPBSLighting.cginc"
 #include "UnityStandardBRDF.cginc"
@@ -111,11 +111,11 @@ void CopyVertexInput(in VertexInput from, out GeometryInput to)
 
 
 struct FragmentInput {
-	float4 pos : SV_POSITION; // must be called pos, because TRANSFER_VERTEX_TO_FRAGMENT expects it
+	float4 pos : SV_POSITION; // must be called pos, because TRANSFER_VERTEX_TO_FRAGMENT expects pos
 	float4 uv0 : TEXCOORD0; // w == 1 marks outline pixel
 	float4 worldPos : TEXCOORD1;
 	float3 normal : TEXCOORD2;
-	LIGHTING_COORDS(3,4) // shadow coords
+	LIGHTING_COORDS(3, 4) // shadow coords
 	UNITY_FOG_COORDS(5) 
 	float3 modelPos : TEXCOORD6;
 	#ifdef UNITY_PASS_FORWARDBASE
@@ -271,7 +271,7 @@ FragmentInput vertReal(in VertexInput v)
 	float vertexDepth = mul(UNITY_MATRIX_V, o.worldPos).z;
 	float value = (vertexDepth - sceneDepth) / _ProjectionParams.z * 0.1;
 	value = value * (abs(value) > 0.1);
-	v.vertex += v.normal * value;	
+	v.vertex += v.normal * value;
 	o.normal.z += value;
 	o.normal.z = normalize(o.normal.z);
 	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
@@ -293,8 +293,7 @@ FragmentInput vertReal(in VertexInput v)
 		#endif
 	#endif
 
-	float3 lightColor = _LightColor0.rgb;
-	UNITY_TRANSFER_FOG(o,o.pos); // transfer fog coords
+	UNITY_TRANSFER_FOG(o, o.pos); // transfer fog coords
 	TRANSFER_VERTEX_TO_FRAGMENT(o) // transfer shadow coords
 	return o;
 }
@@ -324,7 +323,7 @@ FragmentInput vertReal(in VertexInput v)
 
 
 
-
+// geometry shader used to emit extra triangles for outline
 [maxvertexcount(6)]
 void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> tristream)
 {
@@ -641,7 +640,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		half3 averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 		half3 realLightProbes = NeitriShadeSH9(half4(normal, 1));
 		
-		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);		
+		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
 
 		diffuseLightRGB = lightProbes + vertexLights;

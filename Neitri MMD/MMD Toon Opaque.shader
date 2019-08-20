@@ -13,8 +13,8 @@ Shader "Neitri/MMD Toon Opaque" {
 		_BumpScale("Weight", Range(0, 2)) = 0
 
 		[Header(Emission)]
-		[Enum(Disabled,0,Glow always,1,Glow only in darkness,2)] _EmissionType("Emission Type", Range(0, 2)) = 1
-		_EmissionMap ("Texture", 2D) = "black" {}
+		[Enum(Disabled,0,Glow always,1,Glow only in darkness,2)] _EmissionType("Emission Type", Range(0, 2)) = 0
+		_EmissionMap ("Texture", 2D) = "white" {}
 		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
 
 		[Header(Shading Ramp)]

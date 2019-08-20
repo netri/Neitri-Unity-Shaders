@@ -27,7 +27,8 @@ public class NeitriMMDToonEditor : ShaderGUI
 
 			if (GUILayout.Button(new GUIContent("Default", "Reverts changes done by other presets to default values"), GUILayout.ExpandWidth(false)))
 			{
-				SetTexture("_Ramp", "96ad26bf5aa0f2147b6c1651287c1ae6");
+				Undo.RecordObjects(materials.ToArray(), "Preset Default");
+				SetTexture("_Ramp", "dda8707f00c412c4bafa424967d1c740");
 				SetTexture("_Matcap", "fc97398b94ec4c74faef69b1cb644ae2");
 				SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
 				SetColor("_ShadowRim", new Color(0.8f, 0.8f, 0.8f, 1f));
@@ -35,8 +36,9 @@ public class NeitriMMDToonEditor : ShaderGUI
 
 			if (GUILayout.Button(new GUIContent("Skin", "Changes shading ramp, shadow color, shadow rim, to skin like values"), GUILayout.ExpandWidth(false)))
 			{
-				SetTexture("_Ramp", "56d182764dfbf6747955d65bfa1a79e0");
-				SetTexture("_Matcap", "dc916bfb70935a74f9fc1461d7945a15");
+				Undo.RecordObjects(materials.ToArray(), "Preset Skin");
+				SetTexture("_Ramp", "26b970b4d370ab849a1a38dab9297540");
+				SetTexture("_Matcap", "746904ac01669074b9b1539c50574111");
 				SetColor("_ShadowColor", new Color(0.2f, 0f, 0f, 1f));
 				SetColor("_ShadowRim", new Color(1f, 0.66f, 0.66f, 1f));
 			}
