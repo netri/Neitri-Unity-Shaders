@@ -258,7 +258,7 @@ Shader "Neitri/Clock V4"
 					color *= i.color;
 
 					// apply fog
-					UNITY_APPLY_FOG(i.fogCoord, col);
+					UNITY_APPLY_FOG(i.fogCoord, color);
 					return color;
 				}
 		
