@@ -128,7 +128,7 @@ Shader "Neitri/World Triplanar Mapped"
 
 			v2f vert(appdata v)
 			{
-				float4 worldPosition = mul(UNITY_MATRIX_M, v.vertex);
+				float4 worldPosition = mul(unity_ObjectToWorld, v.vertex);
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.depthTextureGrabPos = ComputeGrabScreenPos(o.vertex);
