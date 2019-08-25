@@ -7,8 +7,8 @@ Material:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: Skybox
-  m_Shader: {fileID: 4800000, guid: 056e97cf96d14c840b829cc6f5e1310c, type: 3}
-  m_ShaderKeywords: 
+  m_Shader: {fileID: 10755, guid: 0000000000000000f000000000000000, type: 0}
+  m_ShaderKeywords: _MAPPING_LATITUDE_LONGITUDE_LAYOUT _SUNDISK_HIGH_QUALITY
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -83,25 +83,34 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - _AtmosphereThickness: 2.17
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Exposure: 1
+    - _Exposure: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _HdrExposure: 0.5
+    - _ImageType: 0
+    - _Layout: 0
+    - _Mapping: 1
     - _Metallic: 0
+    - _MirrorOnBack: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _OutlineMode: 0
     - _Parallax: 0.02
+    - _PlanetSize: 0.5
     - _Rotation: 0
     - _Shadow: 0.4
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
+    - _SunDisk: 2
+    - _SunSize: 0.014
+    - _SunSizeConvergence: 9.15
     - _SunStrength: 1
     - _UVSec: 0
     - _ZWrite: 1
@@ -110,9 +119,10 @@ Material:
     m_Colors:
     - _Color: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _GroundColor: {r: 0, g: 0, b: 0, a: 1}
+    - _GroundColor: {r: 0.034482475, g: 0, b: 1, a: 1}
     - _HorizonColor: {r: 0.06704153, g: 0.0907708, b: 0.14705884, a: 1}
     - _SkyColor: {r: 0.125, g: 0.125, b: 0.125, a: 1}
+    - _SkyTint: {r: 0, g: 0, b: 0, a: 1}
     - _SunTint: {r: 0, g: 0.5034485, b: 1, a: 1}
     - _Tint: {r: 0.9191176, g: 0.9191176, b: 0.9191176, a: 1}
     - _outline_color: {r: 0.5, g: 0.5, b: 0.5, a: 1}

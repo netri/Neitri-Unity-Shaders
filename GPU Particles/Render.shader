@@ -1,4 +1,5 @@
 ﻿// created by Neitri, free of charge, free to redistribute
+// downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
 Shader "Neitri/GPU Particles/Render"
 {
@@ -29,9 +30,7 @@ Shader "Neitri/GPU Particles/Render"
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
-
 			#include "Common.cginc"
-			#include "DataLoadSave.cginc"
 
 			struct appdata
 			{

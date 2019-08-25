@@ -30,12 +30,7 @@ Shader "Neitri/GPU Particles/Attractor"
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
-
-			#include "SimplexNoise2D.cginc"
-			#include "SimplexNoise3D.cginc"
-
 			#include "Common.cginc"
-			#include "DataLoadSave.cginc"
 
 			struct appdata
 			{
@@ -72,7 +67,7 @@ Shader "Neitri/GPU Particles/Attractor"
 			}
 
 
-			FRAG_RETURN frag(v2f i) : SV_Target
+			float4 frag(v2f i) : SV_Target
 			{
 				float4 data1, data2;
 				DataLoad(data1, data2, i.uv);

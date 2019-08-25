@@ -26,12 +26,7 @@ Shader "Neitri/GPU Particles/Reset"
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
-
-			#include "SimplexNoise2D.cginc"
-			#include "SimplexNoise3D.cginc"
-
 			#include "Common.cginc"
-			#include "DataLoadSave.cginc"
 
 			struct appdata
 			{
@@ -59,7 +54,7 @@ Shader "Neitri/GPU Particles/Reset"
 			sampler2D _DepthTexture;
 			float _DepthTextureRange;
 
-			FRAG_RETURN frag (v2f i) : SV_Target
+			float4 frag (v2f i) : SV_Target
 			{
 				float3 position;
 				float3 velocity = float3(0, 0, 0);
