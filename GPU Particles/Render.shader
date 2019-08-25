@@ -119,7 +119,7 @@ Shader "Neitri/GPU Particles/Render"
 #ifdef USE_TRIANGLE_STREAM
 				//color /= max(0.9, dist / 10);
 
-				float scale = 0.002;
+				float scale = 0.001;
 				float rotation = primitiveId / 100.0f + speedLen;
 				float sinValue = sin(rotation) * scale;
 				float cosValue = cos(rotation) * scale;

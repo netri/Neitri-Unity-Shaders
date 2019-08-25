@@ -211,6 +211,7 @@ MonoBehaviour:
   isHidden: 0
   UsesAdvancedOptions: 1
   ShowHelp: 1
+  TakesOwnershipIfNecessary: 0
   Triggers:
   - TriggerType: 17
     BroadcastType: 4
@@ -226,6 +227,7 @@ MonoBehaviour:
       ParameterObjects:
       - {fileID: 130777034}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -264,9 +266,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Events: []
-  CombinedNetworkId: -1
-  _dispatcher: {fileID: 0}
-  _registered: 0
 --- !u!23 &129766516
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -505,6 +504,7 @@ MonoBehaviour:
   isHidden: 0
   UsesAdvancedOptions: 1
   ShowHelp: 1
+  TakesOwnershipIfNecessary: 0
   Triggers:
   - TriggerType: 15
     BroadcastType: 7
@@ -522,6 +522,7 @@ MonoBehaviour:
       - {fileID: 709191985}
       - {fileID: 282922357}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -562,6 +563,7 @@ MonoBehaviour:
       ParameterObjects:
       - {fileID: 332577763}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -602,6 +604,7 @@ MonoBehaviour:
       ParameterObjects:
       - {fileID: 332577763}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -640,9 +643,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Events: []
-  CombinedNetworkId: -1
-  _dispatcher: {fileID: 0}
-  _registered: 0
 --- !u!114 &332577771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -667,13 +667,14 @@ MonoBehaviour:
   m_Script: {fileID: 394927577, guid: f78c4655b33cb5741983dc02e08899cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MomentumTransferMethod: 0
   DisallowTheft: 0
-  physicalRoot: {fileID: 0}
   ExactGun: {fileID: 0}
   ExactGrip: {fileID: 0}
   allowManipulationWhenEquipped: 0
   orientation: 0
   AutoHold: 1
+  InteractionText: 
   UseText: Attract
   useEventBroadcastType: 0
   UseDownEventName: 
@@ -687,10 +688,6 @@ MonoBehaviour:
   currentLocalPlayer: {fileID: 0}
   pickupable: 1
   proximity: 2
-  originalKinematic: 0
-  originalGravity: 1
-  originalTrigger: 0
-  originalParent: {fileID: 0}
 --- !u!54 &332577773
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1037,6 +1034,7 @@ MonoBehaviour:
   isHidden: 0
   UsesAdvancedOptions: 1
   ShowHelp: 1
+  TakesOwnershipIfNecessary: 0
   Triggers:
   - TriggerType: 2
     BroadcastType: 2
@@ -1052,6 +1050,7 @@ MonoBehaviour:
       ParameterObjects:
       - {fileID: 130777034}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -1090,9 +1089,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Events: []
-  CombinedNetworkId: -1
-  _dispatcher: {fileID: 0}
-  _registered: 0
 --- !u!1 &599937755
 GameObject:
   m_ObjectHideFlags: 0
@@ -1605,6 +1601,7 @@ MonoBehaviour:
   isHidden: 0
   UsesAdvancedOptions: 1
   ShowHelp: 1
+  TakesOwnershipIfNecessary: 0
   Triggers:
   - TriggerType: 15
     BroadcastType: 7
@@ -1622,6 +1619,7 @@ MonoBehaviour:
       - {fileID: 709191985}
       - {fileID: 282922357}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -1662,6 +1660,7 @@ MonoBehaviour:
       ParameterObjects:
       - {fileID: 1198146496}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -1702,6 +1701,7 @@ MonoBehaviour:
       ParameterObjects:
       - {fileID: 1198146496}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -1740,9 +1740,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Events: []
-  CombinedNetworkId: -1
-  _dispatcher: {fileID: 0}
-  _registered: 0
 --- !u!114 &1198146504
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1767,13 +1764,14 @@ MonoBehaviour:
   m_Script: {fileID: 394927577, guid: f78c4655b33cb5741983dc02e08899cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MomentumTransferMethod: 0
   DisallowTheft: 0
-  physicalRoot: {fileID: 0}
   ExactGun: {fileID: 0}
   ExactGrip: {fileID: 0}
   allowManipulationWhenEquipped: 0
   orientation: 0
   AutoHold: 1
+  InteractionText: 
   UseText: Attract
   useEventBroadcastType: 0
   UseDownEventName: 
@@ -1787,10 +1785,6 @@ MonoBehaviour:
   currentLocalPlayer: {fileID: 0}
   pickupable: 1
   proximity: 2
-  originalKinematic: 0
-  originalGravity: 1
-  originalTrigger: 0
-  originalParent: {fileID: 0}
 --- !u!54 &1198146506
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2014,9 +2008,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Events: []
-  CombinedNetworkId: -1
-  _dispatcher: {fileID: 0}
-  _registered: 0
 --- !u!114 &1504396741
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2053,13 +2044,10 @@ MonoBehaviour:
   RespawnHeightY: -100
   ObjectBehaviourAtRespawnHeight: 0
   ForbidUserPortals: 0
-  UseCustomVoiceFalloffRange: 0
-  VoiceFalloffRangeNear: 4
-  VoiceFalloffRangeFar: 350
   autoSpatializeAudioSources: 1
   gravity: {x: 0, y: -9.8, z: 0}
   layerCollisionArr: 01010101010001010101010100010001010101010101000000010101010100010101010101000101010101010001000101010101010100000001010101010001010101010100010101010101000100010101010101010000000101010101000101010101010101010101010101010101010101010101010101010101010101010101010101000101010101010001000101010101010100000001010101010001000000010000010100000000000000000000000000000000000101010101000101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010100010101010101000100010101010101010000000101010101000101010101010001010100000100000000000001010101000000010101010100010101010101000101010000010000000000000101010100000001010101010001010101010100010101010101000100010101010101010001000101010101000100000001000001010000000000000000000000000000000000010101010100010101010101000101010000010001010101010000000000000001010101010001000000010000010100000000000100000000000000000000000101010101000101010101010001010100000100010001010101010101000000010101010100010101010101000101010000010001000101010101010100000001010101010001010101010100010101000001000100010101010101010000000101010101000101010101010001010101010100000001010101010101000000010101010100010101010101000101010101010000000101010101010100000001010101010001010101010100010101010101000000010101010101010000000101010101000101010101010001010101010100000001010101010101000000010101010100010000000100000101000000000000000000000000000000000001010101010001000000010000010100000001000000000000000000000000000101010101000100000001000001010000000000000000000000000000000000010101010100010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010100000001000001010000000000000000000000000000000000010101010100010101010101010101010101010101010101010101010101010101010101010101
-  capacity: 8
+  capacity: 30
   contentSex: 0
   contentViolence: 0
   contentGore: 0
@@ -2078,9 +2066,9 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 1a40bfdfb6584024d94748688c643d79, type: 2}
   - {fileID: 2100000, guid: 5b7295e8568c8b945a4c9db17b8300f1, type: 2}
   - {fileID: 2100000, guid: d8dd2974d64a7ff4d9ad81e9a19432b9, type: 2}
+  - {fileID: 2100000, guid: d1857713aeee0174285bb2e2b939a860, type: 2}
   - {fileID: 2100000, guid: c40672b55444cff4ab1e02c924850055, type: 2}
   - {fileID: 2100000, guid: a249847509ae0744fb66d2a4f8af7051, type: 2}
-  - {fileID: 0}
   UpdateTimeInMS: 33
   LightMapsNear:
   - {fileID: 0}
@@ -2452,6 +2440,7 @@ MonoBehaviour:
   isHidden: 0
   UsesAdvancedOptions: 1
   ShowHelp: 1
+  TakesOwnershipIfNecessary: 0
   Triggers:
   - TriggerType: 2
     BroadcastType: 2
@@ -2467,6 +2456,7 @@ MonoBehaviour:
       ParameterObjects:
       - {fileID: 130777034}
       ParameterBytes: 
+      TakeOwnershipOfTarget: 0
     Name: Unnamed
     Others: []
     Key: 0
@@ -2505,9 +2495,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Events: []
-  CombinedNetworkId: -1
-  _dispatcher: {fileID: 0}
-  _registered: 0
 --- !u!1 &2127384096
 GameObject:
   m_ObjectHideFlags: 0

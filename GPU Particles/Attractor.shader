@@ -101,12 +101,15 @@ Shader "Neitri/GPU Particles/Attractor"
 						// prevent particles jitter on attractor sphere surface
 						_MaxSpeed *= max(0.1, smoothstep(0, _AttractorSphereRadius / 10, abs(distToSurface)));
 
+						// solar flare like pulses
+						float solarFlares = 1 + sin(_Time.y * 0.1 + uv.x * 10) + sin(_Time.y * 0.1 + uv.y * 10);
+
 						// noise movement the closer particle is to attractor
 						float3 attNoise = float3(
 							snoise(position / 5 + uv.xyy * 2 + sin(_Time.y / 10)),
 							snoise(position / 5 + uv.xyx * 2 - cos(_Time.y / 10)),
 							snoise(position / 5 + uv.yxx * 2 - sin(_Time.y / 10)));
-						attNoise = attNoise * smoothstep(0.1, 0, abs(distToSurface)) * DELTA_TIME;
+						attNoise = attNoise * smoothstep(1, 0, abs(distToSurface)) * DELTA_TIME * solarFlares;
 						_MaxSpeed += length(attNoise);
 						speed += attNoise;
 
@@ -115,7 +118,8 @@ Shader "Neitri/GPU Particles/Attractor"
 							snoise(position + uv.xyy),
 							snoise(position + uv.xyx),
 							snoise(position + uv.yxx));
-						spiralNoise = spiralNoise * smoothstep(10, 5, distToAttr);
+						spiralNoise = spiralNoise * smoothstep(10, 0, distToSurface);
+						_MaxForce += length(spiralNoise);
 						forceSum += spiralNoise;
 
 						// clamp max force
