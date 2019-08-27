@@ -91,14 +91,16 @@ Shader "Neitri/GPU Particles/Render"
 				float dist = distance(_WorldSpaceCameraPos, position.xyz);
 
 				// reduce particles amount with distane
-				if (fmod(primitiveId, dist) > 20) return;
+				//if (fmod(primitiveId, dist) > 20) return;
 
-				// color based on particle speed and time
+				// color based on particle data
 				float speedLen = length(speed.xyz);
-				fixed cv = speedLen*0.5 + _SinTime.x;
+				fixed cv = 
+					speedLen +
+					_SinTime.x +
+					length(uv) * 0.1 +
+					snoise(position * 0.5).x * 0.1;
 
-				// slight variance in color based on particle id
-				cv += fmod(primitiveId, 100) * 0.001;
 
 				// modified IQ color palette, original: http://www.iquilezles.org/www/articles/palettes/palettes.htm
 				float3 color = (0.5 + 0.5*cos(3.14*2*(1*cv+fixed3(0.67,0,0.33))));
@@ -118,8 +120,8 @@ Shader "Neitri/GPU Particles/Render"
 #ifdef USE_TRIANGLE_STREAM
 				//color /= max(0.9, dist / 10);
 
-				float scale = 0.001;
-				float rotation = primitiveId / 100.0f + speedLen;
+				float scale = 0.0007;
+				float rotation = primitiveId * 0.01;
 				float sinValue = sin(rotation) * scale;
 				float cosValue = cos(rotation) * scale;
 				float2x2 rotationMat = {
