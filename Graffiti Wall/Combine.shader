@@ -54,10 +54,12 @@
 
 				fixed4 combined = 0;
 
-				const fixed4 clearMarker = fixed4(1, 0, 1, 1);
-				if (distance(spray, clearMarker) < 0.01)
+				const fixed3 clearColor = fixed3(1, 0, 1);
+				if (distance(spray.rgb, clearColor) < 0.01)
 				{
 					// wipe paint
+					combined.rgb = previous.rgb;
+					combined.a = min(previous.a, saturate(1 - spray.a));
 				}
 				else if (spray.a > 0)
 				{
@@ -65,12 +67,17 @@
 					float alpha = saturate(spray.a * unity_DeltaTime * 20 + previous.a * similarity);
 					combined = fixed4(spray.rgb, alpha);
 
+					//float delta = saturate(spray.a* unity_DeltaTime * 20);
+					//combined.rgb = lerp(previous.rgb, spray.rgb, delta);
+					//combined.a = lerp(previous.rgb, 1, delta);
+
 					//combined = fixed4(spray.rgb, spray.a); //DEBUG
 				}
 				else
 				{
 					combined = previous;
 				}
+
 
 				return combined;
 				//return fixed4(col.a, col.a, col.a, 1); //DEBUG
