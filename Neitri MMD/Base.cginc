@@ -399,12 +399,12 @@ float3 getScreenSpaceDither( float2 vScreenPos )
 	return vDither.rgb;
 }
 
-// from: https://www.shadertoy.com/view/Mllczf
-float triangularPDFNoiseDithering(float2 pos)
+// from https://www.shadertoy.com/view/Mllczf
+float GetTriangularPDFNoiseDithering(float2 pos)
 {
 	float3 p3 = frac(float3(pos.xyx) * float3(.1031, .1030, .0973));
-	p3 += dot(p3, p3.yzx+19.19);
-	float2 rand = frac((p3.xx+p3.yz)*p3.zy);
+	p3 += dot(p3, p3.yzx + 19.19);
+	float2 rand = frac((p3.xx + p3.yz) * p3.zy);
 	return (rand.x + rand.y) * 0.5;
 }
 
@@ -571,12 +571,12 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		if (_DitheredTransparencyType == 1)
 		{
 			// Anchored to camera
-			clip(mainTexture.a - triangularPDFNoiseDithering(i.pos.xy));
+			clip(mainTexture.a - GetTriangularPDFNoiseDithering(i.pos.xy));
 		}
 		else
 		{
 			// Anchored to texture coordinates
-			clip(mainTexture.a - triangularPDFNoiseDithering(i.uv0.xy * 5));
+			clip(mainTexture.a - GetTriangularPDFNoiseDithering(i.uv0.xy * 5));
 		}
 	}
 	#endif
@@ -622,11 +622,16 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 	float3 lightAttenuation; // assigned later
 
 	// prevent bloom if light color is over 1
-	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
+	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping, Ive only ever seen one such map
 	//fixed lightColorMax = max(lightColor.x, max(lightColor.y, lightColor.z));
 	//if(lightColorMax > 1) lightColor /= lightColorMax;
 
-	float3 diffuseLightRGB = 0;
+
+	fixed3 lightColor = _LightColor0.rgb;
+
+	// direction from pixel towards light
+	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
+	float3 finalRGB = 0;
 
 	#ifdef UNITY_PASS_FORWARDBASE
 
@@ -638,25 +643,48 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		//half3 realLightProbes = ShadeSH9(half4(normal, 1));
 
 		half3 averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
-		half3 realLightProbes = NeitriShadeSH9(half4(normal, 1));
+		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 		
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
 
-		diffuseLightRGB = lightProbes + vertexLights;
+		finalRGB += (lightProbes + vertexLights) * mainTexture.rgb;
 
 		float3 bakedLightDir = getLightDirectionFromSphericalHarmonics();
+		fixed3 bakedLightColor = ShadeSH9(half4(bakedLightDir, 1));
+
+		UNITY_BRANCH
+		if (!any(lightDir))
+		{
+			// we want shadow rim to work acceptably even if there is no real light
+			lightDir = bakedLightDir;
+		}
 
 		UNITY_BRANCH
 		if (_ApproximateFakeLight > 0)
 		{
-			fixed3 lightColor = ShadeSH9(half4(bakedLightDir, 1));
-			if (lightColor.r + lightColor.g + lightColor.b > 0)
+			if (grayness(bakedLightColor) > 0)
 			{
 				float NdotL = max(0, dot(normal, bakedLightDir));
-				diffuseLightRGB = lerp(diffuseLightRGB, lightColor, NdotL * _ApproximateFakeLight);
+				finalRGB = lerp(finalRGB, lightColor * mainTexture.rgb, NdotL * _ApproximateFakeLight);
 			}
 		}
+
+		// normalize base padd light colors, so accomulated light colors are always in range 0..1
+		// because some maps have areas where only 0..0,5 lighting is used, and it looks good if we use full 0..1 range there
+		/*float g1 = grayness(lightColor); // real light
+		float g2 = grayness(bakedLightColor); // approximate baked light
+		float g3 = grayness(averageLightProbes); // ambient color
+		if (g2 > g1)
+		{
+			bakedLightColor /= 1 - (g3 + g1); // ambient and real light is applied
+			float NdotL = max(0, dot(normal, bakedLightDir));
+			diffuseLightRGB += bakedLightColor * NdotL;
+		}
+		else
+		{
+			lightColor /= 1 - g3; // only ambient is applied
+		}*/
 
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
@@ -673,36 +701,20 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 	#endif
 
-	// direction from pixel towards light
-	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
 
-	#ifdef UNITY_PASS_FORWARDBASE
-		UNITY_BRANCH
-		if (!any(lightDir))
-		{
-			// we want shadow rim to work acceptably even if there is no real light
-			lightDir = bakedLightDir;
-		}
-	#endif
-
-	UNITY_BRANCH
+	/*UNITY_BRANCH
 	if (_ForceLightDirectionToForward > 0)
 	{
 		float3 lightDirFromModelForward = mul(unity_ObjectToWorld, float3(0, 0, -1));
-		lightDir = normalize(lerp(lightDir, lightDirFromModelForward, _ForceLightDirectionToForward));
-	}
+		lightDir = lerp(lightDir, lightDirFromModelForward, _ForceLightDirectionToForward);
+	}*/
 
+	lightDir = normalize(lightDir);
 	float3 halfDir = normalize(lightDir + viewDir);
 	float NdotL = dot(normal, lightDir);
 	float NdotV = dot(normal, viewDir);
 	float NdotH = dot(normal, halfDir);
 
-	fixed3 lightColor = _LightColor0.rgb;
-
-	float3 finalRGB = 0;
-
-	UNITY_BRANCH
-	if (any(_WorldSpaceLightPos0))
 	{
 		// Specular
 		{
@@ -715,29 +727,23 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 		// Diffuse
 		{
-			#ifdef UNITY_PASS_FORWARDBASE
-			#else
-				// issue: sometimes delta pass light is too bright and there is no unlit color to compensate it with
-				// lets make sure its not too bright
-				float g = grayness(lightColor);
-				UNITY_BRANCH
-				if (g > 1) lightColor /= g;
-			#endif
-
 			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
 			rampNdotL = lerp(_ShadingRampStretch, 1, rampNdotL); // remap 0..1 to _ShadingRampStretch..1
-
 			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb * _RampColorAdjustment;
-			//shadowRamp = max(0, NdotL + 0.1); // DEBUG, phong
-			diffuseLightRGB += 
-				shadowRamp *
-				lightColor *
-				lightAttenuation;
+
+			#ifdef UNITY_PASS_FORWARDBASE
+				finalRGB += lightColor * unityLightAttenuation * shadowRamp * mainTexture.rgb;
+			#else
+				// issue: sometimes delta pass light is too bright, lets make sure its not too bright
+				float3 diffuseColor = lightColor * unityLightAttenuation;
+				float g = grayness(diffuseColor);
+				if (g > 1) diffuseColor /= g;
+				diffuseColor = diffuseColor * shadowRamp * mainTexture.rgb;
+				finalRGB += diffuseColor;
+			#endif
 		}
 	}
 
-	// diffuse light goes into surface and exits with surface color (mainTexture.rgb is surface color)
-	finalRGB += diffuseLightRGB * mainTexture.rgb;
 
 	#ifdef UNITY_PASS_FORWARDBASE
 	#else
@@ -949,8 +955,6 @@ half4 fragShadowCaster(float4 vpos : SV_POSITION, VertexOutputShadowCaster i) : 
 
 	clip(alpha - _AlphaCutout);
 
-	#ifndef IS_TRANSPARENT_SHADER
-	// dithering makes sense only in opaque shader
 	UNITY_BRANCH
 	if (_DitheredTransparencyType != 0)
 	{
@@ -958,15 +962,14 @@ half4 fragShadowCaster(float4 vpos : SV_POSITION, VertexOutputShadowCaster i) : 
 		if (_DitheredTransparencyType == 1)
 		{
 			// Anchored to camera
-			clip(alpha - triangularPDFNoiseDithering(vpos.xy));
+			clip(alpha - GetTriangularPDFNoiseDithering(vpos.xy));
 		}
 		else
 		{
 			// Anchored to texture coordinates
-			clip(alpha - triangularPDFNoiseDithering(i.tex.xy * 5));
+			clip(alpha - GetTriangularPDFNoiseDithering(i.tex.xy * 5));
 		}
 	}
-	#endif
 
 	SHADOW_CASTER_FRAGMENT(i)
 }
