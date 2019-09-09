@@ -75,7 +75,7 @@ Shader "Neitri/GPU Particles/Attractor"
 				float3 speed = data2.xyz;
 
 				float2 uv = i.uv;
-				uv.x = fmod(uv.x, 0.5) * 2.0;
+				uv.x = fmod(uv.x, 0.5) * 2.0; // so both pos and vel data have same uv
 
 				// update according to attractor position and settings
 				float3 attractorPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;

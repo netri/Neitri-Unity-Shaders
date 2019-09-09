@@ -69,9 +69,10 @@ Shader "Neitri/GPU Particles/Render"
 				//if (primitiveId % (101 - clamp(int(_ParticlesAmount * 100), 0, 100)) != 0) return;
 
 				float2 uv = float2(
-					fmod(primitiveId, PARTICLES_ON_EDGE)  / (PARTICLES_ON_EDGE - 1),
-					floor(primitiveId / PARTICLES_ON_EDGE)  / (PARTICLES_ON_EDGE - 1)
+					fmod(primitiveId, PARTICLES_ON_EDGE),
+					floor(primitiveId / PARTICLES_ON_EDGE)
 				);
+				uv /= PARTICLES_ON_EDGE - 1;
 
 				float4 data1, data2;
 				DataLoad(data1, data2, uv);
