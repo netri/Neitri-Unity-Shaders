@@ -34,24 +34,10 @@ UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
 
 
-
-
-sampler2D _MainTex; float4 _MainTex_ST;
-fixed4 _Color;
-float _Glossiness; // name from Unity's standard
-
 int _EmissionType;
-sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
-fixed4 _EmissionColor;
-
-#ifdef USE_NORMAL_MAP
-sampler2D _BumpMap; float4 _BumpMap_ST;
-float _BumpScale;
-#endif
 
 float3 _ShadowColor;
 float3 _ShadowRim;
-float _ShadowRimWeight;
 
 float _BakedLightingFlatness;
 float _ApproximateFakeLight;
@@ -87,21 +73,21 @@ float _DebugFloat1;
 SamplerState Sampler_Linear_Clamp;
 
 
-struct VertexInput {
+struct VertexIn {
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float2 texcoord0 : TEXCOORD0;
 };
 
-struct GeometryInput {
+struct GeometryIn {
 	float4 vertex : SV_POSITION;
 	float3 normal : TEXCOORD0;
 	float3 tangent : TEXCOORD1;
 	float2 texcoord0 : TEXCOORD2;
 };
 
-void CopyVertexInput(in VertexInput from, out GeometryInput to)
+void CopyVertex(in VertexIn from, out GeometryIn to)
 {
 	to.vertex = from.vertex;
 	to.normal = from.normal;
@@ -110,7 +96,7 @@ void CopyVertexInput(in VertexInput from, out GeometryInput to)
 }
 
 
-struct FragmentInput {
+struct FragmentIn {
 	float4 pos : SV_POSITION; // must be called pos, because TRANSFER_VERTEX_TO_FRAGMENT expects pos
 	float4 uv0 : TEXCOORD0; // w == 1 marks outline pixel
 	float4 worldPos : TEXCOORD1;
@@ -198,7 +184,7 @@ float3 NeitriRealVertexLights(float3 pos, float3 normal)
 
 
 
-float3 getCameraPosition()
+float3 GetCameraPosition()
 {
 #ifdef USING_STEREO_MATRICES
 	//return lerp(unity_StereoWorldSpaceCameraPos[0], unity_StereoWorldSpaceCameraPos[1], 0.5);
@@ -208,7 +194,7 @@ float3 getCameraPosition()
 #endif
 }
 
-float3 getCameraForward()
+float3 GetCameraForward()
 {
 #if UNITY_SINGLE_PASS_STEREO
 	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 0));
@@ -218,7 +204,7 @@ float3 getCameraForward()
 	return normalize(p1);
 }
 
-float3 getCameraRight()
+float3 GetCameraRight()
 {
 #if UNITY_SINGLE_PASS_STEREO
 	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(1, 0, 0, 0));
@@ -228,7 +214,7 @@ float3 getCameraRight()
 	return normalize(p1);
 }
 
-float3 getCameraUp()
+float3 GetCameraUp()
 {
 #if UNITY_SINGLE_PASS_STEREO
 	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 1, 0, 0));
@@ -239,18 +225,18 @@ float3 getCameraUp()
 }
 
 // Merlin's mirror detection
-inline bool isInMirror()
+inline bool IsInMirror()
 {
 	return UNITY_MATRIX_P._31 != 0.f || UNITY_MATRIX_P._32 != 0.f;
 }
 
 #ifdef USE_GEOMETRY_STAGE
-FragmentInput vertReal(in GeometryInput v) 
+FragmentIn VertexProgramProxy(in GeometryIn v) 
 #else
-FragmentInput vertReal(in VertexInput v)
+FragmentIn VertexProgramProxy(in VertexIn v)
 #endif
 {
-	FragmentInput o = (FragmentInput)0;
+	FragmentIn o = (FragmentIn)0;
 	o.uv0.xy = v.texcoord0;
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	#ifdef USE_TANGENT_BITANGENT
@@ -303,16 +289,16 @@ FragmentInput vertReal(in VertexInput v)
 
 
 #ifdef USE_GEOMETRY_STAGE
-	GeometryInput vert(VertexInput v)
+	GeometryIn VertexProgram(VertexIn v)
 	{
-		GeometryInput o = (GeometryInput)0;
-		CopyVertexInput(v, o);
+		GeometryIn o = (GeometryIn)0;
+		CopyVertex(v, o);
 		return o;
 	}
 #else
-	FragmentInput vert(VertexInput v)
+	FragmentIn VertexProgram(VertexIn v)
 	{
-		return vertReal(v);
+		return VertexProgramProxy(v);
 	}
 #endif
 
@@ -325,12 +311,12 @@ FragmentInput vertReal(in VertexInput v)
 
 // geometry shader used to emit extra triangles for outline
 [maxvertexcount(6)]
-void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> tristream)
+void GeometryProgram(triangle GeometryIn v[3], inout TriangleStream<FragmentIn> tristream)
 {
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			FragmentInput o = vertReal(v[i]);
+			FragmentIn o = VertexProgramProxy(v[i]);
 			tristream.Append(o);
 		}
 	}
@@ -345,7 +331,7 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 		{
 			float4 worldPos = mul(UNITY_MATRIX_M, float4(v[i].vertex.xyz, 1.0));
 			float3 worldNormal = normalize(UnityObjectToWorldNormal(v[i].normal));
-			float vertexDistanceToCamera = distance(worldPos.xyz / worldPos.w, getCameraPosition());
+			float vertexDistanceToCamera = distance(worldPos.xyz / worldPos.w, GetCameraPosition());
 			if (vertexDistanceToCamera > 10)
 			{
 				return;
@@ -357,7 +343,7 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 
 			worldPos.xyz += worldNormal * outlineWorldWidth;
 
-			FragmentInput o = (FragmentInput)0;
+			FragmentIn o = (FragmentIn)0;
 			o.pos = mul(UNITY_MATRIX_VP, worldPos);
 			o.uv0.xy = v[i].texcoord0; // outline should respect alpha cutout and dithering
 			o.uv0.w = 1; // mark outline pixel
@@ -382,7 +368,7 @@ void geom(triangle GeometryInput v[3], inout TriangleStream<FragmentInput> trist
 
 
 #define GRAYSCALE_VECTOR (float3(0.3, 0.59, 0.11))
-float grayness(float3 color) 
+float Grayness(float3 color) 
 {
 	return dot(color, GRAYSCALE_VECTOR);
 }
@@ -391,7 +377,7 @@ float grayness(float3 color)
 // note: valve edition
 //	   from http://alex.vlachos.com/graphics/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf
 // note: input in pixels (ie not normalized uv)
-float3 getScreenSpaceDither( float2 vScreenPos )
+float3 GetScreenSpaceDither( float2 vScreenPos )
 {
 	// Iestyn's RGB dither (7 asm instructions) from Portal 2 X360, slightly modified for VR
 	float3 vDither = dot( float2( 171.0, 231.0 ), vScreenPos.xy + _Time.z ).xxx;
@@ -426,7 +412,7 @@ half3 ShadeSH9Average()
 
 
 // dominant light direction approximation from spherical harmonics
-float3 getLightDirectionFromSphericalHarmonics()
+float3 GetLightDirectionFromSphericalHarmonics()
 {
 	// Xiexe's
 	//half3 reverseShadeSH9Light = ShadeSH9(float4(-normal,1));
@@ -511,19 +497,19 @@ half3 NeitriShadeSH9(half4 normal)
 
 
 
-#ifdef OUTPUT_DEPTH
+#ifdef CHANGE_DEPTH
 
-struct FragOut
+struct FragmentOut
 {
 	float depth : SV_Depth;
 	float4 color : SV_Target;
 };
-FragOut frag(FragmentInput i)
+FragmentOut FragmentProgram(FragmentIn i)
 {
-	FragOut fragOut;
+	FragmentOut FragmentOut;
 #else
 
-float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
+float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 {
 
 #endif
@@ -535,7 +521,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		if (_ShowInMirror == 1) // Show only in mirror
 		{
 			UNITY_BRANCH
-			if (!isInMirror())
+			if (!IsInMirror())
 			{
 				clip(-1);
 			}
@@ -544,23 +530,21 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		{
 			// Dont show in mirror
 			UNITY_BRANCH
-			if (isInMirror())
+			if (IsInMirror())
 			{
 				clip(-1);
 			}
 		}
 	}
 
-	float4 mainTexture = tex2D(_MainTex, TRANSFORM_TEX(i.uv0, _MainTex));
 
-	#ifdef IS_TRANSPARENT_SHADER
-	// because people expect color alpha to work only on transparent shaders
-	mainTexture *= _Color;
-	#else
-	mainTexture.rgb *= _Color.rgb;
-	#endif
+	SurfaceOut surfaceOut = (SurfaceOut)0; 
+	SurfaceIn surfaceIn;
+	surfaceIn.uv0 = i.uv0.xy;
+	Surface(surfaceIn, surfaceOut);
 
-	clip(mainTexture.a - _AlphaCutout);
+
+	clip(surfaceOut.Alpha - _AlphaCutout);
 
 	#ifndef IS_TRANSPARENT_SHADER
 	// dithering makes sense only in opaque shader
@@ -571,12 +555,12 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		if (_DitheredTransparencyType == 1)
 		{
 			// Anchored to camera
-			clip(mainTexture.a - GetTriangularPDFNoiseDithering(i.pos.xy));
+			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(i.pos.xy));
 		}
 		else
 		{
 			// Anchored to texture coordinates
-			clip(mainTexture.a - GetTriangularPDFNoiseDithering(i.uv0.xy * 5));
+			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(i.uv0.xy * 5));
 		}
 	}
 	#endif
@@ -595,22 +579,20 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 #ifdef USE_NORMAL_MAP
 	UNITY_BRANCH
-	if (_BumpScale > 0)
+	if (any(surfaceOut.Normal))
 	{
 		float3x3 tangentSpaceToWorldSpace = float3x3(i.tangentDir, i.bitangentDir, i.normal);
-		float3 normalTangentSpace = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0, _BumpMap)));
-		normalTangentSpace = lerp(float3(0, 0, 1), normalTangentSpace, _BumpScale);
-		normal = normalize(mul(normalTangentSpace, tangentSpaceToWorldSpace));
+		normal = normalize(mul(surfaceOut.Normal, tangentSpaceToWorldSpace));
 	}
 	else
 #endif
 	{
 		// slightly dither normal over time to hide obvious normal interpolation
-		//normal = normalize(i.normal + getScreenSpaceDither(i.pos.xy) / 10.0);
+		//normal = normalize(i.normal + GetScreenSpaceDither(i.pos.xy) / 10.0);
 		normal = normalize(i.normal);
 	}
 
-	float3 worldSpaceCameraPos = getCameraPosition();
+	float3 worldSpaceCameraPos = GetCameraPosition();
 	float distanceToCamera = distance(i.worldPos.xyz / i.worldPos.w, worldSpaceCameraPos);
 
 
@@ -648,9 +630,9 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
 
-		finalRGB += (lightProbes + vertexLights) * mainTexture.rgb;
+		finalRGB += (lightProbes + vertexLights) * surfaceOut.Albedo;
 
-		float3 bakedLightDir = getLightDirectionFromSphericalHarmonics();
+		float3 bakedLightDir = GetLightDirectionFromSphericalHarmonics();
 		fixed3 bakedLightColor = ShadeSH9(half4(bakedLightDir, 1));
 
 		UNITY_BRANCH
@@ -663,18 +645,18 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		UNITY_BRANCH
 		if (_ApproximateFakeLight > 0)
 		{
-			if (grayness(bakedLightColor) > 0)
+			if (Grayness(bakedLightColor) > 0)
 			{
 				float NdotL = max(0, dot(normal, bakedLightDir));
-				finalRGB = lerp(finalRGB, lightColor * mainTexture.rgb, NdotL * _ApproximateFakeLight);
+				finalRGB = lerp(finalRGB, lightColor * surfaceOut.Albedo, NdotL * _ApproximateFakeLight);
 			}
 		}
 
 		// normalize base padd light colors, so accomulated light colors are always in range 0..1
 		// because some maps have areas where only 0..0,5 lighting is used, and it looks good if we use full 0..1 range there
-		/*float g1 = grayness(lightColor); // real light
-		float g2 = grayness(bakedLightColor); // approximate baked light
-		float g3 = grayness(averageLightProbes); // ambient color
+		/*float g1 = Grayness(lightColor); // real light
+		float g2 = Grayness(bakedLightColor); // approximate baked light
+		float g3 = Grayness(averageLightProbes); // ambient color
 		if (g2 > g1)
 		{
 			bakedLightColor /= 1 - (g3 + g1); // ambient and real light is applied
@@ -688,7 +670,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
-		// bool isInCompleteDark = unityLightAttenuation < 0.05 && grayness(diffuseLightRGB) < 0.01;
+		// bool isInCompleteDark = unityLightAttenuation < 0.05 && Grayness(diffuseLightRGB) < 0.01;
 
 		lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
 
@@ -732,13 +714,13 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb * _RampColorAdjustment;
 
 			#ifdef UNITY_PASS_FORWARDBASE
-				finalRGB += lightColor * unityLightAttenuation * shadowRamp * mainTexture.rgb;
+				finalRGB += lightColor * unityLightAttenuation * shadowRamp * surfaceOut.Albedo;
 			#else
 				// issue: sometimes delta pass light is too bright, lets make sure its not too bright
 				float3 diffuseColor = lightColor * unityLightAttenuation;
-				float g = grayness(diffuseColor);
+				float g = Grayness(diffuseColor);
 				if (g > 1) diffuseColor /= g;
-				diffuseColor = diffuseColor * shadowRamp * mainTexture.rgb;
+				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
 				finalRGB += diffuseColor;
 			#endif
 		}
@@ -777,8 +759,8 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 				if (_MatcapAnchor == 1)
 				{
 					// Anchored to camera rotation
-					float3 up = getCameraUp();
-					float3 right = getCameraRight();
+					float3 up = GetCameraUp();
+					float3 right = GetCameraRight();
 					matcapUv = float2(dot(normal, right), dot(normal, up)) * 0.5 + 0.5;
 				}
 				else
@@ -832,7 +814,6 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 
 	// Shadow rim
 	{
-		//float _ShadowRimWeight;
 		float3 adjustedFinalRGB = finalRGB * _ShadowRim;
 		float w = (1 - abs(NdotV)) * max(0, -NdotL);
 		finalRGB = lerp(finalRGB, adjustedFinalRGB, w);
@@ -841,27 +822,25 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 	// Emission
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_BRANCH
-		if (_EmissionType != 0 && any(_EmissionColor))
+		if (_EmissionType != 0)
 		{
 			if (_EmissionType == 1)
 			{
 				// Glow always
-				fixed3 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)).rgb * _EmissionColor.rgb;
-				finalRGB += emissive;
+				finalRGB += surfaceOut.Emission;
 			}
 			else
 			{
 				// Glow only in darkness
-				fixed3 emissive = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)).rgb * _EmissionColor.rgb;
-				fixed lightWeight = unityLightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + lightColor, fixed3(1, 1, 1));
-				emissive *= 1 - clamp(0, 1, lightWeight);
-				finalRGB += emissive;
+				fixed weight = unityLightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + lightColor, fixed3(1, 1, 1));
+				weight = 1 - clamp(0, 1, weight);
+				finalRGB += surfaceOut.Emission * weight;
 			}
 		}
 	#else
 	#endif
 
-	fixed4 finalRGBA = fixed4(finalRGB, mainTexture.a);
+	fixed4 finalRGBA = fixed4(finalRGB, surfaceOut.Alpha);
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_APPLY_FOG(i.fogCoord, finalRGBA);
@@ -869,9 +848,9 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 		UNITY_APPLY_FOG_COLOR(i.fogCoord, finalRGBA, half4(0,0,0,0)); // fog towards black in additive pass
 	#endif
 
-	#ifdef OUTPUT_DEPTH
-	fragOut.color = finalRGBA;
-	return fragOut;
+	#ifdef CHANGE_DEPTH
+	FragmentOut.color = finalRGBA;
+	return FragmentOut;
 	#else
 	return finalRGBA;
 	#endif
@@ -907,7 +886,7 @@ float4 frag(FragmentInput i, fixed facing : VFACE) : SV_Target
 #define UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT 1
 #endif
 
-struct VertexInputShadowCaster
+struct VertexShadowCasterIn
 {
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
@@ -915,24 +894,24 @@ struct VertexInputShadowCaster
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
-struct VertexOutputShadowCaster
+struct VertexShadowCasterOut
 {
 	V2F_SHADOW_CASTER_NOPOS
 	float2 tex : TEXCOORD1;
 };
 
 #ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
-struct VertexOutputStereoShadowCaster
+struct VertexStereoShadowCasterOut
 {
 	UNITY_VERTEX_OUTPUT_STEREO
 };
 #endif
 
-void vertShadowCaster (VertexInputShadowCaster v
+void VertexProgramShadowCaster (VertexShadowCasterIn v
 	, out float4 opos : SV_POSITION
-	, out VertexOutputShadowCaster o
+	, out VertexShadowCasterOut o
 	#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
-	, out VertexOutputStereoShadowCaster os
+	, out VertexStereoShadowCasterOut os
 	#endif
 )
 {
@@ -944,7 +923,7 @@ void vertShadowCaster (VertexInputShadowCaster v
 	#endif
 }
 
-half4 fragShadowCaster(float4 vpos : SV_POSITION, VertexOutputShadowCaster i) : SV_Target
+half4 FragmentProgramShadowCaster(float4 vpos : SV_POSITION, VertexShadowCasterOut i) : SV_Target
 {
 	half alpha = tex2D(_MainTex, TRANSFORM_TEX(i.tex, _MainTex)).a;
 

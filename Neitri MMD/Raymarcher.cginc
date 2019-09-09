@@ -99,7 +99,7 @@ void raymarch(float3 worldRayStart, inout float3 color, out float screenDepth)
 	color *= 1 - data.y;
 	//color *= 1 - steps / MAX_RAY_STEPS;// - totalDistance / MAX_RAY_DISTANCE * 0.2f;
 	//color *= 1 - min(0.3, saturate((steps * 3) / MAX_RAY_STEPS));
-	#ifdef OUTPUT_DEPTH
+	#ifdef CHANGE_DEPTH
 		float4 clipPos = mul(UNITY_MATRIX_VP, float4(worldRayStart + worldRayDir * totalDistance, 1.0));
 		screenDepth = clipPos.z / clipPos.w;
 	#endif

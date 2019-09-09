@@ -53,7 +53,32 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			"Queue" = "Geometry"
 			"RenderType" = "Opaque"
 		}
-		
+
+		CGINCLUDE
+
+			#include "Neitri MMD Surface.cginc"
+
+			sampler2D _MainTex; float4 _MainTex_ST;
+			fixed4 _Color;
+			float _Glossiness; // name from Unity's standard
+			sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
+			fixed4 _EmissionColor;
+			sampler2D _BumpMap; float4 _BumpMap_ST;
+			float _BumpScale;
+
+			void Surface(SurfaceIn i, inout SurfaceOut o)
+			{
+				fixed4 color = tex2D(_MainTex, TRANSFORM_TEX(i.uv0.xy, _MainTex));
+				o.Albedo = color.rgb * _Color;
+				o.Alpha = color.a;
+				o.Glossiness = _Glossiness;
+				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
+				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
+				o.Normal = lerp(float3(0, 0, 1), o.Normal, _BumpScale);
+			}
+
+		ENDCG
+
 		Pass {
 			Name "ForwardBase"
 			Tags { "LightMode" = "ForwardBase" }
@@ -62,9 +87,9 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			Blend One Zero
 			AlphaToMask On
 			CGPROGRAM
-			#pragma vertex vert
-			#pragma geometry geom
-			#pragma fragment frag
+			#pragma vertex VertexProgram
+			#pragma geometry GeometryProgram
+			#pragma fragment FragmentProgram
 			#ifndef UNITY_PASS_FORWARDBASE
 				#define UNITY_PASS_FORWARDBASE
 			#endif
@@ -73,7 +98,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			#pragma target 4.0
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
-			#include "Base.cginc"
+			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
 		Pass {
@@ -87,8 +112,8 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			Fog { Color (0,0,0,0) }
 			ZTest LEqual
 			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
+			#pragma vertex VertexProgram
+			#pragma fragment FragmentProgram
 			#ifndef UNITY_PASS_FORWARDADD
 				#define UNITY_PASS_FORWARDADD
 			#endif
@@ -96,7 +121,7 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			#pragma target 4.0
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
-			#include "Base.cginc"
+			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
 		Pass {
@@ -106,12 +131,12 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			ZTest LEqual
 			CGPROGRAM
 			#pragma target 4.0
-			#pragma vertex vertShadowCaster
-			#pragma fragment fragShadowCaster
+			#pragma vertex VertexProgramShadowCaster
+			#pragma fragment FragmentProgramShadowCaster
 			#ifndef UNITY_PASS_SHADOWCASTER
 				#define UNITY_PASS_SHADOWCASTER
 			#endif
-			#include "Base.cginc"
+			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
 	}	
