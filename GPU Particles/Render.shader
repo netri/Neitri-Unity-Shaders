@@ -100,7 +100,7 @@ Shader "Neitri/GPU Particles/Render"
 					speedLen +
 					_SinTime.x +
 					length(uv) * 0.1 +
-					snoise(position * 0.5).x * 0.1;
+					snoise(position * 0.1).x * 0.1;
 
 
 				// modified IQ color palette, original: http://www.iquilezles.org/www/articles/palettes/palettes.htm
