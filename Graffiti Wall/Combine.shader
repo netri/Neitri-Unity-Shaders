@@ -63,18 +63,20 @@
 				}
 				else if (spray.a > 0)
 				{
-					float similarity = (1.7 - min(1.7, distance(previous.rgb, spray.rgb))) / 1.7; // 0.01 ... 1
-					float alpha = saturate(spray.a * unity_DeltaTime * 20 + previous.a * similarity);
-					combined = fixed4(spray.rgb, alpha);
+					// when nozzle is closer to wall, alpha is bigger, you want to see results immediately
+					// spray color is more sensitive to FPS if color has smaller alpha
+					float weight = spray.a * lerp(unity_DeltaTime * 45, 1, spray.a);
+					combined.rgb = lerp(previous.rgb, spray.rgb, weight);
 
-					//float delta = saturate(spray.a* unity_DeltaTime * 20);
-					//combined.rgb = lerp(previous.rgb, spray.rgb, delta);
-					//combined.a = lerp(previous.rgb, 1, delta);
+					// alpha can only increase
+					// we only add more color
+					combined.a = lerp(previous.a, 1, weight);
 
 					//combined = fixed4(spray.rgb, spray.a); //DEBUG
 				}
 				else
 				{
+					// nothing to add
 					combined = previous;
 				}
 
