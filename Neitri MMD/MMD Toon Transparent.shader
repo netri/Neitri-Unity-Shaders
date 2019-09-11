@@ -1,10 +1,10 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-// has to be in geometry queue, beause we want it to be shadowed the same as opaque
-
-Shader "Neitri/MMD Toon Transparent" {
-	Properties{
+Shader "Neitri/MMD Toon Transparent"
+{
+	Properties
+	{
 		[Header(Main)]
 		_MainTex("Texture", 2D) = "white" {}
 		_Color("Color", Color) = (1,1,1,1)
@@ -45,11 +45,10 @@ Shader "Neitri/MMD Toon Transparent" {
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest -advanced", Float) = 4
 	}
-	SubShader{
-		Tags {
-			"Queue" = "Geometry+400"
-			"RenderType" = "Transparent"
-		}
+	SubShader
+	{
+		// has to be in geometry queue, beause we want it to be shadowed the same as opaque
+		Tags { "Queue" = "Geometry+400" "RenderType" = "Transparent" }
 
 		CGINCLUDE
 
@@ -65,8 +64,8 @@ Shader "Neitri/MMD Toon Transparent" {
 
 			void Surface(SurfaceIn i, inout SurfaceOut o)
 			{
-				fixed4 color = tex2D(_MainTex, TRANSFORM_TEX(i.uv0.xy, _MainTex));
-				o.Albedo = color.rgb * _Color;
+				fixed4 color = tex2D(_MainTex, TRANSFORM_TEX(i.uv0.xy, _MainTex)) * _Color;
+				o.Albedo = color.rgb;
 				o.Alpha = color.a;
 				o.Glossiness = _Glossiness;
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
@@ -76,11 +75,10 @@ Shader "Neitri/MMD Toon Transparent" {
 
 		ENDCG
 
-		Pass {
+		Pass
+		{
 			Name "ForwardBase"
-			Tags {
-				"LightMode" = "ForwardBase"
-			}
+			Tags { "LightMode" = "ForwardBase" }
 			Cull [_Cull]
 			ZTest [_ZTest]
 			Blend SrcAlpha OneMinusSrcAlpha
@@ -93,21 +91,17 @@ Shader "Neitri/MMD Toon Transparent" {
 				#define UNITY_PASS_FORWARDBASE
 			#endif
 			#define IS_TRANSPARENT_SHADER
-			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
+			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
-			#pragma shader_feature _ _RAYMARCHER_TYPE_SPHERES _RAYMARCHER_TYPE_HEARTS 
-			#pragma shader_feature _ _COLOR_OVER_TIME_ON
-			#pragma shader_feature _ _DITHERED_TRANSPARENCY_ON
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
-		Pass {
+		Pass
+		{
 			Name "ForwardAdd"
-			Tags {
-				"LightMode" = "ForwardAdd"
-			}
+			Tags { "LightMode" = "ForwardAdd" }
 			Cull [_Cull]
 			ZTest [_ZTest]
 			Blend SrcAlpha One
@@ -122,25 +116,27 @@ Shader "Neitri/MMD Toon Transparent" {
 				#define UNITY_PASS_FORWARDADD
 			#endif
 			#define IS_TRANSPARENT_SHADER
-			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
+			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
-		Pass {
+		Pass
+		{
 			Name "ShadowCaster"
 			Tags { "LightMode" = "ShadowCaster" }
 			ZWrite On
 			ZTest LEqual
 			CGPROGRAM
-			#pragma target 2.0
 			#pragma vertex VertexProgramShadowCaster
 			#pragma fragment FragmentProgramShadowCaster
 			#ifndef UNITY_PASS_SHADOWCASTER
 				#define UNITY_PASS_SHADOWCASTER
 			#endif
+			#pragma target 2.0
+			#pragma only_renderers d3d11
 			#define IS_TRANSPARENT_SHADER
 			#include "Neitri MMD Core.cginc"
 			ENDCG

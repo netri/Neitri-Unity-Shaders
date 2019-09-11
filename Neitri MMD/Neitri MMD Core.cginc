@@ -374,10 +374,9 @@ float Grayness(float3 color)
 }
 
 // from: https://www.shadertoy.com/view/MslGR8
-// note: valve edition
-//	   from http://alex.vlachos.com/graphics/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf
+// from: valve edition http://alex.vlachos.com/graphics/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf
 // note: input in pixels (ie not normalized uv)
-float3 GetScreenSpaceDither( float2 vScreenPos )
+float3 GetScreenSpaceDither(float2 vScreenPos)
 {
 	// Iestyn's RGB dither (7 asm instructions) from Portal 2 X360, slightly modified for VR
 	float3 vDither = dot( float2( 171.0, 231.0 ), vScreenPos.xy + _Time.z ).xxx;

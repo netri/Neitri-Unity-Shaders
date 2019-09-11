@@ -1,8 +1,10 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-Shader "Neitri/MMD Toon Opaque Outline" {
-	Properties {
+Shader "Neitri/MMD Toon Opaque Outline"
+{
+	Properties
+	{
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
 		_Color ("Color", Color) = (1,1,1,1)
@@ -48,11 +50,9 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest -advanced", Float) = 4
 	}
-	SubShader {
-		Tags {
-			"Queue" = "Geometry"
-			"RenderType" = "Opaque"
-		}
+	SubShader
+	{
+		Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
 
 		CGINCLUDE
 
@@ -79,7 +79,8 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 
 		ENDCG
 
-		Pass {
+		Pass
+		{
 			Name "ForwardBase"
 			Tags { "LightMode" = "ForwardBase" }
 			Cull [_Cull]
@@ -94,14 +95,15 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 				#define UNITY_PASS_FORWARDBASE
 			#endif
 			#define IS_OUTLINE_SHADER
-			#pragma only_renderers d3d11 glcore gles
 			#pragma target 4.0
+			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
-		Pass {
+		Pass
+		{
 			Name "ForwardAdd"
 			Tags { "LightMode" = "ForwardAdd" }
 			Cull [_Cull]
@@ -117,25 +119,27 @@ Shader "Neitri/MMD Toon Opaque Outline" {
 			#ifndef UNITY_PASS_FORWARDADD
 				#define UNITY_PASS_FORWARDADD
 			#endif
-			#pragma only_renderers d3d11 glcore gles
 			#pragma target 4.0
+			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
-		Pass {
+		Pass
+		{
 			Name "ShadowCaster"
 			Tags { "LightMode" = "ShadowCaster" }
 			ZWrite On
 			ZTest LEqual
 			CGPROGRAM
-			#pragma target 4.0
 			#pragma vertex VertexProgramShadowCaster
 			#pragma fragment FragmentProgramShadowCaster
 			#ifndef UNITY_PASS_SHADOWCASTER
 				#define UNITY_PASS_SHADOWCASTER
 			#endif
+			#pragma target 4.0
+			#pragma only_renderers d3d11
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}

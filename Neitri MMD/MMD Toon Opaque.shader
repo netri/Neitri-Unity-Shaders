@@ -1,9 +1,10 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-Shader "Neitri/MMD Toon Opaque" {
-	Properties {
-
+Shader "Neitri/MMD Toon Opaque"
+{
+	Properties
+	{
 		// Surface properties
 		[Header(Main)] 
 		_MainTex ("Texture", 2D) = "white" {}
@@ -52,11 +53,9 @@ Shader "Neitri/MMD Toon Opaque" {
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
 		//_DebugFloat1("Debug Float 1", Range(0, 1)) = 1
 	}
-	SubShader {
-		Tags {
-			"Queue" = "Geometry"
-			"RenderType" = "Opaque"
-		}
+	SubShader
+	{
+		Tags { "Queue" = "Geometry" "RenderType" = "Opaque"	}
 
 		CGINCLUDE
 
@@ -70,7 +69,7 @@ Shader "Neitri/MMD Toon Opaque" {
 			sampler2D _BumpMap; float4 _BumpMap_ST;
 			float _BumpScale;
 
-			void Surface(SurfaceIn i, inout SurfaceOut o) 
+			void Surface(SurfaceIn i, inout SurfaceOut o)
 			{
 				fixed4 color = tex2D(_MainTex, TRANSFORM_TEX(i.uv0.xy, _MainTex));
 				o.Albedo = color.rgb * _Color;
@@ -83,7 +82,8 @@ Shader "Neitri/MMD Toon Opaque" {
 
 		ENDCG
 		
-		Pass {
+		Pass
+		{
 			Name "ForwardBase"
 			Tags { "LightMode" = "ForwardBase" }
 			Cull [_Cull]
@@ -96,14 +96,15 @@ Shader "Neitri/MMD Toon Opaque" {
 			#ifndef UNITY_PASS_FORWARDBASE
 				#define UNITY_PASS_FORWARDBASE
 			#endif
-			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
+			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
-		Pass {
+		Pass
+		{
 			Name "ForwardAdd"
 			Tags { "LightMode" = "ForwardAdd" }
 			Cull [_Cull]
@@ -119,25 +120,27 @@ Shader "Neitri/MMD Toon Opaque" {
 			#ifndef UNITY_PASS_FORWARDADD
 				#define UNITY_PASS_FORWARDADD
 			#endif
-			#pragma only_renderers d3d11 glcore gles
 			#pragma target 2.0
+			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}
-		Pass {
+		Pass
+		{
 			Name "ShadowCaster"
 			Tags { "LightMode" = "ShadowCaster" }
 			ZWrite On
 			ZTest LEqual
 			CGPROGRAM
-			#pragma target 2.0
 			#pragma vertex VertexProgramShadowCaster
 			#pragma fragment FragmentProgramShadowCaster
 			#ifndef UNITY_PASS_SHADOWCASTER
 				#define UNITY_PASS_SHADOWCASTER
 			#endif
+			#pragma target 2.0
+			#pragma only_renderers d3d11
 			#include "Neitri MMD Core.cginc"
 			ENDCG
 		}

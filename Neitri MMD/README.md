@@ -14,6 +14,9 @@ This shader was made with the following goals in mind:
 This is not a do it all PBR/Toon comprehensive uber shader like those of Xiexe or Poiyomi.
 This is a simple use then look good shader tailored specifically for VRChat avatars.
 
+
+People expect color alpha to work only on transparent shaders.
+
 # Import settings
 
 If your shader is dark after using normal map, make sure you have this on your model import settings:
