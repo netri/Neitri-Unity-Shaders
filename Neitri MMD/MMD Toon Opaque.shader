@@ -22,19 +22,19 @@ Shader "Neitri/MMD Toon Opaque"
 
 		// Core properties
 		[Header(Shading Ramp)]
-		[HDR] _RampColorAdjustment("Color -advanced", Color) = (1,1,1,1)
-		_ShadingRampStretch("Ramp stretch -advanced", Range(0, 1)) = 0
+		_Shadow("Shadow", Range(0, 1)) = 0.4
 		[NoScaleOffset] _Ramp("Ramp -advanced", 2D) = "white" {}
 
 		[Header(Matcap)]
-		[Enum(Disabled,0,Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type -advanced", Range(0, 3)) = 2
-		[HDR] _MatcapTint("Color -advanced", Color) = (1,1,1,1)
+		_MatcapWeight("Strength -advanced", Range(0, 1)) = 1
+		[Enum(Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type -advanced", Range(1, 3)) = 2
+		[HDR] _MatcapTint("Tint -advanced", Color) = (1,1,1,1)
 		[Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor -advanced", Range(0, 2)) = 0
 		[NoScaleOffset] _Matcap("Matcap -advanced", 2D) = "white" {}
 
 		[Header(Shadow)]
 		_ShadowColor ("Shadow color -advanced", Color) = (0,0,0,1)
-		_ShadowRim("Shadow rim color -advanced", Color) = (0.8,0.8,0.8,1)
+		_ShadowRim("Shadow rim color -advanced", Color) = (0,0,0,1)
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness ("Baked lighting flatness -advanced", Range(0, 1)) = 0.9
@@ -43,7 +43,7 @@ Shader "Neitri/MMD Toon Opaque"
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
 		[Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror -advanced", Range(0, 2)) = 0
-		_ForceLightDirectionToForward("Force light to come from forward -advanced", Range(0, 1)) = 0.3
+		_LightSkew("Light Skew -advanced", Vector) = (1, 0.1, 1, 0)
 		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull -advanced", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest -advanced", Float) = 4
@@ -52,6 +52,8 @@ Shader "Neitri/MMD Toon Opaque"
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
 		//_DebugFloat1("Debug Float 1", Range(0, 1)) = 1
+
+		[HideInInspector] _Version("_Version", Float) = 0.1
 	}
 	SubShader
 	{

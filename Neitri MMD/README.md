@@ -1,28 +1,26 @@
 # About
+This shader is tailored for VRChat avatars, it tries to make your anime avatar look just the right good way.
 
-This is the shader I've been using, working on and testing for the last year and half.<br>
-I really like how MMD models look in all the various rendered videos, I've been tring to get close to it.<br>
-
-This shader was made with the following goals in mind:
-- Defaults values should be set to ideal battle tested values
-- Should be noob friendly and easy to setup
-- Look acceptably in all the various and scuffed lighting conditions of VRChat worlds
-- When standard is completely dark, be dark too
-- React to lighting and shadows better than Cubed's but still retain MMD look
+This shader was made with following goals in mind:
+- Be noob friendly and easy to setup
+- Defaults values are set to ideal battle tested values
+- Look acceptably in all scuffed lighting conditions of VRChat worlds
+- When Unity's Standard is completely dark, be dark too
+- React to lighting and shadows better than Cubed's
 - Be something between Cubed's and Unity's Standard
 
-This is not a do it all PBR/Toon comprehensive uber shader like those of Xiexe or Poiyomi.
-This is a simple use then look good shader tailored specifically for VRChat avatars.
+This is not do it all PBR/Toon comprehensive uber shader like those of Xiexe or Poiyomi.
 
-
-People expect color alpha to work only on transparent shaders.
-
-# Import settings
-
-If your shader is dark after using normal map, make sure you have this on your model import settings:
+# Troubleshoting
+If your avatar is dark after using normal map, make sure you have this on your model import settings:
 ![](https://image.prntscr.com/image/XspfVYA_RdKIzu8ZrTVGKQ.png)
 
-Shading ramps and matcaps look best with these import settings:
+# Notes
+Rim lighting is missing because it can be simulared with matcaps.
+
+Color alpha is used only in transparent shader, because that is what people expect.
+
+Shading ramps and matcaps look best with these import settings, we don't want gamma correction to their colors.
 ![](https://image.prntscr.com/image/4KlO8AB5RlCBtgNKOhiYiw.png)
 
 # Good concepts/ideas
@@ -34,3 +32,4 @@ Shading ramps and matcaps look best with these import settings:
 https://knarkowicz.wordpress.com/2018/01/04/cloth-shading/
 https://knarkowicz.wordpress.com/2014/12/27/analytical-dfg-term-for-ibl/
 https://blog.selfshadow.com/publications/s2017-shading-course/drobot/s2017_pbs_multilayered.pdf
+

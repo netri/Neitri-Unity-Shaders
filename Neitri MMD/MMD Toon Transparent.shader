@@ -5,6 +5,7 @@ Shader "Neitri/MMD Toon Transparent"
 {
 	Properties
 	{
+		// Surface properties
 		[Header(Main)]
 		_MainTex("Texture", 2D) = "white" {}
 		_Color("Color", Color) = (1,1,1,1)
@@ -19,6 +20,7 @@ Shader "Neitri/MMD Toon Transparent"
 		_EmissionMap("Texture", 2D) = "white" {}
 		[HDR] _EmissionColor("Color", Color) = (1,1,1,1)
 
+		// Core properties
 		[Header(Shading Ramp)]
 		[HDR] _RampColorAdjustment("Color -advanced", Color) = (1,1,1,1)
 		_ShadingRampStretch("Ramp stretch -advanced", Range(0, 1)) = 0

@@ -5,10 +5,11 @@ Shader "Neitri/MMD Toon Opaque Outline"
 {
 	Properties
 	{
-		[Header(Main)] 
-		_MainTex ("Texture", 2D) = "white" {}
-		_Color ("Color", Color) = (1,1,1,1)
-		_Glossiness ("Glossiness", Range(0, 1)) = 0
+		// Surface properties
+		[Header(Main)]
+		_MainTex("Texture", 2D) = "white" {}
+		_Color("Color", Color) = (1,1,1,1)
+		_Glossiness("Glossiness", Range(0, 1)) = 0
 
 		[Header(Normal Map)]
 		_BumpMap("Normal Map", 2D) = "bump" {}
@@ -16,9 +17,10 @@ Shader "Neitri/MMD Toon Opaque Outline"
 
 		[Header(Emission)]
 		[Enum(Disabled,0,Glow always,1,Glow only in darkness,2)] _EmissionType("Emission Type", Range(0, 2)) = 0
-		_EmissionMap ("Texture", 2D) = "white" {}
-		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
+		_EmissionMap("Texture", 2D) = "white" {}
+		[HDR] _EmissionColor("Color", Color) = (1,1,1,1)
 
+		// Core properties
 		[Header(Shading Ramp)]
 		[HDR] _RampColorAdjustment("Color -advanced", Color) = (1,1,1,1)
 		_ShadingRampStretch("Ramp stretch -advanced", Range(0, 1)) = 0

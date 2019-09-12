@@ -42,12 +42,12 @@ float3 _ShadowRim;
 float _BakedLightingFlatness;
 float _ApproximateFakeLight;
 
-float3 _RampColorAdjustment;
+float _Shadow; // name from Cubed's
 Texture2D _Ramp; // name from Xiexe's
-float _ShadingRampStretch;
 
 int _MatcapType;
 float4 _MatcapTint; // name from Xiexe's
+float _MatcapWeight;
 int _MatcapAnchor;
 Texture2D _Matcap;
 
@@ -59,7 +59,7 @@ float _OutlineWidth;
 float _AlphaCutout;
 int _ShowInMirror;
 int _DitheredTransparencyType;
-float _ForceLightDirectionToForward;
+float3 _LightSkew; // name from Silent's
 
 // DEBUG
 int _DebugInt1;
@@ -249,8 +249,7 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 
 	
 #ifdef _MESH_DEFORMATION_ON
-	// TODO, broken now
-	// inspiration: https://gumroad.com/naelstrof Contact Shader for VRChat, https://www.youtube.com/watch?v=JAIbjUHZyNg
+	// Broken now, inspiration: https://gumroad.com/naelstrof Contact Shader for VRChat, https://www.youtube.com/watch?v=JAIbjUHZyNg
 	float4 projPos = ComputeScreenPos(o.pos);
 	float4 pcoord = float4(projPos.xy / projPos.w, 0, 0);
 	float sceneDepth = LinearEyeDepth (tex2Dlod(_CameraDepthTexture, pcoord));
@@ -393,7 +392,7 @@ float GetTriangularPDFNoiseDithering(float2 pos)
 	return (rand.x + rand.y) * 0.5;
 }
 
-// unsure if better variant that uses higher order terms
+// Neitri's spherical harmonics average that uses higher order terms
 half3 ShadeSH9Average()
 {
 	half3x3 mat = half3x3(
@@ -410,15 +409,9 @@ half3 ShadeSH9Average()
 }
 
 
-// dominant light direction approximation from spherical harmonics
+// Neitri's dominant light direction approximation from spherical harmonics
 float3 GetLightDirectionFromSphericalHarmonics()
 {
-	// Xiexe's
-	//half3 reverseShadeSH9Light = ShadeSH9(float4(-normal,1));
-	//half3 noAmbientShadeSH9Light = (realLightProbes - reverseShadeSH9Light)/2;
-	//return -normalize(noAmbientShadeSH9Light * 0.5 + 0.533);
-
-	// Neitri's
 	// humans perceive colors differently, same amount of green may appear brighter than same amount of blue, that is why we adjust contributions by grayscale vector
 	return normalize(unity_SHAr.xyz * 0.3 + unity_SHAg.xyz * 0.59 + unity_SHAb.xyz * 0.11);
 }
@@ -542,7 +535,6 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	surfaceIn.uv0 = i.uv0.xy;
 	Surface(surfaceIn, surfaceOut);
 
-
 	clip(surfaceOut.Alpha - _AlphaCutout);
 
 	#ifndef IS_TRANSPARENT_SHADER
@@ -599,19 +591,14 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
 
 	// shadows, spot/point light distance calculations, light cookies
-	UNITY_LIGHT_ATTENUATION(unityLightAttenuation, i, i.worldPos.xyz);
-	float3 lightAttenuation; // assigned later
-
-	// prevent bloom if light color is over 1
-	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping, Ive only ever seen one such map
-	//fixed lightColorMax = max(lightColor.x, max(lightColor.y, lightColor.z));
-	//if(lightColorMax > 1) lightColor /= lightColorMax;
-
+	UNITY_LIGHT_ATTENUATION(lightAttenuation, i, i.worldPos.xyz);
 
 	fixed3 lightColor = _LightColor0.rgb;
 
 	// direction from pixel towards light
 	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
+	lightDir = normalize(lightDir * _LightSkew);
+
 	float3 finalRGB = 0;
 
 	#ifdef UNITY_PASS_FORWARDBASE
@@ -621,17 +608,18 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		// environment (ambient) lighting + light probes
 		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
 		//half3 averageLightProbes = ShadeSH9Average();
-		//half3 realLightProbes = ShadeSH9(half4(normal, 1));
 
 		half3 averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 		
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
-		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
+		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness - _ApproximateFakeLight); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
 
 		finalRGB += (lightProbes + vertexLights) * surfaceOut.Albedo;
 
 		float3 bakedLightDir = GetLightDirectionFromSphericalHarmonics();
+		bakedLightDir = normalize(bakedLightDir * _LightSkew);
+
 		fixed3 bakedLightColor = ShadeSH9(half4(bakedLightDir, 1));
 
 		UNITY_BRANCH
@@ -647,11 +635,26 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			if (Grayness(bakedLightColor) > 0)
 			{
 				float NdotL = max(0, dot(normal, bakedLightDir));
-				finalRGB = lerp(finalRGB, lightColor * surfaceOut.Albedo, NdotL * _ApproximateFakeLight);
+				float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
+				float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
+
+				finalRGB = lerp(finalRGB, bakedLightColor * surfaceOut.Albedo * shadowRamp, _ApproximateFakeLight);
+				//finalRGB += bakedLightColor * surfaceOut.Albedo * NdotL * _ApproximateFakeLight;
 			}
 		}
 
-		// normalize base padd light colors, so accomulated light colors are always in range 0..1
+		// Normalize light color
+		// so we are always using maximumum range displays can show
+		/*if (any(lightColor))
+		{
+			float colorMin = Grayness(averageLightProbes + i.vertexLightsAverage.rgb);
+			float colorMax = Grayness(colorMin + lightColor);
+			float g1 = Grayness(lightColor);
+			float g2 = smoothstep(colorMin, colorMax, g1);
+			lightColor *= g2 / g1;
+		}*/
+
+		// normalize base light colors, so accomulated light colors are always in range 0..1
 		// because some maps have areas where only 0..0,5 lighting is used, and it looks good if we use full 0..1 range there
 		/*float g1 = Grayness(lightColor); // real light
 		float g2 = Grayness(bakedLightColor); // approximate baked light
@@ -671,26 +674,12 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
 		// bool isInCompleteDark = unityLightAttenuation < 0.05 && Grayness(diffuseLightRGB) < 0.01;
 
-		lightAttenuation = lerp(_ShadowColor, 1, unityLightAttenuation);
-
 	#else
 		
 		// all spot lights, all point lights, cookie directional lights
 
-		// don't adjust shadows at all for additional lights
-		lightAttenuation = unityLightAttenuation;
-
 	#endif
 
-
-	/*UNITY_BRANCH
-	if (_ForceLightDirectionToForward > 0)
-	{
-		float3 lightDirFromModelForward = mul(unity_ObjectToWorld, float3(0, 0, -1));
-		lightDir = lerp(lightDir, lightDirFromModelForward, _ForceLightDirectionToForward);
-	}*/
-
-	lightDir = normalize(lightDir);
 	float3 halfDir = normalize(lightDir + viewDir);
 	float NdotL = dot(normal, lightDir);
 	float NdotV = dot(normal, viewDir);
@@ -698,6 +687,8 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 
 	{
 		// Specular
+		UNITY_BRANCH
+		if (_Glossiness > 0)
 		{
 			float gloss = _Glossiness;
 			float specPow = exp2(gloss * 10.0);
@@ -709,37 +700,39 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		// Diffuse
 		{
 			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
-			rampNdotL = lerp(_ShadingRampStretch, 1, rampNdotL); // remap 0..1 to _ShadingRampStretch..1
-			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb * _RampColorAdjustment;
+			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
 
+			UNITY_BRANCH
+			if (_Shadow < 1)
+			{
+				float3 maximumLitRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(1, 1)).rgb;
+				shadowRamp = lerp(maximumLitRamp, shadowRamp, _Shadow);
+			}
+
+			float3 diffuseColor;
 			#ifdef UNITY_PASS_FORWARDBASE
-				finalRGB += lightColor * unityLightAttenuation * shadowRamp * surfaceOut.Albedo;
+				diffuseColor = lightColor * shadowRamp * surfaceOut.Albedo;
+				diffuseColor = lerp(_ShadowColor, diffuseColor, lightAttenuation);
 			#else
 				// issue: sometimes delta pass light is too bright, lets make sure its not too bright
-				float3 diffuseColor = lightColor * unityLightAttenuation;
+				diffuseColor = lightColor;
 				float g = Grayness(diffuseColor);
+				UNITY_BRANCH
 				if (g > 1) diffuseColor /= g;
-				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
-				finalRGB += diffuseColor;
+				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo * lightAttenuation;
 			#endif
+			finalRGB += diffuseColor;
 		}
 	}
 
 
-	#ifdef UNITY_PASS_FORWARDBASE
-	#else
-	#endif
 	// can use following defines DIRECTIONAL || POINT || SPOT || DIRECTIONAL_COOKIE || POINT_COOKIE || SPOT_COOKIE
 
-
-	// prevent bloom, final failsafe
-	// BAD: some maps intentonally use lights over 1, then compensate it with tonemapping
-	//finalRGB = saturate(finalRGB);
 
 	// Matcap
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_BRANCH
-		if (_MatcapType != 0)
+		if (_MatcapWeight > 0)
 		{
 			float2 matcapUv;
 
@@ -780,7 +773,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			if (_MatcapType == 1)
 			{
 				// Add to final color
-				finalRGB += matcap;
+				finalRGB += matcap * _MatcapWeight;
 			}
 			else
 			{
@@ -788,34 +781,28 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				if (_MatcapType == 2)
 				{
 					// Multiply final color
-					finalRGB *= matcap;
+					finalRGB *= lerp(1, matcap, _MatcapWeight);
 				}
 				else // 3
 				{
 					// Multiply by light color then add to final color
 					matcap *= lightColor;
-					finalRGB += matcap;
+					finalRGB += matcap * _MatcapWeight;
 				}
 			}
-
-
-			// GOOD: old _TYPE_SKIN keyword, view based shading, adds MMD like feel
-			// it just looks super good, adds more depth just where its needed
-			// finalRGB *= lerp(1, max(0, dot(viewDir, normal)), 0.2);
-			// now done with matcap, I faced issue where these two curves are not the same: cos(x), 1-abs(cos(x+PI/2)), from 0 to PI/2
-			// because above uses dot with viewDir, whereas matcap uses dot with right/up vector, I countered it by creating radial matcap with following values
-			// Table[N[round(100*(cos(-(acos((1-((100-x)/100*PI/2)))-PI/2))))],{x,40,100,10}]
-
-			//return float4(matcap, 1); // DEBUG
 		}
 	#endif
 
 
 	// Shadow rim
 	{
-		float3 adjustedFinalRGB = finalRGB * _ShadowRim;
-		float w = (1 - abs(NdotV)) * max(0, -NdotL);
-		finalRGB = lerp(finalRGB, adjustedFinalRGB, w);
+		float3 shadowRim = surfaceOut.Albedo * lightColor * _ShadowRim;
+
+		float3 cameraForward = GetCameraForward();
+		float dot1 = dot(cameraForward, normal);
+		float dot2 = dot(cameraForward, lightDir);
+		float w = (1 - abs(dot1)) * saturate(dot2);
+		finalRGB += shadowRim * w * lightAttenuation;
 	}
 
 	// Emission
@@ -831,7 +818,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			else
 			{
 				// Glow only in darkness
-				fixed weight = unityLightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + lightColor, fixed3(1, 1, 1));
+				fixed weight = lightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + lightColor, fixed3(1, 1, 1));
 				weight = 1 - clamp(0, 1, weight);
 				finalRGB += surfaceOut.Emission * weight;
 			}
@@ -896,7 +883,7 @@ struct VertexShadowCasterIn
 struct VertexShadowCasterOut
 {
 	V2F_SHADOW_CASTER_NOPOS
-	float2 tex : TEXCOORD1;
+	float2 uv0 : TEXCOORD1;
 };
 
 #ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
@@ -916,7 +903,7 @@ void VertexProgramShadowCaster (VertexShadowCasterIn v
 {
 	UNITY_SETUP_INSTANCE_ID(v);
 	TRANSFER_SHADOW_CASTER_NOPOS(o,opos)
-	o.tex = TRANSFORM_TEX(v.uv0, _MainTex);
+	o.uv0 = v.uv0;
 	#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
 		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(os);
 	#endif
@@ -924,14 +911,12 @@ void VertexProgramShadowCaster (VertexShadowCasterIn v
 
 half4 FragmentProgramShadowCaster(float4 vpos : SV_POSITION, VertexShadowCasterOut i) : SV_Target
 {
-	half alpha = tex2D(_MainTex, TRANSFORM_TEX(i.tex, _MainTex)).a;
+	SurfaceOut surfaceOut = (SurfaceOut)0;
+	SurfaceIn surfaceIn;
+	surfaceIn.uv0 = i.uv0.xy;
+	Surface(surfaceIn, surfaceOut);
 
-	#ifdef IS_TRANSPARENT_SHADER
-	// because people expect color alpha to work only on transparent shaders
-	alpha *= _Color.a;
-	#endif
-
-	clip(alpha - _AlphaCutout);
+	clip(surfaceOut.Alpha - _AlphaCutout);
 
 	UNITY_BRANCH
 	if (_DitheredTransparencyType != 0)
@@ -940,12 +925,12 @@ half4 FragmentProgramShadowCaster(float4 vpos : SV_POSITION, VertexShadowCasterO
 		if (_DitheredTransparencyType == 1)
 		{
 			// Anchored to camera
-			clip(alpha - GetTriangularPDFNoiseDithering(vpos.xy));
+			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(vpos.xy));
 		}
 		else
 		{
 			// Anchored to texture coordinates
-			clip(alpha - GetTriangularPDFNoiseDithering(i.tex.xy * 5));
+			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(i.uv0.xy * 5));
 		}
 	}
 

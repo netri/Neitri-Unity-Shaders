@@ -19,20 +19,21 @@ public class NeitriMMDToonEditor : ShaderGUI
 			materials.Add(material);
 		}
 
-
 		{
 			GUILayout.BeginHorizontal();
 
 			GUILayout.Label("Presets", GUILayout.ExpandWidth(false));
 
-			if (GUILayout.Button(new GUIContent("Default", "Reverts changes done by other presets to default values"), GUILayout.ExpandWidth(false)))
+			if (GUILayout.Button(new GUIContent("Default", "Reverts all changes to default values"), GUILayout.ExpandWidth(false)))
 			{
 				Undo.RecordObjects(materials.ToArray(), "Preset Default");
 				SetTexture("_Ramp", "96ad26bf5aa0f2147b6c1651287c1ae6");
-				SetTexture("_Matcap", "fc97398b94ec4c74faef69b1cb644ae2");
+				SetTexture("_Matcap", "d6064d42d7ffecd4cba07c5bd929b6d5");
+				SetFloat("_MatcapWeight", 0.1f);
 				SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
-				SetColor("_ShadowRim", new Color(0.8f, 0.8f, 0.8f, 1f));
+				SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
 
+				SetFloat("_Shadow", 0.4f);
 				SetFloat("_BakedLightingFlatness", 0.9f);
 				SetFloat("_ApproximateFakeLight", 0.7f);
 				SetFloat("_AlphaCutout", 0.05f);
@@ -44,11 +45,22 @@ public class NeitriMMDToonEditor : ShaderGUI
 			if (GUILayout.Button(new GUIContent("Skin", "Changes shading ramp, shadow color, shadow rim, to skin like values"), GUILayout.ExpandWidth(false)))
 			{
 				Undo.RecordObjects(materials.ToArray(), "Preset Skin");
-				SetTexture("_Ramp", "96ad26bf5aa0f2147b6c1651287c1ae6");
+				SetFloat("_MatcapWeight", 0.5f);
+				SetFloat("_MatcapType", 2);
 				SetTexture("_Matcap", "746904ac01669074b9b1539c50574111");
-				SetColor("_ShadowColor", new Color(0.2f, 0f, 0f, 1f));
-				SetColor("_ShadowRim", new Color(0.9f, 0.8f, 0.8f, 1f));
+				SetColor("_ShadowRim", new Color(0.3f, 0f, 0f, 1f));
 			}
+
+			if (GUILayout.Button(new GUIContent("Rim Light", ""), GUILayout.ExpandWidth(false)))
+			{
+				Undo.RecordObjects(materials.ToArray(), "Preset Rim Light");
+				SetFloat("_MatcapWeight", 1f);
+				SetFloat("_MatcapType", 1);
+				SetTexture("_Matcap", "0c2d781f9138bb74394b78913767973c");
+				SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
+			}
+
+			// Hair, Silk, Leather, Metal
 
 			GUILayout.EndHorizontal();
 		}
