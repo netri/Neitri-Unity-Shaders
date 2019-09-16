@@ -6,6 +6,97 @@ using UnityEditor;
 
 public class NeitriMMDToonEditor : ShaderGUI
 {
+	static class Presets
+	{ 
+	
+		static void AddPresets()
+		{
+			Action<NeitriMMDToonEditor> reset = (NeitriMMDToonEditor t) =>
+			{
+				t.SetTexture("_Ramp", "1283d592696f77545b70f4b513c72188");
+				t.SetFloat("_Shadow", 0.4f); // ramp weight
+				t.SetTexture("_Matcap", "d6064d42d7ffecd4cba07c5bd929b6d5");
+				t.SetFloat("_MatcapWeight", 0.15f);
+				t.SetColor("_MatcapTint", new Color(1f, 1f, 1f, 1f));
+				t.SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
+				t.SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
+
+				t.SetFloat("_BakedLightingFlatness", 0.9f);
+				t.SetFloat("_ApproximateFakeLight", 0.7f);
+				t.SetFloat("_AlphaCutout", 0.05f);
+				t.SetFloat("_ForceLightDirectionToForward", 0.3f);
+				t.SetFloat("_Cull", 2);
+				t.SetFloat("_ZTest", 4);
+			};
+
+			AddPreset("Default", "Reverts all changes to default values", (NeitriMMDToonEditor t) =>
+			{
+				reset(t);
+			});
+
+
+			Action<NeitriMMDToonEditor> skin = (NeitriMMDToonEditor t) =>
+			{
+				t.SetTexture("_Matcap", "c897b2f4ac59d7a47979f27af3221229");
+				t.SetFloat("_MatcapWeight", 0.5f);
+				t.SetFloat("_MatcapType", 2);
+				t.SetColor("_MatcapTint", new Color(1f, 1f, 1f, 1f));
+				t.SetColor("_ShadowRim", new Color(0.3f, 0f, 0f, 1f));
+			};
+
+			AddPreset("Skin", "", (NeitriMMDToonEditor t) =>
+			{
+				reset(t);
+				skin(t);
+			});
+
+			AddPreset("Skin +", "", (NeitriMMDToonEditor t) =>
+			{
+				reset(t);
+				skin(t);
+				t.SetTexture("_Ramp", "3dc80c595a9f8a948acef6614efe394a");
+			});
+
+
+			AddPreset("Rimlight", "", (NeitriMMDToonEditor t) =>
+			{
+				reset(t);
+				t.SetFloat("_MatcapWeight", 1f);
+				t.SetFloat("_MatcapType", 1);
+				t.SetTexture("_Matcap", "0c2d781f9138bb74394b78913767973c");
+				t.SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
+			});
+
+			// TODO: Face, Body, Hair, Silk, Leather, Metal, Carbon fibre
+		}
+
+
+		public struct Preset
+		{
+			public string Name;
+			public string Description;
+			public Action<NeitriMMDToonEditor> Action;
+		}
+
+		static List<Preset> PresetsList = new List<Preset>();
+		static void AddPreset(string Name, string Description, Action<NeitriMMDToonEditor> Preset)
+		{
+			PresetsList.Add(new Preset() { Name = Name, Description = Description, Action = Preset });
+		}
+
+		public static List<Preset> GetPresets()
+		{
+			if (PresetsList.Count == 0)
+			{
+				AddPresets();
+			}
+
+			return PresetsList;
+		}
+	}
+
+
+
 	static bool ShowAdvanced = false;
 
 	List<Material> materials = new List<Material>();
@@ -21,51 +112,18 @@ public class NeitriMMDToonEditor : ShaderGUI
 
 		{
 			GUILayout.BeginHorizontal();
-
 			GUILayout.Label("Presets", GUILayout.ExpandWidth(false));
-
-			if (GUILayout.Button(new GUIContent("Default", "Reverts all changes to default values"), GUILayout.ExpandWidth(false)))
+			foreach (var preset in Presets.GetPresets())
 			{
-				Undo.RecordObjects(materials.ToArray(), "Preset Default");
-				SetTexture("_Ramp", "96ad26bf5aa0f2147b6c1651287c1ae6");
-				SetTexture("_Matcap", "d6064d42d7ffecd4cba07c5bd929b6d5");
-				SetFloat("_MatcapWeight", 0.1f);
-				SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
-				SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
-
-				SetFloat("_Shadow", 0.4f);
-				SetFloat("_BakedLightingFlatness", 0.9f);
-				SetFloat("_ApproximateFakeLight", 0.7f);
-				SetFloat("_AlphaCutout", 0.05f);
-				SetFloat("_ForceLightDirectionToForward", 0.3f);
-				SetFloat("_Cull", 2);
-				SetFloat("_ZTest", 4);
+				if (GUILayout.Button(new GUIContent(preset.Name, preset.Description), GUILayout.ExpandWidth(false)))
+				{
+					Undo.RecordObjects(materials.ToArray(), "Preset " + preset.Name);
+					preset.Action(this);
+				}
 			}
-
-			if (GUILayout.Button(new GUIContent("Skin", "Changes shading ramp, shadow color, shadow rim, to skin like values"), GUILayout.ExpandWidth(false)))
-			{
-				Undo.RecordObjects(materials.ToArray(), "Preset Skin");
-				SetFloat("_MatcapWeight", 0.5f);
-				SetFloat("_MatcapType", 2);
-				SetTexture("_Matcap", "746904ac01669074b9b1539c50574111");
-				SetColor("_ShadowRim", new Color(0.3f, 0f, 0f, 1f));
-			}
-
-			if (GUILayout.Button(new GUIContent("Rim Light", ""), GUILayout.ExpandWidth(false)))
-			{
-				Undo.RecordObjects(materials.ToArray(), "Preset Rim Light");
-				SetFloat("_MatcapWeight", 1f);
-				SetFloat("_MatcapType", 1);
-				SetTexture("_Matcap", "0c2d781f9138bb74394b78913767973c");
-				SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
-			}
-
-			// Hair, Silk, Leather, Metal
 
 			GUILayout.EndHorizontal();
 		}
-
-
 
 		materialEditor.SetDefaultGUIWidths();
 
@@ -95,9 +153,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 		if (ShowAdvanced)
 		{
 			materialEditor.RenderQueueField();
-		}
-
-		
+		}		
 
 		GUILayout.Space(10);
 		if (ShowAdvanced)
@@ -114,13 +170,11 @@ public class NeitriMMDToonEditor : ShaderGUI
 				ShowAdvanced = true;
 			}
 		}
-
-
 	}
 
 
 
-	void SetTexture(string name, string guid)
+	public void SetTexture(string name, string guid)
 	{
 		foreach (var material in materials)
 		{
@@ -128,7 +182,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 		}
 	}
 
-	void SetColor(string name, Color color)
+	public void SetColor(string name, Color color)
 	{
 		foreach (var material in materials)
 		{
@@ -136,7 +190,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 		}
 	}
 
-	void SetFloat(string name, float value)
+	public void SetFloat(string name, float value)
 	{
 		foreach (var material in materials)
 		{
@@ -154,7 +208,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 		return texture;
 	}
 
-	static void SetTexture(Material material, string name, string guid)
+	public static void SetTexture(Material material, string name, string guid)
 	{
 		if (string.IsNullOrEmpty(name)) return;
 		if (!material) return;
@@ -162,6 +216,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 		if (!texture) return;
 		material.SetTexture(name, texture);
 	}
+
 
 	static class Styles
 	{

@@ -7,7 +7,7 @@ ShaderImporter:
   - _BumpMap: {instanceID: 0}
   - _EmissionMap: {instanceID: 0}
   - _Ramp: {fileID: 2800000, guid: 1283d592696f77545b70f4b513c72188, type: 3}
-  - _Matcap: {fileID: 2800000, guid: fc97398b94ec4c74faef69b1cb644ae2, type: 3}
+  - _Matcap: {fileID: 2800000, guid: d6064d42d7ffecd4cba07c5bd929b6d5, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

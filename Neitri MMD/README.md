@@ -16,12 +16,15 @@ If your avatar is dark after using normal map, make sure you have this on your m
 ![](https://image.prntscr.com/image/XspfVYA_RdKIzu8ZrTVGKQ.png)
 
 # Notes
+
 Rim lighting is missing because it can be simulared with matcaps.
 
 Color alpha is used only in transparent shader, because that is what people expect.
 
 Shading ramps and matcaps look best with these import settings, we don't want gamma correction to their colors.
 ![](https://image.prntscr.com/image/4KlO8AB5RlCBtgNKOhiYiw.png)
+
+Subtle barely noticable effects are important too, combinations of many of them has great impact.
 
 # Good concepts/ideas
 

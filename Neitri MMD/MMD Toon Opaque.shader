@@ -12,8 +12,8 @@ Shader "Neitri/MMD Toon Opaque"
 		_Glossiness ("Glossiness", Range(0, 1)) = 0
 
 		[Header(Normal Map)]
-		_BumpMap("Normal Map", 2D) = "bump" {}
 		_BumpScale("Weight", Range(0, 2)) = 0
+		[Normal] _BumpMap("Normal Map", 2D) = "bump" {}
 
 		[Header(Emission)]
 		[Enum(Disabled,0,Glow always,1,Glow only in darkness,2)] _EmissionType("Emission Type", Range(0, 2)) = 0
@@ -22,11 +22,11 @@ Shader "Neitri/MMD Toon Opaque"
 
 		// Core properties
 		[Header(Shading Ramp)]
-		_Shadow("Shadow", Range(0, 1)) = 0.4
+		_Shadow("Weight -advanced", Range(0, 1)) = 0.4
 		[NoScaleOffset] _Ramp("Ramp -advanced", 2D) = "white" {}
 
 		[Header(Matcap)]
-		_MatcapWeight("Strength -advanced", Range(0, 1)) = 1
+		_MatcapWeight("Strength -advanced", Range(0, 1)) = 0.15
 		[Enum(Add to final color,1,Multiply final color,2,Multiply by light color then add to final color,3)] _MatcapType("Type -advanced", Range(1, 3)) = 2
 		[HDR] _MatcapTint("Tint -advanced", Color) = (1,1,1,1)
 		[Enum(Anchored to direction to camera,0,Anchored to camera rotation,1,Anchored to world up,2)] _MatcapAnchor("Anchor -advanced", Range(0, 2)) = 0
@@ -40,11 +40,15 @@ Shader "Neitri/MMD Toon Opaque"
 		_BakedLightingFlatness ("Baked lighting flatness -advanced", Range(0, 1)) = 0.9
 		_ApproximateFakeLight("Approximate fake light -advanced", Range(0, 1)) = 0.7
 
+		// [Header(Outline)] // only in Outline
+		// [HDR] _OutlineColor("Color -advanced", Color) = (0.1,0.1,0.1,1) // only in Outline
+		// _OutlineWidth("Width -advanced", Range(0, 10)) = 1 // only in Outline
+
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
 		[Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror -advanced", Range(0, 2)) = 0
-		_LightSkew("Light Skew -advanced", Vector) = (1, 0.1, 1, 0)
-		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0
+		_LightSkew("Light Skew -advanced", Vector) = (1, 0.1, 1)
+		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0 // hide in Transparent
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull -advanced", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest -advanced", Float) = 4
 		
@@ -76,7 +80,7 @@ Shader "Neitri/MMD Toon Opaque"
 				fixed4 color = tex2D(_MainTex, TRANSFORM_TEX(i.uv0.xy, _MainTex));
 				o.Albedo = color.rgb * _Color;
 				o.Alpha = color.a;
-				o.Glossiness = _Glossiness;
+				o.Smoothness = _Glossiness;
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
 				o.Normal = lerp(float3(0, 0, 1), o.Normal, _BumpScale);

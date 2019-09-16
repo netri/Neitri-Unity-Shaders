@@ -690,7 +690,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		UNITY_BRANCH
 		if (_Glossiness > 0)
 		{
-			float gloss = _Glossiness;
+			float gloss = surfaceOut.Smoothness;
 			float specPow = exp2(gloss * 10.0);
 			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * gloss;
 			// specular light does not enter surface, it is reflected off surface so it does not get any surface color
