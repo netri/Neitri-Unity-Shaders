@@ -78,6 +78,7 @@ struct VertexIn {
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float2 texcoord0 : TEXCOORD0;
+	float4 color : COLOR;
 };
 
 struct GeometryIn {
@@ -85,6 +86,7 @@ struct GeometryIn {
 	float3 normal : TEXCOORD0;
 	float3 tangent : TEXCOORD1;
 	float2 texcoord0 : TEXCOORD2;
+	float4 color : TEXCOORD3;
 };
 
 void CopyVertex(in VertexIn from, out GeometryIn to)
@@ -93,6 +95,7 @@ void CopyVertex(in VertexIn from, out GeometryIn to)
 	to.normal = from.normal;
 	to.tangent = from.tangent;
 	to.texcoord0 = from.texcoord0;
+	to.color = from.color;
 }
 
 
@@ -104,13 +107,14 @@ struct FragmentIn {
 	LIGHTING_COORDS(3, 4) // shadow coords
 	UNITY_FOG_COORDS(5) 
 	float3 modelPos : TEXCOORD6;
+	float4 color : TEXCOORD7;
 	#ifdef UNITY_PASS_FORWARDBASE
-		float4 vertexLightsReal : TEXCOORD7;
-		float4 vertexLightsAverage : TEXCOORD8;
+		float4 vertexLightsReal : TEXCOORD8;
+		float4 vertexLightsAverage : TEXCOORD9;
 	#endif
 	#ifdef USE_TANGENT_BITANGENT
-		float3 tangentDir : TEXCOORD9;
-		float3 bitangentDir : TEXCOORD10;
+		float3 tangentDir : TEXCOORD10;
+		float3 bitangentDir : TEXCOORD11;
 	#endif
 };
 
@@ -246,6 +250,7 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0));
 	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
 	o.modelPos = v.vertex;
+	o.color = v.color;
 
 	
 #ifdef _MESH_DEFORMATION_ON
@@ -533,6 +538,9 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	SurfaceOut surfaceOut = (SurfaceOut)0; 
 	SurfaceIn surfaceIn;
 	surfaceIn.uv0 = i.uv0.xy;
+	surfaceIn.worldPos = i.worldPos;
+	surfaceIn.screenPos = i.pos;
+	surfaceIn.color = i.color;
 	Surface(surfaceIn, surfaceOut);
 
 	clip(surfaceOut.Alpha - _AlphaCutout);

@@ -2,14 +2,16 @@
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
 
-float distanceMap_spheres(float3 p)
+
+
+float DistanceMap_spheres(float3 p)
 {
 	#define SPHERES_SIZE (0.012 * _Raymarcher_Scale)
 	return length(abs(fmod(p, SPHERES_SIZE * 2)) - SPHERES_SIZE) - SPHERES_SIZE * 0.8;
 }
 
 
-float distanceMap_hearts(float3 p)
+float DistanceMap_hearts(float3 p)
 {
 	// https://www.shadertoy.com/view/4lK3Rc Heart - 3D 
 	// https://www.youtube.com/watch?v=aNR4n0i2ZlM formulanimations tutorial :: making a heart with maths
@@ -43,7 +45,7 @@ float distanceMap_hearts(float3 p)
 	return res;
 }
 
-float2 traceDistanceField(float3 from, float3 direction) 
+float2 TraceDistanceField(float3 from, float3 direction) 
 {
 	float4 f = mul(unity_WorldToObject, float4(from, 1));
 	from = f.xyz/f.w;
@@ -62,7 +64,7 @@ float2 traceDistanceField(float3 from, float3 direction)
 		const int maxRayStep = 10;
 		[loop]
 		for (steps = 0; steps < maxRayStep; steps++) {
-			float distance = distanceMap_spheres(currentPos);
+			float distance = DistanceMap_spheres(currentPos);
 			currentPos += distance * direction;
 			totalDistance += distance;
 			if (distance < MIN_RAY_DISTANCE) return float2(totalDistance, steps/(float)(maxRayStep));
@@ -77,7 +79,7 @@ float2 traceDistanceField(float3 from, float3 direction)
 		const int maxRayStep = 20;
 		[loop]
 		for (steps = 0; steps < maxRayStep; steps++) {
-			float distance = distanceMap_hearts(currentPos);
+			float distance = DistanceMap_hearts(currentPos);
 			currentPos += distance * direction;
 			totalDistance += distance;
 			if (distance < MIN_RAY_DISTANCE) return float2(totalDistance, steps/(float)(maxRayStep));
@@ -90,15 +92,15 @@ float2 traceDistanceField(float3 from, float3 direction)
 }
 
 
-void raymarch(float3 worldRayStart, inout float3 color, out float screenDepth)
+void Raymarch(float3 worldRayStart, out float3 tint, out float screenDepth)
 {
 	screenDepth = 1;
 	float3 worldRayDir = normalize(worldRayStart - _WorldSpaceCameraPos);
-	float2 data = traceDistanceField(worldRayStart, worldRayDir);
+	float2 data = TraceDistanceField(worldRayStart, worldRayDir);
 	float totalDistance = data.x;
-	color *= 1 - data.y;
-	//color *= 1 - steps / MAX_RAY_STEPS;// - totalDistance / MAX_RAY_DISTANCE * 0.2f;
-	//color *= 1 - min(0.3, saturate((steps * 3) / MAX_RAY_STEPS));
+	tint = 1 - data.y;
+	//tint= 1 - steps / MAX_RAY_STEPS;// - totalDistance / MAX_RAY_DISTANCE * 0.2f;
+	//tint= 1 - min(0.3, saturate((steps * 3) / MAX_RAY_STEPS));
 	#ifdef CHANGE_DEPTH
 		float4 clipPos = mul(UNITY_MATRIX_VP, float4(worldRayStart + worldRayDir * totalDistance, 1.0));
 		screenDepth = clipPos.z / clipPos.w;
