@@ -55,8 +55,8 @@ float2 TraceDistanceField(float3 from, float3 direction)
 	float3 currentPos = from;
 	int steps = 0;
 
-	#define MIN_RAY_DISTANCE 0.0002
-	#define MAX_RAY_DISTANCE 0.05 // 0.05
+	const float minRayDistance = 0.0002 * _Raymarcher_Scale;
+	const float maxRayDistance = 0.05 * _Raymarcher_Scale; // 0.05
 
 	UNITY_BRANCH
 	if (_Raymarcher_Type == 1)
@@ -67,8 +67,8 @@ float2 TraceDistanceField(float3 from, float3 direction)
 			float distance = DistanceMap_spheres(currentPos);
 			currentPos += distance * direction;
 			totalDistance += distance;
-			if (distance < MIN_RAY_DISTANCE) return float2(totalDistance, steps/(float)(maxRayStep));
-			if (totalDistance > MAX_RAY_DISTANCE) return float2(MAX_RAY_DISTANCE, 1);
+			if (distance < minRayDistance) return float2(totalDistance, steps/(float)(maxRayStep));
+			if (totalDistance > maxRayDistance) return float2(maxRayDistance, 1);
 		}
 		return float2(totalDistance, steps/(float)(maxRayStep));
 	}
@@ -82,8 +82,8 @@ float2 TraceDistanceField(float3 from, float3 direction)
 			float distance = DistanceMap_hearts(currentPos);
 			currentPos += distance * direction;
 			totalDistance += distance;
-			if (distance < MIN_RAY_DISTANCE) return float2(totalDistance, steps/(float)(maxRayStep));
-			if (totalDistance > MAX_RAY_DISTANCE) return float2(MAX_RAY_DISTANCE, 1);
+			if (distance < minRayDistance) return float2(totalDistance, steps/(float)(maxRayStep));
+			if (totalDistance > maxRayDistance) return float2(maxRayDistance, 1);
 		}
 		return float2(totalDistance, steps/(float)(maxRayStep));
 	}
@@ -94,12 +94,15 @@ float2 TraceDistanceField(float3 from, float3 direction)
 
 void Raymarch(float3 worldRayStart, out float3 tint, out float screenDepth)
 {
+	float scale = length(mul(unity_ObjectToWorld, float4(0.577, 0.577, 0.577, 1)));
+	_Raymarcher_Scale *= scale;
+
 	screenDepth = 1;
 	float3 worldRayDir = normalize(worldRayStart - _WorldSpaceCameraPos);
 	float2 data = TraceDistanceField(worldRayStart, worldRayDir);
 	float totalDistance = data.x;
 	tint = 1 - data.y;
-	//tint= 1 - steps / MAX_RAY_STEPS;// - totalDistance / MAX_RAY_DISTANCE * 0.2f;
+	//tint= 1 - steps / MAX_RAY_STEPS;// - totalDistance / maxRayDistance * 0.2f;
 	//tint= 1 - min(0.3, saturate((steps * 3) / MAX_RAY_STEPS));
 	#ifdef CHANGE_DEPTH
 		float4 clipPos = mul(UNITY_MATRIX_VP, float4(worldRayStart + worldRayDir * totalDistance, 1.0));

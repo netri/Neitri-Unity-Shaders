@@ -46,7 +46,7 @@ Shader "Neitri/MMD Toon Opaque Raymarcher"
 
 		[Header(Raymarched Pattern)] // only in Raymarcher
 		[Enum(None,0,Spheres,1,Hearts,2)] _Raymarcher_Type("Type", Range(0, 2)) = 1 // only in Raymarcher
-		_Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0 // only in Raymarcher
+		_Raymarcher_Scale("Scale", Range(0.1, 5)) = 1.0 // only in Raymarcher
 
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
@@ -93,7 +93,6 @@ Shader "Neitri/MMD Toon Opaque Raymarcher"
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
 				o.Normal = lerp(float3(0, 0, 1), o.Normal, _BumpScale);
-
 
 				UNITY_BRANCH
 				if (_Raymarcher_Type != 0)

@@ -46,7 +46,7 @@ Shader "Neitri/MMD Toon Opaque"
 
 		// [Header(Raymarched Pattern)] // only in Raymarcher
 		// [Enum(None,0,Spheres,1,Hearts,2)] _Raymarcher_Type("Type", Range(0, 2)) = 1 // only in Raymarcher
-		// _Raymarcher_Scale("Scale", Range(0.5, 1.5)) = 1.0 // only in Raymarcher
+		// _Raymarcher_Scale("Scale", Range(0.1, 5)) = 1.0 // only in Raymarcher
 
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
