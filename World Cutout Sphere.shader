@@ -58,12 +58,6 @@ Shader "Neitri/World Cutout Sphere"
 				return o;
 			}
 
-			struct FragOut
-			{
-				float depth : SV_Depth;
-				float4 color : SV_Target;
-			};
-
 			float4 frag (v2f i) : SV_Target
 			{
 				float sceneDepth = LinearEyeDepth (SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPosCS)));

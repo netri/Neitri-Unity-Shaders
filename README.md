@@ -61,17 +61,25 @@ Add it to bottom of material list in Renderer component, so whole object is rend
 ![](Images/Distance_Fade_Outline.jpg)
 
 ## Distance Fade Cube Volume
-![](https://i.gyazo.com/5b47d7f1e0e44406eebdad4512ed19f2.mp4)
+![](Images/Distance_Fade_Cube_Volume.gif)
+
+
+# Ported Shadertoy
+Shaders ported from [Shadertoy](https://www.shadertoy.com/)
+## Candy core 2
+https://www.shadertoy.com/view/4sVXDz
 
 
 # Prefabs/Worlds
-Complex combination of shaders and specifc mesh/component/camera
+Complex combination of shaders and specifc mesh/component/camera. Contains premade prefabs or example worlds.
 
 ## Depth Mirror
 
 ## GPU Particles
+[Example World](https://www.vrchat.com/home/launch?worldId=wrld_f4bc450a-6998-4496-bac6-7a53f44dd3ae)
 
 ## Grafitti Wall 
+[Example World](https://www.vrchat.com/home/launch?worldId=wrld_180cb4bc-3ff3-425b-a9f3-1860e01479ad)
 Weak attempt at clone of [Just Graffitiǃ by: nyakome](https://vrchat.net/home/launch?worldId=wrld_96851736-d35a-46d6-8d17-da920a329537)
 
 ## Neitri Clock
