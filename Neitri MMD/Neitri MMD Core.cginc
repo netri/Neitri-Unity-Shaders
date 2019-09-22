@@ -397,6 +397,13 @@ float GetTriangularPDFNoiseDithering(float2 pos)
 	return (rand.x + rand.y) * 0.5;
 }
 
+sampler3D _DitherMaskLOD;
+float GetDithering(float2 pos, float alpha)
+{
+	//return alpha - GetTriangularPDFNoiseDithering(pos);
+	return tex3D(_DitherMaskLOD, float3(pos.xy * 0.25, alpha * 0.9375)).a - 0.01;
+}
+
 // Neitri's spherical harmonics average that uses higher order terms
 half3 ShadeSH9Average()
 {
@@ -493,7 +500,6 @@ half3 NeitriShadeSH9(half4 normal)
 }
 
 
-
 #ifdef CHANGE_DEPTH
 
 struct FragmentOut
@@ -554,12 +560,12 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		if (_DitheredTransparencyType == 1)
 		{
 			// Anchored to camera
-			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(i.pos.xy));
+			clip(GetDithering(i.pos.xy, surfaceOut.Alpha));
 		}
 		else
 		{
 			// Anchored to texture coordinates
-			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(i.uv0.xy * 5));
+			clip(GetDithering(i.uv0.xy * 5, surfaceOut.Alpha));
 		}
 	}
 	#endif
@@ -933,12 +939,12 @@ half4 FragmentProgramShadowCaster(float4 vpos : SV_POSITION, VertexShadowCasterO
 		if (_DitheredTransparencyType == 1)
 		{
 			// Anchored to camera
-			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(vpos.xy));
+			clip(GetDithering(vpos.xy, surfaceOut.Alpha));
 		}
 		else
 		{
 			// Anchored to texture coordinates
-			clip(surfaceOut.Alpha - GetTriangularPDFNoiseDithering(i.uv0.xy * 5));
+			clip(GetDithering(i.uv0.xy * 5, surfaceOut.Alpha));
 		}
 	}
 

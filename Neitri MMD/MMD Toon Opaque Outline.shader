@@ -17,7 +17,7 @@ Shader "Neitri/MMD Toon Opaque Outline"
 
 		[Header(Emission)]
 		[Enum(Disabled,0,Glow always,1,Glow only in darkness,2)] _EmissionType("Emission Type", Range(0, 2)) = 0
-		_EmissionMap("Texture", 2D) = "white" {}
+		_EmissionMap("Texture", 2D) = "black" {}
 		[HDR] _EmissionColor("Color", Color) = (1,1,1,1)
 
 		// Core properties
@@ -90,7 +90,7 @@ Shader "Neitri/MMD Toon Opaque Outline"
 			Cull [_Cull]
 			ZTest [_ZTest]
 			Blend One Zero
-			AlphaToMask On
+			//AlphaToMask On
 			CGPROGRAM
 			#pragma vertex VertexProgram
 			#pragma geometry GeometryProgram
@@ -113,7 +113,7 @@ Shader "Neitri/MMD Toon Opaque Outline"
 			Cull [_Cull]
 			ZTest [_ZTest]
 			Blend SrcAlpha One
-			AlphaToMask On
+			//AlphaToMask On
 			ZWrite Off
 			Fog { Color (0,0,0,0) }
 			ZTest LEqual

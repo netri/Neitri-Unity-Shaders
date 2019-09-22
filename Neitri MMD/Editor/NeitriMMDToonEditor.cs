@@ -17,6 +17,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetFloat("_Shadow", 0.4f); // ramp weight
 				t.SetTexture("_Matcap", "d6064d42d7ffecd4cba07c5bd929b6d5");
 				t.SetFloat("_MatcapWeight", 0.15f);
+				t.SetFloat("_MatcapType", 2);
 				t.SetColor("_MatcapTint", new Color(1f, 1f, 1f, 1f));
 				t.SetColor("_ShadowColor", new Color(0f, 0f, 0f, 1f));
 				t.SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));

@@ -23,7 +23,9 @@ float DistanceMap_hearts(float3 p)
 	#define HEART_SCALE_DOWN (10.15 / _Raymarcher_Scale)
 	#define HEART_REPEAT (0.45 / HEART_SCALE_DOWN)
 
-	p += 10; // hearts are upside down with p = abs(p);
+	//p += 10; // hearts are upside down with p = abs(p);
+	p.y -= 5;
+	p = abs(p);
 
 	p = fmod(p, HEART_REPEAT) - 0.5*HEART_REPEAT;
 
@@ -94,7 +96,7 @@ float2 TraceDistanceField(float3 from, float3 direction)
 
 void Raymarch(float3 worldRayStart, out float3 tint, out float screenDepth)
 {
-	float scale = length(mul(unity_ObjectToWorld, float4(0.577, 0.577, 0.577, 1)));
+	float scale = length(mul(unity_ObjectToWorld, float3(0.577, 0.577, 0.577)));
 	_Raymarcher_Scale *= scale;
 
 	screenDepth = 1;
