@@ -705,14 +705,27 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			lightAttenuation = lerp(1, lightAttenuation, _Shadow);
 		}
 
-		// Specular
+		// Specular reflection
 		UNITY_BRANCH
 		if (surfaceOut.Smoothness > 0)
 		{
-			float specPow = exp2(surfaceOut.Smoothness * 10.0);
-			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * surfaceOut.Smoothness;
-			// specular light does not enter surface, it is reflected off surface so it does not get any surface color
-			finalRGB += lightAttenuation * lightColor * specularReflection;
+			float3 reflectionColor;
+
+			UNITY_BRANCH
+			if (any(unity_SpecCube0_ProbePosition))
+			{
+				float mip = lerp(5, 0, surfaceOut.Smoothness);
+				reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, normal, mip), unity_SpecCube0_HDR);
+			}
+			else
+			{
+				float specPow = exp2(surfaceOut.Smoothness * 10.0);
+				float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 1) / (2 * UNITY_PI);
+				// specular light does not enter surface, it is reflected off surface so it does not get any surface color
+				reflectionColor = lightColor * specularReflection;
+			}
+
+			finalRGB += lightAttenuation * surfaceOut.Smoothness * reflectionColor;
 		}
 
 		// Diffuse
@@ -723,8 +736,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			UNITY_BRANCH
 			if (_Shadow < 1)
 			{
-				float3 maximumLitRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(1, 1)).rgb;
-				shadowRamp = lerp(maximumLitRamp, shadowRamp, _Shadow);
+				shadowRamp = lerp(1, shadowRamp, _Shadow);
 			}
 
 			float3 diffuseColor;

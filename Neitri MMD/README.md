@@ -28,6 +28,8 @@ Subtle barely noticable effects are important too, combinations of many of them 
 
 # Good concepts/ideas
 
+https://www.scratchapixel.com/lessons/3d-basic-rendering/phong-shader-BRDF
+
 [From mobile to high-end PC: Achieving high quality anime style rendering on Unity](https://www.youtube.com/watch?v=egHSE0dpWRw), [Blog Post](https://blog.naver.com/mnpshino/221541025516)
 
 [The highest peak of Chinese 2D CG! When "miHoYo" of "3rd collapse" uses Unity, it becomes like this](https://chinagamenews.net/market-info-126/), [Video](https://www.youtube.com/watch?v=lrfhA6Grwr0)
