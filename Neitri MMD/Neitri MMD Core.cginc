@@ -592,8 +592,9 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	else
 #endif
 	{
-		// slightly dither normal over time to hide obvious normal interpolation
+		// slightly dither normal to hide obvious normal interpolation
 		//normal = normalize(i.normal + GetScreenSpaceDither(i.pos.xy) / 10.0);
+
 		normal = normalize(i.normal);
 	}
 
@@ -620,9 +621,6 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		// non cookie directional light
 
 		// environment (ambient) lighting + light probes
-		//half3 averageLightProbes = ShadeSH9(half4(0, 0, 0, 1));
-		//half3 averageLightProbes = ShadeSH9Average();
-
 		half3 averageLightProbes = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 		
@@ -700,13 +698,19 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	float NdotH = dot(normal, halfDir);
 
 	{
+		UNITY_BRANCH
+		if (_Shadow < 1)
+		{
+			// issue: sometimes entire play area is in shadow and there is no ambient light
+			lightAttenuation = lerp(1, lightAttenuation, _Shadow);
+		}
+
 		// Specular
 		UNITY_BRANCH
-		if (_Glossiness > 0)
+		if (surfaceOut.Smoothness > 0)
 		{
-			float gloss = surfaceOut.Smoothness;
-			float specPow = exp2(gloss * 10.0);
-			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * gloss;
+			float specPow = exp2(surfaceOut.Smoothness * 10.0);
+			float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 10) / (10 * UNITY_PI) * surfaceOut.Smoothness;
 			// specular light does not enter surface, it is reflected off surface so it does not get any surface color
 			finalRGB += lightAttenuation * lightColor * specularReflection;
 		}
@@ -733,7 +737,8 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				float g = Grayness(diffuseColor);
 				UNITY_BRANCH
 				if (g > 1) diffuseColor /= g;
-				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo * lightAttenuation;
+				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
+				diffuseColor = diffuseColor * lightAttenuation;
 			#endif
 			finalRGB += diffuseColor;
 		}
