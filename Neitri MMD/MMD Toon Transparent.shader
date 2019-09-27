@@ -9,7 +9,8 @@ Shader "Neitri/MMD Toon Transparent"
 		[Header(Main)]
 		_MainTex("Texture", 2D) = "white" {}
 		_Color("Color", Color) = (1,1,1,1)
-		_Glossiness("Glossiness", Range(0, 1)) = 0
+		_Metallic("Metallic", Range(0, 1)) = 0
+		_Glossiness("Smoothness", Range(0, 1)) = 0
 
 		[Header(Normal Map)]
 		_BumpScale("Weight", Range(0, 2)) = 0
@@ -65,6 +66,7 @@ Shader "Neitri/MMD Toon Transparent"
 
 			sampler2D _MainTex; float4 _MainTex_ST;
 			fixed4 _Color;
+			float _Metallic;
 			float _Glossiness; // name from Unity's standard
 			sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
 			fixed4 _EmissionColor;
@@ -76,6 +78,7 @@ Shader "Neitri/MMD Toon Transparent"
 				fixed4 color = tex2D(_MainTex, TRANSFORM_TEX(i.uv0.xy, _MainTex)) * _Color;
 				o.Albedo = color.rgb;
 				o.Alpha = color.a;
+				o.Metallic = _Metallic;
 				o.Smoothness = _Glossiness;
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));

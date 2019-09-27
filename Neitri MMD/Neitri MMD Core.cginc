@@ -228,6 +228,12 @@ float3 GetCameraUp()
 	return normalize(p1);
 }
 
+half3 DistanceFromAABB(half3 p, half3 aabbMin, half3 aabbMax)
+{
+	return max(max(p - aabbMax, aabbMin - p), half3(0.0, 0.0, 0.0));
+}
+
+
 // Merlin's mirror detection
 inline bool IsInMirror()
 {
@@ -611,8 +617,9 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	fixed3 lightColor = _LightColor0.rgb;
 
 	// direction from pixel towards light
-	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz); // BAD: don't normalize, stay 0 if no light direction
-	lightDir = normalize(lightDir * _LightSkew);
+	// BAD: don't normalize, stay 0 if no light direction
+	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz);
+	lightDir = length(lightDir) > 0 ? normalize(lightDir * _LightSkew) : 0;
 
 	float3 finalRGB = 0;
 
@@ -632,7 +639,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		float3 bakedLightDir = GetLightDirectionFromSphericalHarmonics();
 		bakedLightDir = normalize(bakedLightDir * _LightSkew);
 
-		fixed3 bakedLightColor = ShadeSH9(half4(bakedLightDir, 1));
+		float3 compensatedLightColor = lightColor + averageLightProbes + i.vertexLightsAverage.rgb;
 
 		UNITY_BRANCH
 		if (!any(lightDir))
@@ -641,19 +648,31 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			lightDir = bakedLightDir;
 		}
 
-		UNITY_BRANCH
-		if (_ApproximateFakeLight > 0)
-		{
-			if (Grayness(bakedLightColor) > 0)
-			{
-				float NdotL = max(0, dot(normal, bakedLightDir));
-				float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
-				float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
+		//UNITY_BRANCH
+		//if (_ApproximateFakeLight > 0)
+		//{
+		//	fixed3 bakedLightColor = ShadeSH9(half4(bakedLightDir, 1));
+		//	if (Grayness(bakedLightColor) > 0)
+		//	{
+		//		float NdotL = max(0, dot(normal, bakedLightDir));
+		//		float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
+		//		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
 
-				finalRGB = lerp(finalRGB, bakedLightColor * surfaceOut.Albedo * shadowRamp, _ApproximateFakeLight);
-				//finalRGB += bakedLightColor * surfaceOut.Albedo * NdotL * _ApproximateFakeLight;
-			}
-		}
+		//		finalRGB = lerp(finalRGB, bakedLightColor * surfaceOut.Albedo * shadowRamp, _ApproximateFakeLight);
+		//		//finalRGB += bakedLightColor * surfaceOut.Albedo * NdotL * _ApproximateFakeLight;
+		//	}
+		//}
+
+		//UNITY_BRANCH
+		//if (any(unity_SpecCube0_ProbePosition))
+		//{
+		//	// EXPERIMENTAL: using light probe for diffuse color
+		//	float d1 = DistanceFromAABB(i.worldPos, unity_SpecCube0_BoxMax.xyz, unity_SpecCube0_BoxMin.xyz);
+		//	float d2 = distance(unity_SpecCube0_BoxMax.xyz, unity_SpecCube0_BoxMin.xyz);
+		//	float blend = saturate(1 - d1 * 0.1 - d2 * 0.01 );
+		//	float3 reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, normal, 5), unity_SpecCube0_HDR);
+		//	finalRGB = lerp(finalRGB, reflectionColor * surfaceOut.Albedo, blend);
+		//}
 
 		// Normalize light color
 		// so we are always using maximumum range displays can show
@@ -705,30 +724,36 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			lightAttenuation = lerp(1, lightAttenuation, _Shadow);
 		}
 
+
 		// Specular reflection
+		float3 specularRGB = 0;
 		UNITY_BRANCH
 		if (surfaceOut.Smoothness > 0)
 		{
 			float3 reflectionColor;
 
-			UNITY_BRANCH
-			if (any(unity_SpecCube0_ProbePosition))
+			#ifdef UNITY_PASS_FORWARDBASE
+				UNITY_BRANCH
+				if (any(unity_SpecCube0_ProbePosition))
+				{
+					float mip = lerp(5, 0, surfaceOut.Smoothness);
+					reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflect(-viewDir, normal), mip), unity_SpecCube0_HDR);
+				}
+				else
+			#endif
 			{
-				float mip = lerp(5, 0, surfaceOut.Smoothness);
-				reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, normal, mip), unity_SpecCube0_HDR);
-			}
-			else
-			{
+				// specular energy conservation from http://www.rorydriscoll.com/2009/01/25/energy-conservation-in-games/
 				float specPow = exp2(surfaceOut.Smoothness * 10.0);
-				float specularReflection = pow(max(NdotH, 0), specPow) * (specPow + 1) / (2 * UNITY_PI);
-				// specular light does not enter surface, it is reflected off surface so it does not get any surface color
+				float specularReflection = pow(saturate(NdotH), specPow) * (specPow + 8) / (8 * UNITY_PI);
 				reflectionColor = lightColor * specularReflection;
 			}
 
-			finalRGB += lightAttenuation * surfaceOut.Smoothness * reflectionColor;
+			// in non metal materials, specular light does not enter surface, it is reflected off surface so it does not get any surface color
+			specularRGB += lightAttenuation * reflectionColor * lerp(1, surfaceOut.Albedo, surfaceOut.Metallic);
 		}
 
 		// Diffuse
+		float3 diffuseRGB = 0;
 		{
 			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
 			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
@@ -752,8 +777,12 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
 				diffuseColor = diffuseColor * lightAttenuation;
 			#endif
-			finalRGB += diffuseColor;
+			diffuseRGB += diffuseColor;
 		}
+
+		// energy conservative combine specular and diffuse
+		// specularRGB + diffuseRGB <= lightColor
+		finalRGB += lerp(diffuseRGB, specularRGB, surfaceOut.Smoothness * lerp(0.3, 1, surfaceOut.Metallic));
 	}
 
 
@@ -817,7 +846,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				else // 3
 				{
 					// Multiply by light color then add to final color
-					matcap *= lightColor;
+					matcap *= compensatedLightColor;
 					finalRGB += matcap * _MatcapWeight;
 				}
 			}

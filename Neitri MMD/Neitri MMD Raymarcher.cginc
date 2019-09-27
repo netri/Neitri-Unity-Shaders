@@ -100,7 +100,17 @@ void Raymarch(float3 worldRayStart, out float3 tint, out float screenDepth)
 	_Raymarcher_Scale *= scale;
 
 	screenDepth = 1;
-	float3 worldRayDir = normalize(worldRayStart - _WorldSpaceCameraPos);
+	
+	float3 worldRayDir;
+	if (unity_OrthoParams.w)
+	{
+		worldRayDir = normalize(-UNITY_MATRIX_I_V._13_23_33);
+	}
+	else
+	{
+		worldRayDir = normalize(worldRayStart - _WorldSpaceCameraPos);
+	}
+
 	float2 data = TraceDistanceField(worldRayStart, worldRayDir);
 	float totalDistance = data.x;
 	tint = 1 - data.y;

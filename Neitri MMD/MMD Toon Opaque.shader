@@ -9,7 +9,8 @@ Shader "Neitri/MMD Toon Opaque"
 		[Header(Main)] 
 		_MainTex("Texture", 2D) = "white" {}
 		_Color("Color", Color) = (1,1,1,1)
-		_Glossiness("Glossiness", Range(0, 1)) = 0
+		_Metallic("Metallic", Range(0, 1)) = 0
+		_Glossiness("Smoothness", Range(0, 1)) = 0
 
 		[Header(Normal Map)]
 		_BumpScale("Weight", Range(0, 2)) = 0
@@ -47,6 +48,8 @@ Shader "Neitri/MMD Toon Opaque"
 		// [Header(Raymarched Pattern)] // only in Raymarcher
 		// [Enum(None,0,Spheres,1,Hearts,2)] _Raymarcher_Type("Type", Range(0, 2)) = 1 // only in Raymarcher
 		// _Raymarcher_Scale("Scale", Range(0.1, 5)) = 1.0 // only in Raymarcher
+		// _RaymarcherColor1("Color 1", Color) = (1,1,1,1) // only in Raymarcher
+		// _RaymarcherColor2("Color 2", Color) = (1,1,1,1) // only in Raymarcher
 
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
@@ -73,6 +76,7 @@ Shader "Neitri/MMD Toon Opaque"
 
 			sampler2D _MainTex; float4 _MainTex_ST;
 			fixed4 _Color;
+			float _Metallic;
 			float _Glossiness; // name from Unity's standard
 			sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
 			fixed4 _EmissionColor;
@@ -84,6 +88,7 @@ Shader "Neitri/MMD Toon Opaque"
 				fixed4 color = tex2D(_MainTex, TRANSFORM_TEX(i.uv0.xy, _MainTex));
 				o.Albedo = color.rgb * _Color;
 				o.Alpha = color.a;
+				o.Metallic = _Metallic;
 				o.Smoothness = _Glossiness;
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
