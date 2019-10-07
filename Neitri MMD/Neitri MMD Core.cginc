@@ -636,70 +636,20 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 
 		finalRGB += (lightProbes + vertexLights) * surfaceOut.Albedo;
 
-		float3 bakedLightDir = GetLightDirectionFromSphericalHarmonics();
-		bakedLightDir = normalize(bakedLightDir * _LightSkew);
 
-		float3 compensatedLightColor = lightColor + averageLightProbes + i.vertexLightsAverage.rgb;
-
+		// light color and light dir that falls back to baked light color and light dir in case there is no realtime directional light
+		float3 compensatedLightColor = lightColor;
+		float3 compensatedLightDir = lightDir;
 		UNITY_BRANCH
-		if (!any(lightDir))
+		if (!any(compensatedLightColor))
 		{
-			// we want shadow rim to work acceptably even if there is no real light
-			lightDir = bakedLightDir;
+			compensatedLightColor = averageLightProbes + i.vertexLightsAverage.rgb;
 		}
-
-		//UNITY_BRANCH
-		//if (_ApproximateFakeLight > 0)
-		//{
-		//	fixed3 bakedLightColor = ShadeSH9(half4(bakedLightDir, 1));
-		//	if (Grayness(bakedLightColor) > 0)
-		//	{
-		//		float NdotL = max(0, dot(normal, bakedLightDir));
-		//		float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
-		//		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
-
-		//		finalRGB = lerp(finalRGB, bakedLightColor * surfaceOut.Albedo * shadowRamp, _ApproximateFakeLight);
-		//		//finalRGB += bakedLightColor * surfaceOut.Albedo * NdotL * _ApproximateFakeLight;
-		//	}
-		//}
-
-		//UNITY_BRANCH
-		//if (any(unity_SpecCube0_ProbePosition))
-		//{
-		//	// EXPERIMENTAL: using light probe for diffuse color
-		//	float d1 = DistanceFromAABB(i.worldPos, unity_SpecCube0_BoxMax.xyz, unity_SpecCube0_BoxMin.xyz);
-		//	float d2 = distance(unity_SpecCube0_BoxMax.xyz, unity_SpecCube0_BoxMin.xyz);
-		//	float blend = saturate(1 - d1 * 0.1 - d2 * 0.01 );
-		//	float3 reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, normal, 5), unity_SpecCube0_HDR);
-		//	finalRGB = lerp(finalRGB, reflectionColor * surfaceOut.Albedo, blend);
-		//}
-
-		// Normalize light color
-		// so we are always using maximumum range displays can show
-		/*if (any(lightColor))
+		UNITY_BRANCH
+		if (!any(compensatedLightDir))
 		{
-			float colorMin = Grayness(averageLightProbes + i.vertexLightsAverage.rgb);
-			float colorMax = Grayness(colorMin + lightColor);
-			float g1 = Grayness(lightColor);
-			float g2 = smoothstep(colorMin, colorMax, g1);
-			lightColor *= g2 / g1;
-		}*/
-
-		// normalize base light colors, so accomulated light colors are always in range 0..1
-		// because some maps have areas where only 0..0,5 lighting is used, and it looks good if we use full 0..1 range there
-		/*float g1 = Grayness(lightColor); // real light
-		float g2 = Grayness(bakedLightColor); // approximate baked light
-		float g3 = Grayness(averageLightProbes); // ambient color
-		if (g2 > g1)
-		{
-			bakedLightColor /= 1 - (g3 + g1); // ambient and real light is applied
-			float NdotL = max(0, dot(normal, bakedLightDir));
-			diffuseLightRGB += bakedLightColor * NdotL;
+			compensatedLightDir = normalize(GetLightDirectionFromSphericalHarmonics() * _LightSkew);
 		}
-		else
-		{
-			lightColor /= 1 - g3; // only ambient is applied
-		}*/
 
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
@@ -716,74 +666,75 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	float NdotV = dot(normal, viewDir);
 	float NdotH = dot(normal, halfDir);
 
+	#ifdef UNITY_PASS_FORWARDBASE
+	UNITY_BRANCH
+	if (_Shadow < 1)
 	{
+		// issue: sometimes entire play area is in shadow and there is no ambient light
+		lightAttenuation = lerp(1, lightAttenuation, _Shadow);
+	}
+	#endif
+
+	// Specular reflection
+	float3 specularRGB = 0;
+	UNITY_BRANCH
+	if (surfaceOut.Smoothness > 0)
+	{
+		float3 reflectionColor;
+
+		#ifdef UNITY_PASS_FORWARDBASE
+			UNITY_BRANCH
+			if (any(unity_SpecCube0_ProbePosition))
+			{
+				float mip = lerp(5, 0, surfaceOut.Smoothness);
+				reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflect(-viewDir, normal), mip), unity_SpecCube0_HDR);
+			}
+			else
+		#endif
+		{
+			// specular energy conservation from http://www.rorydriscoll.com/2009/01/25/energy-conservation-in-games/
+			float specPow = exp2(surfaceOut.Smoothness * 10.0);
+			float specularReflection = pow(saturate(NdotH), specPow) * (specPow + 8) / (8 * UNITY_PI);
+			reflectionColor = lightColor * specularReflection;
+		}
+
+		// in non metal materials, specular light does not enter surface, it is reflected off surface so it does not get any surface color
+		specularRGB += lightAttenuation * reflectionColor * lerp(1, surfaceOut.Albedo, surfaceOut.Metallic);
+	}
+
+	// Diffuse
+	float3 diffuseRGB = 0;
+	UNITY_BRANCH
+	if (any(lightDir))
+	{
+		float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
+		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
+
 		UNITY_BRANCH
 		if (_Shadow < 1)
 		{
-			// issue: sometimes entire play area is in shadow and there is no ambient light
-			lightAttenuation = lerp(1, lightAttenuation, _Shadow);
+			shadowRamp = lerp(1, shadowRamp, _Shadow);
 		}
 
-
-		// Specular reflection
-		float3 specularRGB = 0;
-		UNITY_BRANCH
-		if (surfaceOut.Smoothness > 0)
-		{
-			float3 reflectionColor;
-
-			#ifdef UNITY_PASS_FORWARDBASE
-				UNITY_BRANCH
-				if (any(unity_SpecCube0_ProbePosition))
-				{
-					float mip = lerp(5, 0, surfaceOut.Smoothness);
-					reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflect(-viewDir, normal), mip), unity_SpecCube0_HDR);
-				}
-				else
-			#endif
-			{
-				// specular energy conservation from http://www.rorydriscoll.com/2009/01/25/energy-conservation-in-games/
-				float specPow = exp2(surfaceOut.Smoothness * 10.0);
-				float specularReflection = pow(saturate(NdotH), specPow) * (specPow + 8) / (8 * UNITY_PI);
-				reflectionColor = lightColor * specularReflection;
-			}
-
-			// in non metal materials, specular light does not enter surface, it is reflected off surface so it does not get any surface color
-			specularRGB += lightAttenuation * reflectionColor * lerp(1, surfaceOut.Albedo, surfaceOut.Metallic);
-		}
-
-		// Diffuse
-		float3 diffuseRGB = 0;
-		{
-			float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
-			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
-
+		float3 diffuseColor;
+		#ifdef UNITY_PASS_FORWARDBASE
+			diffuseColor = lightColor * shadowRamp * surfaceOut.Albedo;
+			diffuseColor = lerp(_ShadowColor, diffuseColor, lightAttenuation);
+		#else
+			// issue: sometimes delta pass light is too bright, lets make sure its not too bright
+			diffuseColor = lightColor;
+			float g = Grayness(diffuseColor);
 			UNITY_BRANCH
-			if (_Shadow < 1)
-			{
-				shadowRamp = lerp(1, shadowRamp, _Shadow);
-			}
-
-			float3 diffuseColor;
-			#ifdef UNITY_PASS_FORWARDBASE
-				diffuseColor = lightColor * shadowRamp * surfaceOut.Albedo;
-				diffuseColor = lerp(_ShadowColor, diffuseColor, lightAttenuation);
-			#else
-				// issue: sometimes delta pass light is too bright, lets make sure its not too bright
-				diffuseColor = lightColor;
-				float g = Grayness(diffuseColor);
-				UNITY_BRANCH
-				if (g > 1) diffuseColor /= g;
-				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
-				diffuseColor = diffuseColor * lightAttenuation;
-			#endif
-			diffuseRGB += diffuseColor;
-		}
-
-		// energy conservative combine specular and diffuse
-		// specularRGB + diffuseRGB <= lightColor
-		finalRGB += lerp(diffuseRGB, specularRGB, surfaceOut.Smoothness * lerp(0.3, 1, surfaceOut.Metallic));
+			if (g > 1) diffuseColor /= g;
+			diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
+			diffuseColor = diffuseColor * lightAttenuation;
+		#endif
+		diffuseRGB += diffuseColor;
 	}
+
+	// energy conservative combine specular and diffuse
+	// specularRGB + diffuseRGB <= lightColor
+	finalRGB += lerp(diffuseRGB, specularRGB, surfaceOut.Smoothness * lerp(0.3, 1, surfaceOut.Metallic));
 
 
 	// can use following defines DIRECTIONAL || POINT || SPOT || DIRECTIONAL_COOKIE || POINT_COOKIE || SPOT_COOKIE
@@ -855,9 +806,10 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 
 
 	// Shadow rim
+	UNITY_BRANCH
+	if (any(lightColor) && any(_ShadowRim))
 	{
 		float3 shadowRim = surfaceOut.Albedo * lightColor * _ShadowRim;
-
 		float3 cameraForward = GetCameraForward();
 		float dot1 = dot(cameraForward, normal);
 		float dot2 = dot(cameraForward, lightDir);
@@ -878,7 +830,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			else
 			{
 				// Glow only in darkness
-				fixed weight = lightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + lightColor, fixed3(1, 1, 1));
+				fixed weight = lightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + compensatedLightColor, fixed3(1, 1, 1));
 				weight = 1 - clamp(0, 1, weight);
 				finalRGB += surfaceOut.Emission * weight;
 			}
