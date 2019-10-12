@@ -85,12 +85,12 @@ Weak attempt at clone of [Just Graffitiǃ by: nyakome](https://vrchat.net/home/l
 ## Neitri Clock
 Most up to date versions of my clock.
 Also distributed thru [VRCMods](https://vrcmods.com/item/2515-Digital-Clock)
-![](Images/Distance_Fade_Outline.jpg)
+![](Neitri%20Clock/.Images/v1%20v2%20v3%20v4.png)
 
 ## Shader Debug
 Prefab that helps with world light debugging.
 I use it to debug issues with my Neitri MMD shader.
-![](Neitri%20Clock/.Images/v1%20v2%20v3%20v4.png)
+![](Images/Shader_Debug.png)
 
 ## Wireframe Projector
 Wireframe Projector Prefab inspired by the one found [Avatar Testing‼ by Mimi's](https://vrchat.net/home/launch?worldId=wrld_8ef393c0-a985-4d7e-90f0-33ab10d41ee3)
