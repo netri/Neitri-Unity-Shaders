@@ -1,10 +1,11 @@
 fileFormatVersion: 2
-guid: 7986bf01375e19d41a9ce9380c3b17d0
+guid: dd1701cc882ef714da60ce70d2e7ff12
 ModelImporter:
   serializedVersion: 22
   fileIDToRecycleName:
     100000: //RootNode
     400000: //RootNode
+    2100000: clock
     2300000: //RootNode
     3300000: //RootNode
     4300000: clock
@@ -13,12 +14,12 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: clock
-    second: {fileID: 2100000, guid: 64e58b0c4dd510c488dfe9bc361751ab, type: 2}
+    second: {fileID: 2100000, guid: 58374b9e32f74174db263e7540382a8b, type: 2}
   materials:
     importMaterials: 1
     materialName: 0
     materialSearch: 1
-    materialLocation: 0
+    materialLocation: 1
   animations:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
@@ -47,7 +48,7 @@ ModelImporter:
     meshCompression: 0
     addColliders: 0
     importVisibility: 0
-    importBlendShapes: 1
+    importBlendShapes: 0
     importCameras: 0
     importLights: 0
     swapUVChannels: 0
@@ -67,7 +68,7 @@ ModelImporter:
     normalSmoothAngle: 60
     normalImportMode: 0
     tangentImportMode: 3
-    normalCalculationMode: 0
+    normalCalculationMode: 4
   importAnimation: 0
   copyAvatar: 0
   humanDescription:

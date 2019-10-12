@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_Name: clock
+  m_Shader: {fileID: 4800000, guid: 93c11d933dc6f4d41bab5e042e54bf34, type: 3}
+  m_ShaderKeywords: _ALPHAPREMULTIPLY_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 1c341ba6c0e554f4eb4e71653bde4cbe, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _CirclesSpacing: 0.4
+    m_Colors:
+    - _Color: {r: 1, g: 0.972549, b: 0.9411765, a: 1}
+    - _Color2: {r: 0.06666666, g: 0.80399996, b: 1, a: 1}
+    - _Color3: {r: 0.67458826, g: 0.90774703, b: 0.95686275, a: 1}
+    - _CompassUvCenter: {r: 0.8, g: 0.395, b: 0, a: 0}

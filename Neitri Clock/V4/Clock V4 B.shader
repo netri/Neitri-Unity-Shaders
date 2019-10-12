@@ -1,6 +1,6 @@
 ﻿// Created by Neitri, free of charge, free to redistribute
 
-Shader "Neitri/Clock V4"
+Shader "Neitri/Clock V4 B"
 {
 	Properties
 	{
