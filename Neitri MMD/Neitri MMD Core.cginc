@@ -58,6 +58,7 @@ float _OutlineWidth;
 
 float _AlphaCutout;
 int _ShowInMirror;
+int _IgnoreMirrorClipPlane;
 int _DitheredTransparencyType;
 float3 _LightSkew; // name from Silent's
 
@@ -258,6 +259,12 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 	o.modelPos = v.vertex;
 	o.color = v.color;
 
+	UNITY_BRANCH
+	if (_IgnoreMirrorClipPlane && IsInMirror())
+	{
+		// https://docs.microsoft.com/en-us/windows/win32/direct3d9/viewports-and-clipping
+		o.pos.z = min(o.pos.z, o.pos.w);
+	}
 	
 #ifdef _MESH_DEFORMATION_ON
 	// Broken now, inspiration: https://gumroad.com/naelstrof Contact Shader for VRChat, https://www.youtube.com/watch?v=JAIbjUHZyNg

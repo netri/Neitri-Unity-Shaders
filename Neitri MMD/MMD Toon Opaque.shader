@@ -18,7 +18,7 @@ Shader "Neitri/MMD Toon Opaque"
 
 		[Header(Emission)]
 		[Enum(Disabled,0,Glow always,1,Glow only in darkness,2)] _EmissionType("Emission Type", Range(0, 2)) = 0
-		_EmissionMap("Texture", 2D) = "black" {}
+		_EmissionMap("Texture", 2D) = "white" {}
 		[HDR] _EmissionColor("Color", Color) = (1,1,1,1)
 
 		// Core properties
@@ -54,6 +54,7 @@ Shader "Neitri/MMD Toon Opaque"
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
 		[Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror -advanced", Range(0, 2)) = 0
+		[Enum(No,0,Yes,1)] _IgnoreMirrorClipPlane("Headpat yourself in mirror -advanced", Range(0, 1)) = 0
 		_LightSkew("Light Skew -advanced", Vector) = (1, 0.1, 1)
 		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0 // hide in Transparent
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 2
