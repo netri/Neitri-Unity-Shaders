@@ -29,10 +29,7 @@
 				float4 vertex : SV_POSITION;
 			};
 
-			 
-			sampler2D _LastCameraDepthTexture;
-			float4 _LastCameraDepthTexture_ST;
-
+			UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
 			float3 rgbToHsv(float3 c)
 			{
@@ -57,13 +54,13 @@
 			{
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.uv = TRANSFORM_TEX(v.uv, _LastCameraDepthTexture);
+				o.uv = v.uv;
 				return o;
 			}
 			
 			float4 frag (v2f i) : SV_Target
 			{
-				float z = SAMPLE_DEPTH_TEXTURE(_LastCameraDepthTexture, i.uv);
+				float z = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
 				float v = LinearEyeDepth(z) / 10;
 
 				float3 rgb = hsvToRgb(float3(v,1,1));
