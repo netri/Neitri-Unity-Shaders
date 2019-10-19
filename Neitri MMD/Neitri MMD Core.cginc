@@ -28,10 +28,6 @@
 #define USE_GEOMETRY_STAGE
 #endif
 
-#ifdef _MESH_DEFORMATION_ON
-UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
-#endif
-
 
 
 int _EmissionType;
@@ -59,8 +55,13 @@ float _OutlineWidth;
 float _AlphaCutout;
 int _ShowInMirror;
 int _IgnoreMirrorClipPlane;
+float _ContactDeformRange;
 int _DitheredTransparencyType;
 float3 _LightSkew; // name from Silent's
+
+UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
+
+
 
 // DEBUG
 int _DebugInt1;
@@ -107,15 +108,14 @@ struct FragmentIn {
 	float3 normal : TEXCOORD2;
 	LIGHTING_COORDS(3, 4) // shadow coords
 	UNITY_FOG_COORDS(5) 
-	float3 modelPos : TEXCOORD6;
-	float4 color : TEXCOORD7;
+	float4 color : TEXCOORD6;
 	#ifdef UNITY_PASS_FORWARDBASE
-		float4 vertexLightsReal : TEXCOORD8;
-		float4 vertexLightsAverage : TEXCOORD9;
+		float4 vertexLightsReal : TEXCOORD7;
+		float4 vertexLightsAverage : TEXCOORD8;
 	#endif
 	#ifdef USE_TANGENT_BITANGENT
-		float3 tangentDir : TEXCOORD10;
-		float3 bitangentDir : TEXCOORD11;
+		float3 tangentDir : TEXCOORD9;
+		float3 bitangentDir : TEXCOORD10;
 	#endif
 };
 
@@ -188,45 +188,40 @@ float3 NeitriRealVertexLights(float3 pos, float3 normal)
 
 
 
-
 float3 GetCameraPosition()
 {
 #ifdef USING_STEREO_MATRICES
-	//return lerp(unity_StereoWorldSpaceCameraPos[0], unity_StereoWorldSpaceCameraPos[1], 0.5);
 	return unity_StereoWorldSpaceCameraPos[0];
 #else
 	return _WorldSpaceCameraPos;
 #endif
 }
 
-float3 GetCameraForward()
-{
-#if UNITY_SINGLE_PASS_STEREO
-	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 0));
-#else
-	float3 p1 = mul(unity_CameraToWorld, float4(0, 0, 1, 0));
-#endif
-	return normalize(p1);
-}
-
 float3 GetCameraRight()
 {
 #if UNITY_SINGLE_PASS_STEREO
-	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(1, 0, 0, 0));
+	return unity_StereoCameraToWorld[0]._m00_m10_m20;
 #else
-	float3 p1 = mul(unity_CameraToWorld, float4(1, 0, 0, 0));
+	return unity_CameraToWorld._m00_m10_m20;
 #endif
-	return normalize(p1);
 }
 
 float3 GetCameraUp()
 {
 #if UNITY_SINGLE_PASS_STEREO
-	float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 1, 0, 0));
+	return unity_StereoCameraToWorld[0]._m01_m11_m21;
 #else
-	float3 p1 = mul(unity_CameraToWorld, float4(0, 1, 0, 0));
+	return unity_CameraToWorld._m01_m11_m21;
 #endif
-	return normalize(p1);
+}
+
+float3 GetCameraForward()
+{
+#if UNITY_SINGLE_PASS_STEREO
+	return unity_StereoCameraToWorld[0]._m02_m12_m22;
+#else
+	return unity_CameraToWorld._m02_m12_m22;
+#endif
 }
 
 half3 DistanceFromAABB(half3 p, half3 aabbMin, half3 aabbMax)
@@ -255,9 +250,60 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 		o.bitangentDir = normalize(cross(o.normal, o.tangentDir));
 	#endif
 	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0));
-	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
-	o.modelPos = v.vertex;
 	o.color = v.color;
+
+	// attempts to simulate deformation when you touch skin/hair
+	// moves mesh avay from current value in depth buffer along vertex normal
+	UNITY_BRANCH
+	if (_ContactDeformRange > 0)
+	{
+		float depthDifference;
+
+#if defined(UNITY_SINGLE_PASS_STEREO)
+		// special case for single pass VR rendering, we want "depthDifference" to be the same in both eyes
+		// se we calculate it for both eyes and take average
+		// could take left eye "depthDifference" for both eyes if you want to squeeze out extra performance
+		{
+			float4 vertex0 = mul(unity_StereoMatrixVP[0], o.worldPos);
+			float4 vertex1 = mul(unity_StereoMatrixVP[1], o.worldPos);
+
+			// ComputeScreenPos
+			float4 screenPos0 = ComputeNonStereoScreenPos(vertex0);
+			float4 screenPos1 = ComputeNonStereoScreenPos(vertex1);
+			float4 scaleOffset0 = unity_StereoScaleOffset[0];
+			float4 scaleOffset1 = unity_StereoScaleOffset[1];
+			screenPos0.xy = screenPos0.xy * scaleOffset0.xy + scaleOffset0.zw * screenPos0.w;
+			screenPos1.xy = screenPos1.xy * scaleOffset1.xy + scaleOffset1.zw * screenPos1.w;
+
+			float sceneDepth0 = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos0.xy / vertex0.w, 0, 0)));
+			float sceneDepth1 = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos1.xy / vertex1.w, 0, 0)));
+			float vertexDepth0 = -mul(unity_StereoMatrixV[0], o.worldPos).z;
+			float vertexDepth1 = -mul(unity_StereoMatrixV[1], o.worldPos).z;
+
+			depthDifference = ((vertexDepth0 - sceneDepth0) + (vertexDepth1 - sceneDepth1)) * 0.5;
+		}
+#else
+		{
+			float4 vertex = mul(UNITY_MATRIX_VP, o.worldPos);
+			float4 screenPos = ComputeScreenPos(vertex);
+			float sceneDepth = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos.xy / vertex.w, 0, 0)));
+			float vertexDepth = -mul(UNITY_MATRIX_V, o.worldPos).z;
+			depthDifference = vertexDepth - sceneDepth;
+		}
+#endif
+
+		//depthDifference += 0.02; // simulate finger thickness, people usually touch with their hands, but we get depth of back side of hand, we want front
+
+		const float range = _ContactDeformRange;
+		depthDifference = abs(depthDifference) < range ? (depthDifference > 0 ? depthDifference - range : range + depthDifference) : 0;
+		depthDifference *= saturate(dot(o.normal, -GetCameraForward()));
+		depthDifference *= _ContactDeformRange;
+
+		o.worldPos.xyz += o.normal * depthDifference;
+	}
+
+	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
+
 
 	UNITY_BRANCH
 	if (_IgnoreMirrorClipPlane && IsInMirror())
@@ -265,23 +311,6 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 		// https://docs.microsoft.com/en-us/windows/win32/direct3d9/viewports-and-clipping
 		o.pos.z = min(o.pos.z, o.pos.w);
 	}
-	
-#ifdef _MESH_DEFORMATION_ON
-	// Broken now, inspiration: https://gumroad.com/naelstrof Contact Shader for VRChat, https://www.youtube.com/watch?v=JAIbjUHZyNg
-	float4 projPos = ComputeScreenPos(o.pos);
-	float4 pcoord = float4(projPos.xy / projPos.w, 0, 0);
-	float sceneDepth = LinearEyeDepth (tex2Dlod(_CameraDepthTexture, pcoord));
-	float vertexDepth = mul(UNITY_MATRIX_V, o.worldPos).z;
-	float value = (vertexDepth - sceneDepth) / _ProjectionParams.z * 0.1;
-	value = value * (abs(value) > 0.1);
-	v.vertex += v.normal * value;
-	o.normal.z += value;
-	o.normal.z = normalize(o.normal.z);
-	o.worldPos = mul(unity_ObjectToWorld, float4(v.vertex, 1.0));
-	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
-#endif
-
-	float3 objectWorldPos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 	
 	// vertex lights are a cheap way to calculate 4 lights without shadows at once
 	// Unity renders first few lights as pixel lights with shadows in base/delta pass
@@ -291,6 +320,7 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 	#ifdef UNITY_PASS_FORWARDBASE
 		#ifdef VERTEXLIGHT_ON // defined only in frgament shader
 			// Approximated illumination from non-important point lights
+			float3 objectWorldPos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 			o.vertexLightsReal.rgb = NeitriRealVertexLights(o.worldPos, o.normal);
 			o.vertexLightsAverage.rgb = NeitriAverageVertexLights(objectWorldPos);
 		#endif
@@ -612,8 +642,6 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	}
 
 	float3 worldSpaceCameraPos = GetCameraPosition();
-	float distanceToCamera = distance(i.worldPos.xyz / i.worldPos.w, worldSpaceCameraPos);
-
 
 	// direction from pixel towards camera
 	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
@@ -921,11 +949,19 @@ void VertexProgramShadowCaster (VertexShadowCasterIn v
 )
 {
 	UNITY_SETUP_INSTANCE_ID(v);
-	TRANSFER_SHADOW_CASTER_NOPOS(o,opos)
+	TRANSFER_SHADOW_CASTER_NOPOS(o, opos)
 	o.uv0 = v.uv0;
 	#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
 		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(os);
 	#endif
+
+	UNITY_BRANCH
+	if (_ContactDeformRange > 0)
+	{
+		// make depth seems as if mesh is further away from mesh
+		// so camera depth texture does not collide with surface contact deformation
+		opos.z -= _ContactDeformRange * 0.1 * opos.w;
+	}
 }
 
 half4 FragmentProgramShadowCaster(float4 vpos : SV_POSITION, VertexShadowCasterOut i) : SV_Target
