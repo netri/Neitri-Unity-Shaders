@@ -11,6 +11,7 @@ Shader "Neitri/MMD Toon Opaque Outline"
 		_Color("Color", Color) = (1,1,1,1)
 		_Metallic("Metallic", Range(0, 1)) = 0
 		_Glossiness("Smoothness", Range(0, 1)) = 0
+		_OcclusionMap("Occlusion -advanced", 2D) = "white" {}
 
 		[Header(Normal Map)]
 		_BumpScale("Weight", Range(0, 2)) = 0
@@ -69,6 +70,7 @@ Shader "Neitri/MMD Toon Opaque Outline"
 			fixed4 _Color;
 			float _Metallic;
 			float _Glossiness; // name from Unity's standard
+			sampler2D _OcclusionMap; float4 _OcclusionMap_ST;
 			sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
 			fixed4 _EmissionColor;
 			sampler2D _BumpMap; float4 _BumpMap_ST;

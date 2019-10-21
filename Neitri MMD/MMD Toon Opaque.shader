@@ -11,6 +11,7 @@ Shader "Neitri/MMD Toon Opaque"
 		_Color("Color", Color) = (1,1,1,1)
 		_Metallic("Metallic", Range(0, 1)) = 0
 		_Glossiness("Smoothness", Range(0, 1)) = 0
+		_OcclusionMap("Occlusion -advanced", 2D) = "white" {}
 
 		[Header(Normal Map)]
 		_BumpScale("Weight", Range(0, 2)) = 0
@@ -23,7 +24,7 @@ Shader "Neitri/MMD Toon Opaque"
 
 		// Core properties
 		[Header(Shading Ramp)]
-		_Shadow("Weight -advanced", Range(0, 1)) = 0.4
+		_Shadow("Weight -advanced", Range(0, 1)) = 0.8
 		[NoScaleOffset] _Ramp("Ramp -advanced", 2D) = "white" {}
 
 		[Header(Matcap)]
@@ -61,7 +62,6 @@ Shader "Neitri/MMD Toon Opaque"
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest -advanced", Float) = 4
 		
-		//[Toggle(_)] _UseContactDeformation ("Contact Deformation", Range(0, 1)) = 0
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
 		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
 		//_DebugFloat1("Debug Float 1", Range(0, 1)) = 1
@@ -80,10 +80,12 @@ Shader "Neitri/MMD Toon Opaque"
 			fixed4 _Color;
 			float _Metallic;
 			float _Glossiness; // name from Unity's standard
+			sampler2D _OcclusionMap; float4 _OcclusionMap_ST;
 			sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
 			fixed4 _EmissionColor;
 			sampler2D _BumpMap; float4 _BumpMap_ST;
 			float _BumpScale;
+			
 
 			void Surface(SurfaceIn i, inout SurfaceOut o)
 			{
@@ -92,6 +94,7 @@ Shader "Neitri/MMD Toon Opaque"
 				o.Alpha = color.a;
 				o.Metallic = _Metallic;
 				o.Smoothness = _Glossiness;
+				o.Occlusion = tex2D(_OcclusionMap, TRANSFORM_TEX(i.uv0.xy, _OcclusionMap));
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
 				o.Normal = lerp(float3(0, 0, 1), o.Normal, _BumpScale);

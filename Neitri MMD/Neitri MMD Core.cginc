@@ -584,12 +584,15 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	}
 
 
-	SurfaceOut surfaceOut = (SurfaceOut)0; 
 	SurfaceIn surfaceIn;
 	surfaceIn.uv0 = i.uv0.xy;
 	surfaceIn.worldPos = i.worldPos;
 	surfaceIn.screenPos = i.pos;
 	surfaceIn.color = i.color;
+
+	SurfaceOut surfaceOut = (SurfaceOut)0;
+	surfaceOut.Occlusion = 1;
+
 	Surface(surfaceIn, surfaceOut);
 
 	clip(surfaceOut.Alpha - _AlphaCutout);
@@ -669,7 +672,10 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness - _ApproximateFakeLight); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
 
-		finalRGB += (lightProbes + vertexLights) * surfaceOut.Albedo;
+		float rampNdotL = surfaceOut.Occlusion;
+		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
+
+		finalRGB += (lightProbes + vertexLights) * surfaceOut.Albedo * shadowRamp;
 
 
 		// light color and light dir that falls back to baked light color and light dir in case there is no realtime directional light
@@ -734,7 +740,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		}
 
 		// in non metal materials, specular light does not enter surface, it is reflected off surface so it does not get any surface color
-		specularRGB += lightAttenuation * reflectionColor * lerp(1, surfaceOut.Albedo, surfaceOut.Metallic);
+		specularRGB += lightAttenuation * reflectionColor * lerp(1, surfaceOut.Albedo, surfaceOut.Metallic) * surfaceOut.Occlusion;
 	}
 
 	// Diffuse
@@ -743,7 +749,9 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	if (any(lightDir))
 	{
 		float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
+		rampNdotL *= surfaceOut.Occlusion;
 		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
+
 
 		UNITY_BRANCH
 		if (_Shadow < 1)
