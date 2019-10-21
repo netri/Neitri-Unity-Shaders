@@ -7,8 +7,8 @@ using UnityEditor;
 public class NeitriMMDToonEditor : ShaderGUI
 {
 	static class Presets
-	{ 
-	
+	{
+
 		static void AddPresets()
 		{
 			Action<NeitriMMDToonEditor> reset = (NeitriMMDToonEditor t) =>
@@ -111,6 +111,34 @@ public class NeitriMMDToonEditor : ShaderGUI
 			materials.Add(material);
 		}
 
+		// Remove all keywords to prevent VRChat "Out of keywords" issue
+		foreach (var material in materials)
+		{
+			if (material.shaderKeywords != null && material.shaderKeywords.Length > 0)
+			{
+				material.shaderKeywords = new string[] { };
+			}
+		}
+
+		// Migrate HDR colors, because Unity 2018 incorrectly changes them to linear / gamma
+		#if UNITY_2018_1_OR_NEWER
+		//foreach (var material in materials)
+		//{
+		//	if (material.GetFloat("_Version") <= 1)
+		//	{
+		//		Debug.Log("Migrating HDR colors for " + material.name);
+		//		foreach (var property in properties)
+		//		{
+		//			if (property.flags == MaterialProperty.PropFlags.HDR)
+		//			{
+		//				material.SetColor(property.name, material.GetColor(property.name).linear);
+		//			}
+		//		}
+		//		material.SetFloat("_Version", 2);
+		//	}
+		//}
+		#endif
+
 		{
 			GUILayout.BeginHorizontal();
 			GUILayout.Label("Presets", GUILayout.ExpandWidth(false));
@@ -154,7 +182,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 		if (ShowAdvanced)
 		{
 			materialEditor.RenderQueueField();
-		}		
+		}
 
 		GUILayout.Space(10);
 		if (ShowAdvanced)
