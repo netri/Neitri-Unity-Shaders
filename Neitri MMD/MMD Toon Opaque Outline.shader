@@ -83,6 +83,7 @@ Shader "Neitri/MMD Toon Opaque Outline"
 				o.Alpha = color.a;
 				o.Metallic = _Metallic;
 				o.Smoothness = _Glossiness;
+				o.Occlusion = tex2D(_OcclusionMap, TRANSFORM_TEX(i.uv0.xy, _OcclusionMap));
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
 				o.Normal = lerp(float3(0, 0, 1), o.Normal, _BumpScale);
