@@ -14,7 +14,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 			Action<NeitriMMDToonEditor> reset = (NeitriMMDToonEditor t) =>
 			{
 				t.SetTexture("_Ramp", "1283d592696f77545b70f4b513c72188");
-				t.SetFloat("_Shadow", 0.4f); // ramp weight
+				t.SetFloat("_Shadow", 0.6f); // ramp weight
 				t.SetTexture("_Matcap", "d6064d42d7ffecd4cba07c5bd929b6d5");
 				t.SetFloat("_MatcapWeight", 0.15f);
 				t.SetFloat("_MatcapType", 2);
@@ -25,7 +25,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetFloat("_BakedLightingFlatness", 0.9f);
 				t.SetFloat("_ApproximateFakeLight", 0.7f);
 				t.SetFloat("_AlphaCutout", 0.05f);
-				t.SetFloat("_ForceLightDirectionToForward", 0.3f);
+				t.SetVector("_LightSkew", new Vector4(1f, 0.1f, 1f, 0f));
 				t.SetFloat("_Cull", 2);
 				t.SetFloat("_ZTest", 4);
 			};
@@ -58,6 +58,13 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetTexture("_Ramp", "3dc80c595a9f8a948acef6614efe394a");
 			});
 
+			AddPreset("Skin ++", "", (NeitriMMDToonEditor t) =>
+			{
+				reset(t);
+				skin(t);
+				t.SetTexture("_Ramp", "3dc80c595a9f8a948acef6614efe394a");
+				t.SetFloat("_Shadow", 0.8f); // ramp weight
+			});
 
 			AddPreset("Rimlight", "", (NeitriMMDToonEditor t) =>
 			{
@@ -66,6 +73,16 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetFloat("_MatcapType", 1);
 				t.SetTexture("_Matcap", "0c2d781f9138bb74394b78913767973c");
 				t.SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
+			});
+
+			AddPreset("Unity Standard", "", (NeitriMMDToonEditor t) =>
+			{
+				reset(t);
+				skin(t);
+				t.SetFloat("_MatcapWeight", 0f);
+				t.SetTexture("_Ramp", "bdf1b35b19aeeec4c9bd175a43232d46");
+				t.SetFloat("_Shadow", 1.0f); // ramp weight
+				t.SetFloat("_BakedLightingFlatness", 0f);
 			});
 
 			// TODO: Face, Body, Hair, Silk, Leather, Metal, Carbon fibre
@@ -224,6 +241,13 @@ public class NeitriMMDToonEditor : ShaderGUI
 		foreach (var material in materials)
 		{
 			material.SetFloat(name, value);
+		}
+	}
+	public void SetVector(string name, Vector4 value)
+	{
+		foreach (var material in materials)
+		{
+			material.SetVector(name, value);
 		}
 	}
 

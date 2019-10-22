@@ -735,7 +735,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 		
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
-		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness - _ApproximateFakeLight); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
+		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
 
 		float rampNdotL = surfaceOut.Occlusion;
 		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
