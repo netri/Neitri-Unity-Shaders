@@ -69,6 +69,71 @@ int _DebugInt2;
 float _DebugFloat1;
 
 
+
+
+#define PI 3.14159265358979323846
+
+float sqr(float x) { return x * x; }
+
+float SchlickFresnel(float u)
+{
+	float m = saturate(1 - u);
+	float m2 = m * m;
+	return m2 * m2 * m; // pow(m,5)
+}
+
+float GTR1(float NdotH, float a)
+{
+	if (a >= 1) return 1 / PI;
+	float a2 = a * a;
+	float t = 1 + (a2 - 1) * NdotH * NdotH;
+	return (a2 - 1) / (PI * log(a2) * t);
+}
+
+float GTR2(float NdotH, float a)
+{
+	float a2 = a * a;
+	float t = 1 + (a2 - 1) * NdotH * NdotH;
+	return a2 / (PI * t * t);
+}
+
+float GTR2_aniso(float NdotH, float HdotX, float HdotY, float ax, float ay)
+{
+	return 1 / (PI * ax * ay * sqr(sqr(HdotX / ax) + sqr(HdotY / ay) + NdotH * NdotH));
+}
+
+float smithG_GGX(float NdotV, float alphaG)
+{
+	float a = alphaG * alphaG;
+	float b = NdotV * NdotV;
+	return 1 / (NdotV + sqrt(a + b - a * b));
+}
+
+float smithG_GGX_aniso(float NdotV, float VdotX, float VdotY, float ax, float ay)
+{
+	return 1 / (NdotV + sqrt(sqr(VdotX * ax) + sqr(VdotY * ay) + sqr(NdotV)));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ensure we sample with linar clamp sampler settings regardless of texture import settings
 // useful for ramp or matcap textures to prevent user errors
 // https://docs.unity3d.com/Manual/SL-SamplerStates.html
@@ -674,6 +739,11 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 
 		float rampNdotL = surfaceOut.Occlusion;
 		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
+		UNITY_BRANCH
+		if (_Shadow < 1)
+		{
+			shadowRamp = lerp(1, shadowRamp, _Shadow);
+		}
 
 		finalRGB += (lightProbes + vertexLights) * surfaceOut.Albedo * shadowRamp;
 
@@ -702,10 +772,6 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 
 	#endif
 
-	float3 halfDir = normalize(lightDir + viewDir);
-	float NdotL = dot(normal, lightDir);
-	float NdotV = dot(normal, viewDir);
-	float NdotH = dot(normal, halfDir);
 
 	#ifdef UNITY_PASS_FORWARDBASE
 	UNITY_BRANCH
@@ -716,72 +782,147 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	}
 	#endif
 
-	// Specular reflection
-	float3 specularRGB = 0;
-	UNITY_BRANCH
-	if (surfaceOut.Smoothness > 0)
-	{
-		float3 reflectionColor;
+	float3 L = lightDir;
+	float3 V = viewDir;
+	float3 N = normal;
+	float3 X = i.tangentDir;
+	float3 Y = i.bitangentDir;
+	float3 H = normalize(L + V);
 
-		#ifdef UNITY_PASS_FORWARDBASE
-			UNITY_BRANCH
-			if (any(unity_SpecCube0_ProbePosition))
+	float NdotL = dot(N, L);
+	float NdotV = dot(N, V);
+	float NdotH = dot(N, H);
+	float LdotH = dot(L, H);
+
+	{
+		float diffuseWeight = 0;
+		float specularWeight = 0;
+		float reflectionProbeWeight = 0;
+
+		// Disney's BRDF, calculate diffuse and specular weight with crazy physicaly based math based on real life measurements
+		{
+			// Disney's BRDF
+			// https://raw.githubusercontent.com/wdas/brdf/master/src/brdfs/disney.brdf
+			// 
+			// Copyright Disney Enterprises, Inc.All rights reserved.
+			//
+			// Licensed under the Apache License, Version 2.0 (the "License");
+			// you may not use this file except in compliance with the License
+			// and the following modification to it : Section 6 Trademarks.
+			// deleted and replaced with :
+			//
+			// 6. Trademarks.This License does not grant permission to use the
+			// trade names, trademarks, service marks, or product names of the
+			// Licensor and its affiliates, except as required for reproducing
+			// the content of the NOTICE file.
+			//
+			// You may obtain a copy of the License at
+			// http://www.apache.org/licenses/LICENSE-2.0
+
+			float3 baseColor = surfaceOut.Albedo;
+			float metallic = surfaceOut.Metallic * 0.5;
+			float subsurface = 0;
+			float specular = 0.5;
+			float roughness = 1 - surfaceOut.Smoothness;
+			float specularTint = 0;
+			float anisotropic = 0;
+			float sheen = 0;
+			float sheenTint = 0.5;
+			float clearcoat = 0;
+			float clearcoatGloss = 1;
+
+			float3 Cdlin = baseColor;
+			float Cdlum = .3 * Cdlin.r + .6 * Cdlin.g + .1 * Cdlin, b; // luminance approx.
+			float3 Ctint = Cdlum > 0 ? Cdlin / Cdlum : float3(1, 1, 1); // normalize lum. to isolate hue+sat
+			float3 Cspec0 = lerp(specular * .08 * lerp(float3(1, 1, 1), Ctint, specularTint), Cdlin, metallic);
+			float3 Csheen = lerp(float3(1, 1, 1), Ctint, sheenTint);
+
+			// Diffuse fresnel - go from 1 at normal incidence to .5 at grazing
+			// and mix in diffuse retro-reflection based on roughness
+			float FL = SchlickFresnel(NdotL);
+			float FV = SchlickFresnel(NdotV);
+			float Fd90 = 0.5 + 2 * LdotH * LdotH * roughness;
+			float Fd = lerp(1.0, Fd90, FL) * lerp(1.0, Fd90, FV);
+
+			// Based on Hanrahan-Krueger brdf approximation of isotropic bssrdf
+			// 1.25 scale is used to (roughly) preserve albedo
+			// Fss90 used to "flatten" retroreflection based on roughness
+			float Fss90 = LdotH * LdotH * roughness;
+			float Fss = lerp(1.0, Fss90, FL) * lerp(1.0, Fss90, FV);
+			float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
+
+			diffuseWeight = lerp(Fd, ss, subsurface) * NdotL;
+			//diffuseWeight *= 1 - metallic;
+			
+			// TODO: not correct
+			//reflectionProbeWeight = 1 - (diffuseWeight * (1 - metallic));
+			reflectionProbeWeight = surfaceOut.Smoothness *  metallic;
+
+			if (NdotL > 0 && NdotV > 0)
 			{
-				float mip = lerp(5, 0, surfaceOut.Smoothness);
-				reflectionColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflect(-viewDir, normal), mip), unity_SpecCube0_HDR);
+				// specular
+				float aspect = sqrt(1 - anisotropic * .9);
+				float ax = max(.001, sqr(roughness) / aspect);
+				float ay = max(.001, sqr(roughness) * aspect);
+				float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay); // amount of microfacets facing camera
+				float FH = SchlickFresnel(LdotH);
+				float3 Fs = lerp(Cspec0, float3(1, 1, 1), FH);
+				float Gs; // geometry self shadowing
+				Gs = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
+				Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
+
+				// sheen
+				float3 Fsheen = FH * sheen * Csheen;
+
+				// clearcoat (ior = 1.5 -> F0 = 0.04)
+				float Dr = GTR1(NdotH, lerp(.1, .001, clearcoatGloss));
+				float Fr = lerp(.04, 1.0, FH);
+				float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
+
+				specularWeight = Gs * Fs * Ds * PI * NdotL;
 			}
-			else
-		#endif
-		{
-			// specular energy conservation from http://www.rorydriscoll.com/2009/01/25/energy-conservation-in-games/
-			float specPow = exp2(surfaceOut.Smoothness * 10.0);
-			float specularReflection = pow(saturate(NdotH), specPow) * (specPow + 8) / (8 * UNITY_PI);
-			reflectionColor = lightColor * specularReflection;
 		}
 
-		// in non metal materials, specular light does not enter surface, it is reflected off surface so it does not get any surface color
-		specularRGB += lightAttenuation * reflectionColor * lerp(1, surfaceOut.Albedo, surfaceOut.Metallic) * surfaceOut.Occlusion;
-	}
-
-	// Diffuse
-	float3 diffuseRGB = 0;
-	UNITY_BRANCH
-	if (any(lightDir))
-	{
-		float rampNdotL = NdotL * 0.5 + 0.5; // remap -1..1 to 0..1
-		rampNdotL *= surfaceOut.Occlusion;
-		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
-
-
-		UNITY_BRANCH
-		if (_Shadow < 1)
+		// specular
 		{
-			shadowRamp = lerp(1, shadowRamp, _Shadow);
+			finalRGB += specularWeight * lightColor;
+
+			#ifdef UNITY_PASS_FORWARDBASE
+				float specCubeMip = lerp(10, 0, surfaceOut.Smoothness); // 10 is blurry, 0 is sharp
+				finalRGB += reflectionProbeWeight * DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflect(-viewDir, normal), specCubeMip), unity_SpecCube0_HDR);
+			#endif
 		}
 
-		float3 diffuseColor;
-		#ifdef UNITY_PASS_FORWARDBASE
-			diffuseColor = lightColor * shadowRamp * surfaceOut.Albedo;
-			diffuseColor = lerp(_ShadowColor, diffuseColor, lightAttenuation);
-		#else
-			// issue: sometimes delta pass light is too bright, lets make sure its not too bright
-			diffuseColor = lightColor;
-			float g = Grayness(diffuseColor);
+		// diffuse
+		{
+			float rampU = diffuseWeight * 0.5 + 0.5; // remap -1..1 to 0..1
+			rampU *= 1 - surfaceOut.Metallic;
+			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampU, rampU)).rgb;
 			UNITY_BRANCH
-			if (g > 1) diffuseColor /= g;
-			diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
-			diffuseColor = diffuseColor * lightAttenuation;
-		#endif
-		diffuseRGB += diffuseColor;
+			if (_Shadow < 1)
+			{
+				shadowRamp = lerp(1, shadowRamp, _Shadow);
+			}
+
+			float3 diffuseColor;
+			#ifdef UNITY_PASS_FORWARDBASE
+				diffuseColor = lightColor * shadowRamp * surfaceOut.Albedo;
+				diffuseColor = lerp(_ShadowColor, diffuseColor, lightAttenuation);
+			#else
+				// issue: sometimes delta pass light is too bright, lets make sure its not too bright
+				diffuseColor = lightColor;
+				float g = Grayness(diffuseColor);
+				UNITY_BRANCH
+					if (g > 1) diffuseColor /= g;
+				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
+				diffuseColor = diffuseColor * lightAttenuation;
+			#endif
+			finalRGB += diffuseColor;
+		}
+
 	}
 
-	// energy conservative combine specular and diffuse
-	// specularRGB + diffuseRGB <= lightColor
-	finalRGB += lerp(diffuseRGB, specularRGB, surfaceOut.Smoothness * lerp(0.3, 1, surfaceOut.Metallic));
-
-
-	// can use following defines DIRECTIONAL || POINT || SPOT || DIRECTIONAL_COOKIE || POINT_COOKIE || SPOT_COOKIE
-
+	// can use following defines DIRECTIONAL || POINT || SPOT || DIRECTIONAL_COOKIE || POINT_COOKIE || SPOT_COOKIE	
 
 	// Matcap
 	#ifdef UNITY_PASS_FORWARDBASE
@@ -846,7 +987,6 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			}
 		}
 	#endif
-
 
 	// Shadow rim
 	UNITY_BRANCH
