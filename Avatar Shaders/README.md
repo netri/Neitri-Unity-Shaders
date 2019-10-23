@@ -5,7 +5,6 @@ This shader was made with following goals in mind:
 - Be noob friendly and easy to setup
 - Defaults values are set to ideal battle tested values
 - Look acceptably in all scuffed lighting conditions of VRChat worlds
-- When Unity's Standard is completely dark, be dark too
 - React to lighting and shadows better than Cubed's
 - Be something between Cubed's and Unity's Standard
 
@@ -17,14 +16,20 @@ If your avatar is dark after using normal map, make sure you have this on your m
 
 # Notes
 
-Rim lighting is missing because it can be simulared with matcaps.
-
-Color alpha is used only in transparent shader, because that is what people expect.
+Rim lighting is missing because it can be simulared with matcaps, there is preset for it.
 
 Shading ramps and matcaps look best with these import settings, we don't want gamma correction to their colors.
 ![](https://image.prntscr.com/image/4KlO8AB5RlCBtgNKOhiYiw.png)
 
-Subtle barely noticable effects are important too, combinations of many of them has great impact.
+Ramps should start at black and end in white, use ramp weight to adjust the black color.
+
+Shaders are using Unity's surface shader concept, you can easily adjust them to use metallic or smothness from texture.
+
+Uses ![Disney's BRDF](https://raw.githubusercontent.com/wdas/brdf/master/src/brdfs/disney.brdf).
+
+Color alpha is used only in transparent shader, because that is what people expect.
+
+Subtle barely noticable effects are important too, combinations of many of them have great impact.
 
 # Good concepts/ideas
 

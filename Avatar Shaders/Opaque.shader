@@ -1,7 +1,7 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-Shader "Neitri/MMD Toon Opaque"
+Shader "Neitri/Avatar Shaders/Opaque"
 {
 	Properties
 	{
@@ -74,7 +74,7 @@ Shader "Neitri/MMD Toon Opaque"
 
 		CGINCLUDE
 
-			#include "Neitri MMD Surface.cginc"
+			#include "Surface.cginc"
 
 			sampler2D _MainTex; float4 _MainTex_ST;
 			fixed4 _Color;
@@ -120,7 +120,7 @@ Shader "Neitri/MMD Toon Opaque"
 			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
-			#include "Neitri MMD Core.cginc"
+			#include "Core.cginc"
 			ENDCG
 		}
 		Pass
@@ -144,7 +144,7 @@ Shader "Neitri/MMD Toon Opaque"
 			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
-			#include "Neitri MMD Core.cginc"
+			#include "Core.cginc"
 			ENDCG
 		}
 		Pass
@@ -161,10 +161,10 @@ Shader "Neitri/MMD Toon Opaque"
 			#endif
 			#pragma target 2.0
 			#pragma only_renderers d3d11
-			#include "Neitri MMD Core.cginc"
+			#include "Core.cginc"
 			ENDCG
 		}
 	}	
-	FallBack Off
-	CustomEditor "NeitriMMDToonEditor"
+	FallBack "Standard"
+	CustomEditor "NeitriAvatarShadersEditor"
 }

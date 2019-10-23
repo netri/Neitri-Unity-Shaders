@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 4874498449877826}
   - component: {fileID: 108891511744586800}
   m_Layer: 0
-  m_Name: Light To Enable Camera Depth Texture
+  m_Name: Enable Camera Depth Texture
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -33,13 +33,13 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1599546292853768}
-  m_LocalRotation: {x: 0.7615232, y: 0.6061975, z: -0.12017606, w: 0.19535805}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: -926.31104, y: -41043.44, z: -14117.847}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!108 &108891511744586800
 Light:
   m_ObjectHideFlags: 1

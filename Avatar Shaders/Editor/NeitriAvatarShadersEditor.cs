@@ -4,14 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class NeitriMMDToonEditor : ShaderGUI
+public class NeitriAvatarShadersEditor : ShaderGUI
 {
 	static class Presets
 	{
 
 		static void AddPresets()
 		{
-			Action<NeitriMMDToonEditor> reset = (NeitriMMDToonEditor t) =>
+			Action<NeitriAvatarShadersEditor> reset = (NeitriAvatarShadersEditor t) =>
 			{
 				t.SetTexture("_Ramp", "1283d592696f77545b70f4b513c72188");
 				t.SetFloat("_Shadow", 0.6f); // ramp weight
@@ -30,13 +30,13 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetFloat("_ZTest", 4);
 			};
 
-			AddPreset("Default", "Reverts all changes to default values", (NeitriMMDToonEditor t) =>
+			AddPreset("Default", "Reverts all changes to default values", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 			});
 
 
-			Action<NeitriMMDToonEditor> skin = (NeitriMMDToonEditor t) =>
+			Action<NeitriAvatarShadersEditor> skin = (NeitriAvatarShadersEditor t) =>
 			{
 				t.SetTexture("_Matcap", "c897b2f4ac59d7a47979f27af3221229");
 				t.SetFloat("_MatcapWeight", 0.5f);
@@ -45,20 +45,20 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetColor("_ShadowRim", new Color(0.3f, 0f, 0f, 1f));
 			};
 
-			AddPreset("Skin", "", (NeitriMMDToonEditor t) =>
+			AddPreset("Skin", "", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 				skin(t);
 			});
 
-			AddPreset("Skin +", "", (NeitriMMDToonEditor t) =>
+			AddPreset("Skin +", "", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 				skin(t);
 				t.SetTexture("_Ramp", "3dc80c595a9f8a948acef6614efe394a");
 			});
 
-			AddPreset("Skin ++", "", (NeitriMMDToonEditor t) =>
+			AddPreset("Skin ++", "", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 				skin(t);
@@ -66,7 +66,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetFloat("_Shadow", 0.8f); // ramp weight
 			});
 
-			AddPreset("Rimlight", "", (NeitriMMDToonEditor t) =>
+			AddPreset("Rimlight", "", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 				t.SetFloat("_MatcapWeight", 1f);
@@ -75,7 +75,7 @@ public class NeitriMMDToonEditor : ShaderGUI
 				t.SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
 			});
 
-			AddPreset("Unity Standard", "", (NeitriMMDToonEditor t) =>
+			AddPreset("Unity Standard", "", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 				skin(t);
@@ -93,11 +93,11 @@ public class NeitriMMDToonEditor : ShaderGUI
 		{
 			public string Name;
 			public string Description;
-			public Action<NeitriMMDToonEditor> Action;
+			public Action<NeitriAvatarShadersEditor> Action;
 		}
 
 		static List<Preset> PresetsList = new List<Preset>();
-		static void AddPreset(string Name, string Description, Action<NeitriMMDToonEditor> Preset)
+		static void AddPreset(string Name, string Description, Action<NeitriAvatarShadersEditor> Preset)
 		{
 			PresetsList.Add(new Preset() { Name = Name, Description = Description, Action = Preset });
 		}

@@ -4,7 +4,7 @@
 // Some ideas are from:
 // Cubed's https://github.com/cubedparadox/Cubeds-Unity-Shaders
 // Xiexe's https://github.com/Xiexe/Xiexes-Unity-Shaders
-
+// uses Disney's BRDF https://raw.githubusercontent.com/wdas/brdf/master/src/brdfs/disney.brdf
 
 
 #include "UnityCG.cginc"
@@ -537,76 +537,6 @@ float3 GetLightDirectionFromSphericalHarmonics()
 }
 
 
-// based on ShadeSH9 from \Unity\builtin_shaders-2017.4.15f1\CGIncludes\UnityStandardUtils.cginc:
-half3 NeitriShadeSH9(half4 normal)
-{
-	half3 realLightProbes = 0;
-
-	//normal.w = 0; // DEBUG
-	//return average; // DEBUG
-
-	float4 SHAr = unity_SHAr;
-	float4 SHAg = unity_SHAg;
-	float4 SHAb = unity_SHAb;
-	float4 SHBr = unity_SHBr;
-	float4 SHBg = unity_SHBg;
-	float4 SHBb = unity_SHBb;
-
-	UNITY_BRANCH
-	if (_BakedLightingFlatness > 0)
-	{
-		// issue: sometimes intensity of baked lights is too big, so lets try to normalize their color range here
-
-		half3 thresholdsMax = lerp(1, 0.5, _BakedLightingFlatness);
-		
-		// BAD: this adds more colors we dont want
-		//half3 thresholdsMin = lerp(0, 0.5, _BakedLightingFlatness);
-
-		float len;
-#define ADJUST(VECTOR, CHANNEL) \
-		len = length(VECTOR); \
-		if (len > thresholdsMax.CHANNEL) VECTOR *= thresholdsMax.CHANNEL / len;
-		//else if (len < thresholdsMin.CHANNEL) VECTOR *= thresholdsMin.CHANNEL / len;
-
-		ADJUST(SHAr, r);
-		ADJUST(SHAg, g);
-		ADJUST(SHAb, b);
-		ADJUST(SHBr, r);
-		ADJUST(SHBg, g);
-		ADJUST(SHBb, b);
-
-#undef ADJUST
-	}
-
-#define EVALUATE(VECTOR, NORMAL) \
-	dot(VECTOR, NORMAL)
-
-	// Linear (L1) + constant (L0) polynomial terms
-	realLightProbes.r = EVALUATE(SHAr, normal);
-	realLightProbes.g = EVALUATE(SHAg, normal);
-	realLightProbes.b = EVALUATE(SHAb, normal);
-
-	half3 x1;
-	// 4 of the quadratic (L2) polynomials
-	half4 vB = normal.xyzz * normal.yzzx;
-	x1.r = EVALUATE(SHBr, vB);
-	x1.g = EVALUATE(SHBg, vB);
-	x1.b = EVALUATE(SHBb, vB);
-	realLightProbes += x1;
-
-	// Final (5th) quadratic (L2) polynomial
-	//half vC = normal.x * normal.x - normal.y * normal.y;
-	//realLightProbes += unity_SHC.rgb * vC;
-	
-#undef EVALUATE
-
-#ifdef UNITY_COLORSPACE_GAMMA
-	realLightProbes = LinearToGammaSpace(realLightProbes);
-#endif
-
-	return realLightProbes;
-}
-
 
 #ifdef CHANGE_DEPTH
 
@@ -852,7 +782,6 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
 
 			diffuseWeight = lerp(Fd, ss, subsurface) * NdotL;
-			//diffuseWeight *= 1 - metallic;
 			
 			// TODO: not correct
 			//reflectionProbeWeight = 1 - (diffuseWeight * (1 - metallic));
@@ -960,9 +889,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				}
 			}
 
-
 			float3 matcap = _Matcap.Sample(Sampler_Linear_Clamp, matcapUv).rgb * _MatcapTint.rgb * _MatcapTint.a;
-
 
 			UNITY_BRANCH
 			if (_MatcapType == 1)
@@ -1021,7 +948,11 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	#else
 	#endif
 
-	fixed4 finalRGBA = fixed4(finalRGB, surfaceOut.Alpha);
+	#ifdef IS_TRANSPARENT_SHADER
+		fixed4 finalRGBA = fixed4(finalRGB, surfaceOut.Alpha);
+	#else
+		fixed4 finalRGBA = fixed4(finalRGB, 1);
+	#endif
 
 	#ifdef UNITY_PASS_FORWARDBASE
 		UNITY_APPLY_FOG(i.fogCoord, finalRGBA);

@@ -1,14 +1,14 @@
 // by Neitri, free of charge, free to redistribute
 // downloaded from https://github.com/netri/Neitri-Unity-Shaders
 
-Shader "Neitri/MMD Toon Opaque Outline"
+Shader "Neitri/Avatar Shaders/Opaque + Raymarcher"
 {
 	Properties
 	{
 		// Surface properties
-		[Header(Main)]
-		_MainTex("Texture", 2D) = "white" {}
-		_Color("Color", Color) = (1,1,1,1)
+		[Header(Main)] 
+		_MainTex ("Texture", 2D) = "white" {}
+		_Color ("Color", Color) = (1,1,1,1)
 		_Metallic("Metallic", Range(0, 1)) = 0
 		_Glossiness("Smoothness", Range(0, 1)) = 0
 		_OcclusionMap("Occlusion -advanced", 2D) = "white" {}
@@ -19,8 +19,8 @@ Shader "Neitri/MMD Toon Opaque Outline"
 
 		[Header(Emission)]
 		[Enum(Disabled,0,Glow always,1,Glow only in darkness,2)] _EmissionType("Emission Type", Range(0, 2)) = 0
-		_EmissionMap("Texture", 2D) = "white" {}
-		[HDR] _EmissionColor("Color", Color) = (1,1,1,1)
+		_EmissionMap ("Texture", 2D) = "white" {}
+		[HDR] _EmissionColor ("Color", Color) = (1,1,1,1)
 
 		// Core properties
 		[Header(Shading Ramp)]
@@ -35,16 +35,22 @@ Shader "Neitri/MMD Toon Opaque Outline"
 		[NoScaleOffset] _Matcap("Matcap -advanced", 2D) = "white" {}
 
 		[Header(Shadow)]
-		_ShadowColor("Shadow color -advanced", Color) = (0,0,0,1)
+		_ShadowColor ("Shadow color -advanced", Color) = (0,0,0,1)
 		_ShadowRim("Shadow rim color -advanced", Color) = (0,0,0,1)
 
 		[Header(Baked Lighting)]
-		_BakedLightingFlatness("Baked lighting flatness -advanced", Range(0, 1)) = 0.9
+		_BakedLightingFlatness ("Baked lighting flatness -advanced", Range(0, 1)) = 0.9
 		//_ApproximateFakeLight("Approximate fake light -advanced", Range(0, 1)) = 0.7
 
-		[Header(Outline)] // only in Outline
-		[HDR] _OutlineColor("Color -advanced", Color) = (0.1,0.1,0.1,1) // only in Outline
-		 _OutlineWidth("Width -advanced", Range(0, 10)) = 1 // only in Outline
+		// [Header(Outline)] // only in Outline
+		// [HDR] _OutlineColor("Color -advanced", Color) = (0.1,0.1,0.1,1) // only in Outline
+		// _OutlineWidth("Width -advanced", Range(0, 10)) = 1 // only in Outline
+
+		[Header(Raymarched Pattern)] // only in Raymarcher
+		[Enum(None,0,Spheres,1,Hearts,2)] _Raymarcher_Type("Type", Range(0, 2)) = 1 // only in Raymarcher
+		_Raymarcher_Scale("Scale", Range(0.1, 5)) = 1.0 // only in Raymarcher
+		_RaymarcherColor1("Color 1", Color) = (0,0,0,1) // only in Raymarcher
+		_RaymarcherColor2("Color 2", Color) = (1,1,1,1) // only in Raymarcher
 
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
@@ -53,18 +59,30 @@ Shader "Neitri/MMD Toon Opaque Outline"
 		_ContactDeformRange("Contant mesh deformation -advanced", Range(0, 0.2)) = 0
 		_LightSkew("Light Skew -advanced", Vector) = (1, 0.1, 1)
 		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0 // hide in Transparent
-		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 2
-		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest -advanced", Float) = 4
+		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull -advanced", Float) = 2
+		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest -advanced", Float) = 4
+		
+		//[Toggle(_)] _UseContactDeformation ("Contact Deformation", Range(0, 1)) = 0
+		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
+		//[Toggle(_)] _DebugInt2("Debug Int 2", Range(0, 1)) = 1
+		//_DebugFloat1("Debug Float 1", Range(0, 1)) = 1
 
 		[HideInInspector] _Version("_Version", Float) = 0.1
 	}
 	SubShader
 	{
-		Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
+		Tags { "Queue" = "Geometry" "RenderType" = "Opaque"	}
 
 		CGINCLUDE
 
-			#include "Neitri MMD Surface.cginc"
+			#define CHANGE_DEPTH
+			int _Raymarcher_Type;
+			float _Raymarcher_Scale;
+			float4 _RaymarcherColor1;
+			float4 _RaymarcherColor2;
+			#include "Raymarcher.cginc"
+
+			#include "Surface.cginc"
 
 			sampler2D _MainTex; float4 _MainTex_ST;
 			fixed4 _Color;
@@ -87,10 +105,24 @@ Shader "Neitri/MMD Toon Opaque Outline"
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
 				o.Normal = lerp(float3(0, 0, 1), o.Normal, _BumpScale);
+
+				UNITY_BRANCH
+				if (_Raymarcher_Type != 0)
+				{
+					float depth;
+					float3 tint = 0;
+					Raymarch(i.worldPos.xyz, tint, depth);
+					o.Albedo.rgb *= lerp(_RaymarcherColor1, _RaymarcherColor2, tint);
+					#ifdef CHANGE_DEPTH
+						float realDepthWeight = i.color.r;
+						o.Depth = lerp(depth, i.screenPos.z, realDepthWeight);
+					#endif
+				}
+
 			}
 
 		ENDCG
-
+		
 		Pass
 		{
 			Name "ForwardBase"
@@ -101,17 +133,15 @@ Shader "Neitri/MMD Toon Opaque Outline"
 			//AlphaToMask On
 			CGPROGRAM
 			#pragma vertex VertexProgram
-			#pragma geometry GeometryProgram
 			#pragma fragment FragmentProgram
 			#ifndef UNITY_PASS_FORWARDBASE
 				#define UNITY_PASS_FORWARDBASE
 			#endif
-			#define IS_OUTLINE_SHADER
-			#pragma target 4.0
+			#pragma target 2.0
 			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
-			#include "Neitri MMD Core.cginc"
+			#include "Core.cginc"
 			ENDCG
 		}
 		Pass
@@ -131,11 +161,11 @@ Shader "Neitri/MMD Toon Opaque Outline"
 			#ifndef UNITY_PASS_FORWARDADD
 				#define UNITY_PASS_FORWARDADD
 			#endif
-			#pragma target 4.0
+			#pragma target 2.0
 			#pragma only_renderers d3d11
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
-			#include "Neitri MMD Core.cginc"
+			#include "Core.cginc"
 			ENDCG
 		}
 		Pass
@@ -150,12 +180,12 @@ Shader "Neitri/MMD Toon Opaque Outline"
 			#ifndef UNITY_PASS_SHADOWCASTER
 				#define UNITY_PASS_SHADOWCASTER
 			#endif
-			#pragma target 4.0
+			#pragma target 2.0
 			#pragma only_renderers d3d11
-			#include "Neitri MMD Core.cginc"
+			#include "Core.cginc"
 			ENDCG
 		}
 	}	
-	FallBack "Neitri/Neitri/MMD Toon Opaque"
-	CustomEditor "NeitriMMDToonEditor"
+	FallBack "Neitri/Avatar Shaders/Opaque"
+	CustomEditor "NeitriAvatarShadersEditor"
 }
