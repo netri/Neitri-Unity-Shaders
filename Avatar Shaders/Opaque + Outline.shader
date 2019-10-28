@@ -40,7 +40,7 @@ Shader "Neitri/Avatar Shaders/Opaque + Outline"
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness("Baked lighting flatness -advanced", Range(0, 1)) = 0.9
-		//_ApproximateFakeLight("Approximate fake light -advanced", Range(0, 1)) = 0.7
+		_ApproximateFakeLight("Approximate fake light -advanced", Range(0, 1)) = 0.7
 
 		[Header(Outline)] // only in Outline
 		[HDR] _OutlineColor("Color -advanced", Color) = (0.1,0.1,0.1,1) // only in Outline

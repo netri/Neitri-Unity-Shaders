@@ -40,7 +40,7 @@ Shader "Neitri/Avatar Shaders/Opaque"
 
 		[Header(Baked Lighting)]
 		_BakedLightingFlatness("Baked lighting flatness -advanced", Range(0, 1)) = 0.9
-		//_ApproximateFakeLight("Approximate fake light -advanced", Range(0, 1)) = 0.7
+		_ApproximateFakeLight("Approximate fake light -advanced", Range(0, 1)) = 0.7
 
 		// [Header(Outline)] // only in Outline
 		// [HDR] _OutlineColor("Color -advanced", Color) = (0.1,0.1,0.1,1) // only in Outline
@@ -57,7 +57,7 @@ Shader "Neitri/Avatar Shaders/Opaque"
 		[Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror -advanced", Range(0, 2)) = 0
 		[Enum(No,0,Yes,1)] _IgnoreMirrorClipPlane("Headpat yourself in mirror -advanced", Range(0, 1)) = 0
 		_ContactDeformRange("Contant mesh deformation -advanced", Range(0, 0.2)) = 0
-		_LightSkew("Light Skew -advanced", Vector) = (1, 0.1, 1)
+		_LightSkew("Light Skew -advanced", Vector) = (1, 1, 1)
 		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0 // hide in Transparent
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 2
 		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest -advanced", Float) = 4

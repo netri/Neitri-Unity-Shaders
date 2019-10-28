@@ -128,12 +128,6 @@ float smithG_GGX_aniso(float NdotV, float VdotX, float VdotY, float ax, float ay
 
 
 
-
-
-
-
-
-
 // ensure we sample with linar clamp sampler settings regardless of texture import settings
 // useful for ramp or matcap textures to prevent user errors
 // https://docs.unity3d.com/Manual/SL-SamplerStates.html
@@ -301,6 +295,46 @@ inline bool IsInMirror()
 	return UNITY_MATRIX_P._31 != 0.f || UNITY_MATRIX_P._32 != 0.f;
 }
 
+
+// Calculates depth differene between vertex and worlPos and current value in depth buffer
+float CalculateDepthDifference(float3 worldPos)
+{
+#if defined(UNITY_SINGLE_PASS_STEREO)
+	// special case for single pass VR rendering, we want "depthDifference" to be the same in both eyes
+	// se we calculate it for both eyes and take average
+	// could take left eye "depthDifference" for both eyes if you want to squeeze out extra performance
+	{
+		float4 vertex0 = mul(unity_StereoMatrixVP[0], worldPos);
+		float4 vertex1 = mul(unity_StereoMatrixVP[1], worldPos);
+
+		// ComputeScreenPos
+		float4 screenPos0 = ComputeNonStereoScreenPos(vertex0);
+		float4 scaleOffset0 = unity_StereoScaleOffset[0];
+		screenPos0.xy = screenPos0.xy * scaleOffset0.xy + scaleOffset0.zw * screenPos0.w;
+		float sceneDepth0 = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos0.xy / vertex0.w, 0, 0)));
+		if (abs(sceneDepth0 - GammaToLinearSpaceExact(0.5)) < 0.0025) return 0; // no depth texture
+		float vertexDepth0 = -mul(unity_StereoMatrixV[0], worldPos).z;
+
+		float4 screenPos1 = ComputeNonStereoScreenPos(vertex1);
+		float4 scaleOffset1 = unity_StereoScaleOffset[1];
+		screenPos1.xy = screenPos1.xy * scaleOffset1.xy + scaleOffset1.zw * screenPos1.w;
+		float sceneDepth1 = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos1.xy / vertex1.w, 0, 0)));
+		float vertexDepth1 = -mul(unity_StereoMatrixV[1], worldPos).z;
+
+		return ((vertexDepth0 - sceneDepth0) + (vertexDepth1 - sceneDepth1)) * 0.5;
+	}
+#else
+	{
+		float4 vertex = mul(UNITY_MATRIX_VP, worldPos);
+		float4 screenPos = ComputeScreenPos(vertex);
+		float sceneDepth = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos.xy / vertex.w, 0, 0)));
+		if (abs(sceneDepth - GammaToLinearSpaceExact(0.5)) < 0.0025) return 0; // no depth texture
+		float vertexDepth = -mul(UNITY_MATRIX_V, worldPos).z;
+		return vertexDepth - sceneDepth;
+	}
+#endif
+}
+
 #ifdef USE_GEOMETRY_STAGE
 FragmentIn VertexProgramProxy(in GeometryIn v) 
 #else
@@ -322,49 +356,16 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 	UNITY_BRANCH
 	if (_ContactDeformRange > 0)
 	{
-		float depthDifference;
-
-#if defined(UNITY_SINGLE_PASS_STEREO)
-		// special case for single pass VR rendering, we want "depthDifference" to be the same in both eyes
-		// se we calculate it for both eyes and take average
-		// could take left eye "depthDifference" for both eyes if you want to squeeze out extra performance
+		float depthDifference = CalculateDepthDifference(o.worldPos);
+		if (abs(depthDifference) > 0)
 		{
-			float4 vertex0 = mul(unity_StereoMatrixVP[0], o.worldPos);
-			float4 vertex1 = mul(unity_StereoMatrixVP[1], o.worldPos);
-
-			// ComputeScreenPos
-			float4 screenPos0 = ComputeNonStereoScreenPos(vertex0);
-			float4 screenPos1 = ComputeNonStereoScreenPos(vertex1);
-			float4 scaleOffset0 = unity_StereoScaleOffset[0];
-			float4 scaleOffset1 = unity_StereoScaleOffset[1];
-			screenPos0.xy = screenPos0.xy * scaleOffset0.xy + scaleOffset0.zw * screenPos0.w;
-			screenPos1.xy = screenPos1.xy * scaleOffset1.xy + scaleOffset1.zw * screenPos1.w;
-
-			float sceneDepth0 = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos0.xy / vertex0.w, 0, 0)));
-			float sceneDepth1 = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos1.xy / vertex1.w, 0, 0)));
-			float vertexDepth0 = -mul(unity_StereoMatrixV[0], o.worldPos).z;
-			float vertexDepth1 = -mul(unity_StereoMatrixV[1], o.worldPos).z;
-
-			depthDifference = ((vertexDepth0 - sceneDepth0) + (vertexDepth1 - sceneDepth1)) * 0.5;
+			//depthDifference += 0.02; // simulate finger thickness, people usually touch with their hands, but we get depth of back side of hand, we want front
+			const float range = _ContactDeformRange;
+			depthDifference = abs(depthDifference) < range ? (depthDifference > 0 ? depthDifference - range : range + depthDifference) : 0;
+			depthDifference *= saturate(dot(o.normal, -GetCameraForward()));
+			depthDifference *= _ContactDeformRange;
+			o.worldPos.xyz += o.normal * depthDifference;
 		}
-#else
-		{
-			float4 vertex = mul(UNITY_MATRIX_VP, o.worldPos);
-			float4 screenPos = ComputeScreenPos(vertex);
-			float sceneDepth = LinearEyeDepth(tex2Dlod(_CameraDepthTexture, float4(screenPos.xy / vertex.w, 0, 0)));
-			float vertexDepth = -mul(UNITY_MATRIX_V, o.worldPos).z;
-			depthDifference = vertexDepth - sceneDepth;
-		}
-#endif
-
-		//depthDifference += 0.02; // simulate finger thickness, people usually touch with their hands, but we get depth of back side of hand, we want front
-
-		const float range = _ContactDeformRange;
-		depthDifference = abs(depthDifference) < range ? (depthDifference > 0 ? depthDifference - range : range + depthDifference) : 0;
-		depthDifference *= saturate(dot(o.normal, -GetCameraForward()));
-		depthDifference *= _ContactDeformRange;
-
-		o.worldPos.xyz += o.normal * depthDifference;
 	}
 
 	o.pos = mul(UNITY_MATRIX_VP, o.worldPos);
@@ -422,10 +423,16 @@ FragmentIn VertexProgramProxy(in VertexIn v)
 
 
 // geometry shader used to emit extra triangles for outline
+#ifdef IS_OUTLINE_SHADER
 [maxvertexcount(6)]
+#else
+[maxvertexcount(3)]
+#endif
 void GeometryProgram(triangle GeometryIn v[3], inout TriangleStream<FragmentIn> tristream)
 {
+	// passthru data
 	{
+		[unroll]
 		for (int i = 0; i < 3; i++)
 		{
 			FragmentIn o = VertexProgramProxy(v[i]);
@@ -434,11 +441,13 @@ void GeometryProgram(triangle GeometryIn v[3], inout TriangleStream<FragmentIn> 
 	}
 
 #ifdef IS_OUTLINE_SHADER
+	// add outline triangles
 	UNITY_BRANCH
 	if (_OutlineWidth > 0)
 	{
 		tristream.RestartStrip();
 
+		[unroll]
 		for (int i = 2; i >= 0; i--)
 		{
 			float4 worldPos = mul(UNITY_MATRIX_M, float4(v[i].vertex.xyz, 1.0));
@@ -658,6 +667,15 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 
 	#ifdef UNITY_PASS_FORWARDBASE
 
+	
+		float3 occlusionRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(surfaceOut.Occlusion, surfaceOut.Occlusion)).rgb;
+		UNITY_BRANCH
+		if (_Shadow < 1)
+		{
+			occlusionRamp = lerp(1, occlusionRamp, _Shadow);
+		}
+
+
 		// non cookie directional light
 
 		// environment (ambient) lighting + light probes
@@ -666,31 +684,22 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
 		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
+		float ambientWeight = 1;
 
-		float rampNdotL = surfaceOut.Occlusion;
-		float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampNdotL, rampNdotL)).rgb;
+		// light color and light dir falls back to baked light color and light dir in case there is no realtime directional light
 		UNITY_BRANCH
-		if (_Shadow < 1)
+		if (!any(lightColor) && !any(lightDir))
 		{
-			shadowRamp = lerp(1, shadowRamp, _Shadow);
+			ambientWeight -= _ApproximateFakeLight;
+			// sum of ambient light over unit sphere is 4*PI
+			// sum of direct light over unit hemisphere is PI
+			// that means fake light intensity has to be 4 times bigger to compensate for ambient light, however 4 looks too bright
+			lightDir = normalize(GetLightDirectionFromSphericalHarmonics() * _LightSkew);
+			lightColor = 2 * _ApproximateFakeLight * (averageLightProbes + i.vertexLightsAverage.rgb) * occlusionRamp;
 		}
 
-		finalRGB += (lightProbes + vertexLights) * surfaceOut.Albedo * shadowRamp;
-
-
-		// light color and light dir that falls back to baked light color and light dir in case there is no realtime directional light
-		float3 compensatedLightColor = lightColor;
-		float3 compensatedLightDir = lightDir;
-		UNITY_BRANCH
-		if (!any(compensatedLightColor))
-		{
-			compensatedLightColor = averageLightProbes + i.vertexLightsAverage.rgb;
-		}
-		UNITY_BRANCH
-		if (!any(compensatedLightDir))
-		{
-			compensatedLightDir = normalize(GetLightDirectionFromSphericalHarmonics() * _LightSkew);
-		}
+		float3 ambientRGB = ambientWeight * (lightProbes + vertexLights) * surfaceOut.Albedo * occlusionRamp;
+		finalRGB += ambientRGB;
 
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
@@ -724,9 +733,12 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	float NdotH = dot(N, H);
 	float LdotH = dot(L, H);
 
+	//NdotL = NdotL * 0.5 + 0.5;
+	//NdotH = NdotH * 0.5 + 0.5;
+
 	{
 		float diffuseWeight = 0;
-		float specularWeight = 0;
+		float3 specularWeight = 0;
 		float reflectionProbeWeight = 0;
 
 		// Disney's BRDF, calculate diffuse and specular weight with crazy physicaly based math based on real life measurements
@@ -781,8 +793,9 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			float Fss = lerp(1.0, Fss90, FL) * lerp(1.0, Fss90, FV);
 			float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
 
-			diffuseWeight = lerp(Fd, ss, subsurface) * NdotL;
-			
+			//diffuseWeight = lerp(Fd, ss, subsurface) * NdotL;
+			diffuseWeight = Fd * NdotL;
+
 			// TODO: not correct
 			//reflectionProbeWeight = 1 - (diffuseWeight * (1 - metallic));
 			reflectionProbeWeight = surfaceOut.Smoothness *  metallic;
@@ -790,31 +803,38 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			if (NdotL > 0 && NdotV > 0)
 			{
 				// specular
-				float aspect = sqrt(1 - anisotropic * .9);
-				float ax = max(.001, sqr(roughness) / aspect);
-				float ay = max(.001, sqr(roughness) * aspect);
-				float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay); // amount of microfacets facing camera
+				
+				// anisotropic
+				//float aspect = sqrt(1 - anisotropic * .9);
+				//float ax = max(.001, sqr(roughness) / aspect);
+				//float ay = max(.001, sqr(roughness) * aspect);
+				//float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay); // amount of microfacets facing camera
+				//float Gs; // geometry self shadowing
+				//Gs = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
+				//Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
+
+				// not anisotropic
+				float Ds = GTR2(NdotH, roughness * roughness); // amount of microfacets facing camera
+				float Gs = smithG_GGX(NdotV, roughness); // geometry self shadowing
+
 				float FH = SchlickFresnel(LdotH);
 				float3 Fs = lerp(Cspec0, float3(1, 1, 1), FH);
-				float Gs; // geometry self shadowing
-				Gs = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
-				Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
 
 				// sheen
-				float3 Fsheen = FH * sheen * Csheen;
+				//float3 Fsheen = FH * sheen * Csheen;
 
 				// clearcoat (ior = 1.5 -> F0 = 0.04)
-				float Dr = GTR1(NdotH, lerp(.1, .001, clearcoatGloss));
-				float Fr = lerp(.04, 1.0, FH);
-				float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
+				//float Dr = GTR1(NdotH, lerp(.1, .001, clearcoatGloss));
+				//float Fr = lerp(.04, 1.0, FH);
+				//float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
 
-				specularWeight = Gs * Fs * Ds * PI * NdotL;
+				specularWeight = (Gs * Fs * Ds) * PI * NdotL;
 			}
 		}
 
 		// specular
 		{
-			finalRGB += specularWeight * lightColor;
+			finalRGB += specularWeight * lightColor * lightAttenuation;
 
 			#ifdef UNITY_PASS_FORWARDBASE
 				float specCubeMip = lerp(10, 0, surfaceOut.Smoothness); // 10 is blurry, 0 is sharp
@@ -826,25 +846,24 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		{
 			float rampU = diffuseWeight * 0.5 + 0.5; // remap -1..1 to 0..1
 			rampU *= 1 - surfaceOut.Metallic;
-			float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampU, rampU)).rgb;
-			UNITY_BRANCH
-			if (_Shadow < 1)
-			{
-				shadowRamp = lerp(1, shadowRamp, _Shadow);
-			}
-
 			float3 diffuseColor;
 			#ifdef UNITY_PASS_FORWARDBASE
+				rampU *= lightAttenuation;
+				// issue: sometimes world has no ambient lighting to show occlusion on, lets show little of it on direct light
+				rampU *= lerp(0.5, 1, surfaceOut.Occlusion);
+				float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampU, rampU)).rgb;
+				UNITY_BRANCH
+				if (_Shadow < 1) shadowRamp = lerp(1, shadowRamp, _Shadow);
 				diffuseColor = lightColor * shadowRamp * surfaceOut.Albedo;
-				diffuseColor = lerp(_ShadowColor, diffuseColor, lightAttenuation);
 			#else
 				// issue: sometimes delta pass light is too bright, lets make sure its not too bright
 				diffuseColor = lightColor;
 				float g = Grayness(diffuseColor);
 				UNITY_BRANCH
-					if (g > 1) diffuseColor /= g;
-				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo;
-				diffuseColor = diffuseColor * lightAttenuation;
+				if (g > 1) diffuseColor /= g;
+				float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampU, rampU)).rgb;
+				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo * lightAttenuation;
+				//return float4(diffuseColor * lightAttenuation* diffuseWeight, 1);
 			#endif
 			finalRGB += diffuseColor;
 		}
@@ -908,7 +927,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				else // 3
 				{
 					// Multiply by light color then add to final color
-					matcap *= compensatedLightColor;
+					matcap *= lightColor;
 					finalRGB += matcap * _MatcapWeight;
 				}
 			}
@@ -940,7 +959,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			else
 			{
 				// Glow only in darkness
-				fixed weight = lightAttenuation * dot(averageLightProbes + i.vertexLightsAverage.rgb + compensatedLightColor, fixed3(1, 1, 1));
+				fixed weight = Grayness(ambientRGB);
 				weight = 1 - clamp(0, 1, weight);
 				finalRGB += surfaceOut.Emission * weight;
 			}
