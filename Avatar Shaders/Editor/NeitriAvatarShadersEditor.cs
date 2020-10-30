@@ -25,12 +25,11 @@ public class NeitriAvatarShadersEditor : ShaderGUI
 				t.SetFloat("_BakedLightingFlatness", 0.9f);
 				t.SetFloat("_ApproximateFakeLight", 0.7f);
 				t.SetFloat("_AlphaCutout", 0.05f);
-				t.SetVector("_LightSkew", new Vector4(1f, 0.1f, 1f, 0f));
 				t.SetFloat("_Cull", 2);
 				t.SetFloat("_ZTest", 4);
 			};
 
-			AddPreset("Default", "Reverts all changes to default values", (NeitriAvatarShadersEditor t) =>
+			AddPreset("Default", "Reverts back to default values that are changed by other presets", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 			});
@@ -75,7 +74,7 @@ public class NeitriAvatarShadersEditor : ShaderGUI
 				t.SetColor("_ShadowRim", new Color(0f, 0f, 0f, 1f));
 			});
 
-			AddPreset("Unity Standard", "", (NeitriAvatarShadersEditor t) =>
+			AddPreset("Unity Standard", "Makes this shader look like Unity Standard", (NeitriAvatarShadersEditor t) =>
 			{
 				reset(t);
 				skin(t);
@@ -83,6 +82,8 @@ public class NeitriAvatarShadersEditor : ShaderGUI
 				t.SetTexture("_Ramp", "bdf1b35b19aeeec4c9bd175a43232d46");
 				t.SetFloat("_Shadow", 1.0f); // ramp weight
 				t.SetFloat("_BakedLightingFlatness", 0f);
+				t.SetFloat("_ApproximateFakeLight", 0f);
+				t.SetColor("_LightSKew", new Color(1f, 1f, 1f, 1f));
 			});
 
 			// TODO: Face, Body, Hair, Silk, Leather, Metal, Carbon fibre

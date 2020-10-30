@@ -11,7 +11,8 @@ Shader "Neitri/Avatar Shaders/Opaque + Raymarcher"
 		_Color ("Color", Color) = (1,1,1,1)
 		_Metallic("Metallic", Range(0, 1)) = 0
 		_Glossiness("Smoothness", Range(0, 1)) = 0
-		_OcclusionMap("Occlusion -advanced", 2D) = "white" {}
+		_OcclusionStrength("Occlusion -advanced", Range(0, 1)) = 1
+		_OcclusionMap(" -advanced", 2D) = "white" {}
 
 		[Header(Normal Map)]
 		_BumpScale("Weight", Range(0, 2)) = 0
@@ -54,13 +55,13 @@ Shader "Neitri/Avatar Shaders/Opaque + Raymarcher"
 
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
+		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0 // hide in Transparent
+		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 0
 		[Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror -advanced", Range(0, 2)) = 0
 		[Enum(No,0,Yes,1)] _IgnoreMirrorClipPlane("Headpat yourself in mirror -advanced", Range(0, 1)) = 0
 		_ContactDeformRange("Contant mesh deformation -advanced", Range(0, 0.2)) = 0
-		_LightSkew("Light Skew -advanced", Vector) = (1, 0.1, 1)
-		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0 // hide in Transparent
-		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull -advanced", Float) = 2
-		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest -advanced", Float) = 4
+		_LightSkew("Light Skew -advanced", Vector) = (1, 1, 1)
+		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest -advanced", Float) = 4
 		
 		//[Toggle(_)] _UseContactDeformation ("Contact Deformation", Range(0, 1)) = 0
 		//[Toggle(_)] _DebugInt1("Debug Int 1", Range(0, 1)) = 1
@@ -88,7 +89,8 @@ Shader "Neitri/Avatar Shaders/Opaque + Raymarcher"
 			fixed4 _Color;
 			float _Metallic;
 			float _Glossiness; // name from Unity's standard
-			sampler2D _OcclusionMap; float4 _OcclusionMap_ST;
+			sampler2D _OcclusionMap; float4 _OcclusionMap_ST; // name from Unity's standard
+			float _OcclusionStrength; // name from Unity's standard
 			sampler2D _EmissionMap; float4 _EmissionMap_ST; // name from Xiexe's
 			fixed4 _EmissionColor;
 			sampler2D _BumpMap; float4 _BumpMap_ST;
@@ -101,7 +103,7 @@ Shader "Neitri/Avatar Shaders/Opaque + Raymarcher"
 				o.Alpha = color.a;
 				o.Metallic = _Metallic;
 				o.Smoothness = _Glossiness;
-				o.Occlusion = tex2D(_OcclusionMap, TRANSFORM_TEX(i.uv0.xy, _OcclusionMap));
+				o.Occlusion = lerp(1, tex2D(_OcclusionMap, TRANSFORM_TEX(i.uv0.xy, _OcclusionMap)), _OcclusionStrength);
 				o.Emission = tex2D(_EmissionMap, TRANSFORM_TEX(i.uv0.xy, _EmissionMap)) * _EmissionColor;
 				o.Normal = UnpackNormal(tex2D(_BumpMap, TRANSFORM_TEX(i.uv0.xy, _BumpMap)));
 				o.Normal = lerp(float3(0, 0, 1), o.Normal, _BumpScale);

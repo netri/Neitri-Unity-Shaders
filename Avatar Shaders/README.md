@@ -11,10 +11,14 @@ This shader was made with following goals in mind:
 This is not do it all PBR/Toon comprehensive uber shader like those of Xiexe or Poiyomi.
 
 # Troubleshoting
+Some meshes are not visible ? It's faces might be facing wrong direction, try to "Show Advanced" and set Cull: Off.
+
 If your avatar is dark after using normal map, make sure you have this on your model import settings:
 ![](https://image.prntscr.com/image/XspfVYA_RdKIzu8ZrTVGKQ.png)
 
 # Notes
+
+Cull is Off by default because normal people don't know what culling is.
 
 Rim lighting is missing because it can be simulared with matcaps, there is preset for it.
 

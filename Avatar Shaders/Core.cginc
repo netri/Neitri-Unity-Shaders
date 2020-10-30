@@ -38,14 +38,14 @@ float3 _ShadowRim;
 float _BakedLightingFlatness;
 float _ApproximateFakeLight;
 
-float _Shadow; // name from Cubed's
-Texture2D _Ramp; // name from Xiexe's
+float _Shadow; // name & idea from Cubed's
+sampler2D _Ramp; // name from Xiexe's
 
 int _MatcapType;
 float4 _MatcapTint; // name from Xiexe's
 float _MatcapWeight;
 int _MatcapAnchor;
-Texture2D _Matcap;
+sampler2D _Matcap;
 
 #ifdef IS_OUTLINE_SHADER
 float4 _OutlineColor;
@@ -57,7 +57,7 @@ int _ShowInMirror;
 int _IgnoreMirrorClipPlane;
 float _ContactDeformRange;
 int _DitheredTransparencyType;
-float3 _LightSkew; // name from Silent's
+float3 _LightSkew; // name & idea from Silent's
 
 UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
@@ -294,7 +294,6 @@ inline bool IsInMirror()
 {
 	return UNITY_MATRIX_P._31 != 0.f || UNITY_MATRIX_P._32 != 0.f;
 }
-
 
 // Calculates depth differene between vertex and worlPos and current value in depth buffer
 float CalculateDepthDifference(float3 worldPos)
@@ -546,7 +545,6 @@ float3 GetLightDirectionFromSphericalHarmonics()
 }
 
 
-
 #ifdef CHANGE_DEPTH
 
 struct FragmentOut
@@ -628,10 +626,12 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		clip(facing); // clip backfaces in case cull is off or front
 		return _OutlineColor;
 	}
-#endif
+#endif	
+	
+	// slightly dither normal to hide obvious normal interpolation
+	i.normal += GetScreenSpaceDither(i.pos.xy) * 0.01;
 
 	float3 normal;
-
 #ifdef USE_NORMAL_MAP
 	UNITY_BRANCH
 	if (any(surfaceOut.Normal))
@@ -642,39 +642,45 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	else
 #endif
 	{
-		// slightly dither normal to hide obvious normal interpolation
-		//normal = normalize(i.normal + GetScreenSpaceDither(i.pos.xy) / 10.0);
-
 		normal = normalize(i.normal);
 	}
 
 	float3 worldSpaceCameraPos = GetCameraPosition();
 
 	// direction from pixel towards camera
-	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);
-
+	float3 viewDir = normalize(worldSpaceCameraPos - i.worldPos.xyz);	
+	
 	// shadows, spot/point light distance calculations, light cookies
 	UNITY_LIGHT_ATTENUATION(lightAttenuation, i, i.worldPos.xyz);
+
+	/// ACIIL's fix: lightAtten is random in scenes without directional lights.
+	if (!any(_LightColor0.rgb)) 
+	{
+		lightAttenuation = 1;
+	}
 
 	fixed3 lightColor = _LightColor0.rgb;
 
 	// direction from pixel towards light
-	// BAD: don't normalize, stay 0 if no light direction
+	// BAD: don't normalize, stay 0 if no light direction so we can detect it in other lighting code
 	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos.xyz);
-	lightDir = length(lightDir) > 0 ? normalize(lightDir * _LightSkew) : 0;
+	float lighrDirLength = length(lightDir);
+	lightDir = lighrDirLength > 0 ? (lightDir * _LightSkew) / lighrDirLength : 0;
 
 	float3 finalRGB = 0;
 
 	#ifdef UNITY_PASS_FORWARDBASE
-
 	
-		float3 occlusionRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(surfaceOut.Occlusion, surfaceOut.Occlusion)).rgb;
-		UNITY_BRANCH
-		if (_Shadow < 1)
+		float3 occlusionRamp;
 		{
-			occlusionRamp = lerp(1, occlusionRamp, _Shadow);
+			float occlusionAdjusted = surfaceOut.Occlusion * 0.5 + 0.5;
+			occlusionRamp = tex2D(_Ramp, float2(occlusionAdjusted, occlusionAdjusted)).rgb;
+			UNITY_BRANCH
+			if (_Shadow < 1)
+			{
+				occlusionRamp = lerp(1, occlusionRamp, _Shadow);
+			}
 		}
-
 
 		// non cookie directional light
 
@@ -683,7 +689,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		half3 realLightProbes = ShadeSH9(half4(normal, 1));
 		
 		half3 lightProbes = lerp(realLightProbes, averageLightProbes, _BakedLightingFlatness);
-		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
+		float3 vertexLights = lerp(i.vertexLightsReal.rgb, i.vertexLightsAverage.rgb, _BakedLightingFlatness); // BAD: don't use #ifdef VERTEXLIGHT_ON, it's defined only in fragment shader
 		float ambientWeight = 1;
 
 		// light color and light dir falls back to baked light color and light dir in case there is no realtime directional light
@@ -691,15 +697,16 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		if (!any(lightColor) && !any(lightDir))
 		{
 			ambientWeight -= _ApproximateFakeLight;
-			// sum of ambient light over unit sphere is 4*PI
-			// sum of direct light over unit hemisphere is PI
+			// integral/volume of unit sphere is 4*PI
+			// integral of clamped cosine over unit hemisphere is PI
 			// that means fake light intensity has to be 4 times bigger to compensate for ambient light, however 4 looks too bright
 			lightDir = normalize(GetLightDirectionFromSphericalHarmonics() * _LightSkew);
-			lightColor = 2 * _ApproximateFakeLight * (averageLightProbes + i.vertexLightsAverage.rgb) * occlusionRamp;
+			lightColor = 2 * _ApproximateFakeLight * (averageLightProbes + i.vertexLightsAverage.rgb);
 		}
 
 		float3 ambientRGB = ambientWeight * (lightProbes + vertexLights) * surfaceOut.Albedo * occlusionRamp;
 		finalRGB += ambientRGB;
+		//return float4(finalRGB, 0); // DEBUG
 
 		// BAD: we cant tell where is complete darkness
 		// issue: if we are in complete dark we dont want to artifiaclly lighten up shadowed parts
@@ -711,7 +718,6 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 
 	#endif
 
-
 	#ifdef UNITY_PASS_FORWARDBASE
 	UNITY_BRANCH
 	if (_Shadow < 1)
@@ -720,6 +726,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 		lightAttenuation = lerp(1, lightAttenuation, _Shadow);
 	}
 	#endif
+
 
 	float3 L = lightDir;
 	float3 V = viewDir;
@@ -767,7 +774,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			float specular = 0.5;
 			float roughness = 1 - surfaceOut.Smoothness;
 			float specularTint = 0;
-			float anisotropic = 0;
+			float anisotropic = surfaceOut.Anisotropic;
 			float sheen = 0;
 			float sheenTint = 0.5;
 			float clearcoat = 0;
@@ -803,19 +810,27 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			if (NdotL > 0 && NdotV > 0)
 			{
 				// specular
-				
-				// anisotropic
-				//float aspect = sqrt(1 - anisotropic * .9);
-				//float ax = max(.001, sqr(roughness) / aspect);
-				//float ay = max(.001, sqr(roughness) * aspect);
-				//float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay); // amount of microfacets facing camera
-				//float Gs; // geometry self shadowing
-				//Gs = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
-				//Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
 
-				// not anisotropic
-				float Ds = GTR2(NdotH, roughness * roughness); // amount of microfacets facing camera
-				float Gs = smithG_GGX(NdotV, roughness); // geometry self shadowing
+				float Ds; // amount of microfacets facing camera
+				float Gs; // geometry self shadowing
+				// anisotropic
+				UNITY_BRANCH
+				if (anisotropic != 0)
+				{
+					float aspect = sqrt(1 - anisotropic * .9);
+					float ax = max(.001, sqr(roughness) / aspect);
+					float ay = max(.001, sqr(roughness) * aspect);
+					Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay); // amount of microfacets facing camera
+					// geometry self shadowing
+					Gs = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
+					Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
+				}
+				else
+				{
+					// not anisotropic
+					Ds = GTR2(NdotH, roughness * roughness); // amount of microfacets facing camera
+					Gs = smithG_GGX(NdotV, roughness); // geometry self shadowing
+				}
 
 				float FH = SchlickFresnel(LdotH);
 				float3 Fs = lerp(Cspec0, float3(1, 1, 1), FH);
@@ -849,9 +864,9 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 			float3 diffuseColor;
 			#ifdef UNITY_PASS_FORWARDBASE
 				rampU *= lightAttenuation;
-				// issue: sometimes world has no ambient lighting to show occlusion on, lets show little of it on direct light
+				// issue: sometimes world has no ambient lighting to show occlusion on, lets show little of it on first direct light
 				rampU *= lerp(0.5, 1, surfaceOut.Occlusion);
-				float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampU, rampU)).rgb;
+				float3 shadowRamp = tex2D(_Ramp, float2(rampU, rampU)).rgb;
 				UNITY_BRANCH
 				if (_Shadow < 1) shadowRamp = lerp(1, shadowRamp, _Shadow);
 				diffuseColor = lightColor * shadowRamp * surfaceOut.Albedo;
@@ -861,7 +876,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				float g = Grayness(diffuseColor);
 				UNITY_BRANCH
 				if (g > 1) diffuseColor /= g;
-				float3 shadowRamp = _Ramp.Sample(Sampler_Linear_Clamp, float2(rampU, rampU)).rgb;
+				float3 shadowRamp = tex2D(_Ramp, float2(rampU, rampU)).rgb;
 				diffuseColor = diffuseColor * shadowRamp * surfaceOut.Albedo * lightAttenuation;
 				//return float4(diffuseColor * lightAttenuation* diffuseWeight, 1);
 			#endif
@@ -908,7 +923,7 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 				}
 			}
 
-			float3 matcap = _Matcap.Sample(Sampler_Linear_Clamp, matcapUv).rgb * _MatcapTint.rgb * _MatcapTint.a;
+			float3 matcap = tex2D(_Matcap, matcapUv).rgb * _MatcapTint.rgb * _MatcapTint.a;
 
 			UNITY_BRANCH
 			if (_MatcapType == 1)

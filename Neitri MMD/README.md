@@ -1,0 +1,1 @@
+#Moved to https://github.com/netri/Neitri-Unity-Shaders/tree/master/Avatar%20Shaders

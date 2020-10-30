@@ -19,6 +19,7 @@ struct SurfaceOut
 	half Occlusion;
 	half Metallic; // 0=non-metal, 1=metal
 	half Smoothness; // 0=rough, 1=smooth
+	half Anisotropic; // 0=no anisotropy
 	fixed Alpha; // alpha for transparencies
 	#ifdef CHANGE_DEPTH
 		float Depth;
