@@ -49,7 +49,7 @@ Shader "Neitri/Avatar Shaders/Transparent"
 
 		[Header(Other)]
 		_AlphaCutout("Alpha Cutout", Range(0, 1)) = 0.05
-		[Enum(Disabled,0,Anchored to camera,1,Anchored to texture coordinates,2)] _DitheredTransparencyType("Dithered transparency -advanced", Range(0, 2)) = 0 // hide in Transparent
+		_DitheredTransparency("Dithered transparency -advanced", Range(0, 1)) = 1 // hide in Transparent
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull -advanced", Float) = 0
 		[Enum(Show in both,0,Show only in mirror,1,Dont show in mirror,2)] _ShowInMirror("Show in mirror -advanced", Range(0, 2)) = 0
 		[Enum(No,0,Yes,1)] _IgnoreMirrorClipPlane("Headpat yourself in mirror -advanced", Range(0, 1)) = 0

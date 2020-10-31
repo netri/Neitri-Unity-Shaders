@@ -56,7 +56,7 @@ float _AlphaCutout;
 int _ShowInMirror;
 int _IgnoreMirrorClipPlane;
 float _ContactDeformRange;
-int _DitheredTransparencyType;
+float _DitheredTransparency;
 float3 _LightSkew; // name & idea from Silent's
 
 UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
@@ -74,6 +74,8 @@ float _DebugFloat1;
 #define PI 3.14159265358979323846
 
 float sqr(float x) { return x * x; }
+
+float InverseLerp(float min, float max, float x) { return saturate(min + x * (max - min)); }
 
 float SchlickFresnel(float u)
 {
@@ -602,19 +604,12 @@ float4 FragmentProgram(FragmentIn i, fixed facing : VFACE) : SV_Target
 	#ifndef IS_TRANSPARENT_SHADER
 	// dithering makes sense only in opaque shader
 	UNITY_BRANCH
-	if (_DitheredTransparencyType != 0)
+	if (_DitheredTransparency > 0)
 	{
-		UNITY_BRANCH
-		if (_DitheredTransparencyType == 1)
-		{
-			// Anchored to camera
-			clip(GetDithering(i.pos.xy, surfaceOut.Alpha));
-		}
-		else
-		{
-			// Anchored to texture coordinates
-			clip(GetDithering(i.uv0.xy * 5, surfaceOut.Alpha));
-		}
+		// alpha 1 is fully visible, 0 is fully invisible
+		float adjustedAlpha = saturate((surfaceOut.Alpha - _AlphaCutout) / (1 - _AlphaCutout)); // remap _AlphaCutout..1 to 0..1
+		adjustedAlpha = saturate(adjustedAlpha / _DitheredTransparency); // remap 0.._DitheredTransparency to 0..1
+		clip(GetDithering(i.pos.xy, adjustedAlpha)); // Anchored to camera
 	}
 	#endif
 
@@ -1087,19 +1082,12 @@ half4 FragmentProgramShadowCaster(float4 vpos : SV_POSITION, VertexShadowCasterO
 	clip(surfaceOut.Alpha - _AlphaCutout);
 
 	UNITY_BRANCH
-	if (_DitheredTransparencyType != 0)
+	if (_DitheredTransparency > 0)
 	{
-		UNITY_BRANCH
-		if (_DitheredTransparencyType == 1)
-		{
-			// Anchored to camera
-			clip(GetDithering(vpos.xy, surfaceOut.Alpha));
-		}
-		else
-		{
-			// Anchored to texture coordinates
-			clip(GetDithering(i.uv0.xy * 5, surfaceOut.Alpha));
-		}
+		// alpha 1 is fully visible, 0 is fully invisible
+		float adjustedAlpha = saturate((surfaceOut.Alpha - _AlphaCutout) / (1 - _AlphaCutout)); // remap _AlphaCutout..1 to 0..1
+		adjustedAlpha = saturate(adjustedAlpha / _DitheredTransparency); // remap 0.._DitheredTransparency to 0..1
+		clip(GetDithering(vpos.xy, adjustedAlpha)); // Anchored to camera
 	}
 
 	SHADOW_CASTER_FRAGMENT(i)
