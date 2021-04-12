@@ -34,24 +34,49 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Matcap:
+        m_Texture: {fileID: 2800000, guid: d6064d42d7ffecd4cba07c5bd929b6d5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _Ramp:
-        m_Texture: {fileID: 2800000, guid: dda8707f00c412c4bafa424967d1c740, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1283d592696f77545b70f4b513c72188, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _BakedLightingFlatness: 0.7
+    - _AlphaCutout: 0.05
+    - _Anisotropic: 0
+    - _ApproximateFakeLight: 0.7
+    - _BakedLightingFlatness: 0.9
     - _BumpScale: 0
     - _ColorOverTime_Speed: 0.1
+    - _ContactDeformRange: 0
     - _Cull: 2
+    - _DitheredTransparencyType: 0
+    - _EmissionType: 0
     - _Glossiness: 0
+    - _IgnoreMirrorClipPlane: 0
+    - _MatcapAnchor: 0
+    - _MatcapType: 2
+    - _MatcapWeight: 0
+    - _Metallic: 0
+    - _OcclusionStrength: 1
     - _Raymarcher_Scale: 1
     - _Raymarcher_Type: 0
     - _ShadingRampStretch: 0
-    - _Shadow: 0.7
+    - _Shadow: 0.6
+    - _ShowInMirror: 0
     - _UseColorOverTime: 0
     - _UseDitheredTransparency: 1
+    - _Version: 0.1
     - _ZTest: 4
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+    - _LightSkew: {r: 1, g: 1, b: 1, a: 1}
+    - _MatcapTint: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ShadowRim: {r: 0, g: 0, b: 0, a: 1}

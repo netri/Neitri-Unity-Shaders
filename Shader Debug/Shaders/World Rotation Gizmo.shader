@@ -8,7 +8,6 @@
 	{
 		Blend SrcAlpha OneMinusSrcAlpha
 		Tags { "RenderType"="Opaque" "Queue"="Transparent" "IgnoreProjector"="True" }
-		LOD 100
 
 		Pass
 		{

@@ -5,8 +5,8 @@
 	}
 	SubShader
 	{
-		Tags { "RenderType"="Opaque" "IgnoreProjector"="True" }
-		LOD 100
+		Tags { "Queue" = "Geometry" "RenderType" = "Opaque" "IgnoreProjector" = "True" }
+		Cull Back
 
 		Pass
 		{
@@ -52,8 +52,6 @@
 			}
 			ENDCG
 		}
-
-		UsePass "VertexLit/SHADOWCASTER"
 	}
 
 	FallBack Off

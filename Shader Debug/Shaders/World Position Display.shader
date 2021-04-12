@@ -115,8 +115,7 @@ Shader "Neitri/Debug/World Position Display"
 			}
 
 			ENDCG
-		}
-		
+		}		
 	}
 
 	Fallback Off

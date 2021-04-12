@@ -6,7 +6,6 @@
 	SubShader
 	{
 		Tags { "RenderType"="Opaque" "IgnoreProjector"="True" }
-		LOD 100
 
 		Pass
 		{
@@ -79,8 +78,6 @@
 
 			ENDCG
 		}
-
-		UsePass "VertexLit/SHADOWCASTER"
 	}
 
 	FallBack Off
