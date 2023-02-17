@@ -1,5 +1,5 @@
 # [Example World](https://www.vrchat.com/home/launch?worldId=wrld_f4bc450a-6998-4496-bac6-7a53f44dd3ae)
-
+![](../.Images/GPU_Particles_Example_World.png)<br>
 # How it works
 The data is stored in render texture, one pixel RGB is world XYZ of the particle.
 To render the particles: You take mesh with alot of quads (or you make the quads in tesselation or geometry shader stage), identify every quad for examply by SV_VertexID and move it to positon stored in the texture.
